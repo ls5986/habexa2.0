@@ -1,0 +1,156 @@
+"""
+Keepa API endpoints for price history and product data.
+"""
+from fastapi import APIRouter, Depends, HTTPException, Query
+from typing import List
+
+from app.api.deps import get_current_user
+from app.services.keepa_client import keepa_client, KeepaError
+
+router = APIRouter()
+
+
+@router.get("/product/{asin}")
+async def get_keepa_product(
+    asin: str,
+    days: int = Query(90, ge=30, le=365),
+    current_user=Depends(get_current_user)
+):
+    """
+    Get Keepa price history and stats for a product.
+    
+    Args:
+        asin: Amazon ASIN
+        days: Days of history (30-365)
+        
+    Returns:
+        Product data with price history, averages, and sales estimates
+    """
+    
+    try:
+        data = await keepa_client.get_product(
+            asin=asin,
+            days=days,
+            history=True
+        )
+        
+        if not data:
+            raise HTTPException(404, f"Product not found: {asin}")
+        
+        return data
+        
+    except KeepaError as e:
+        raise HTTPException(400, str(e))
+
+
+@router.get("/history/{asin}")
+async def get_price_history(
+    asin: str,
+    days: int = Query(90, ge=30, le=365),
+    current_user=Depends(get_current_user)
+):
+    """
+    Get just the price history for charts.
+    Lighter endpoint that returns only chart data.
+    """
+    
+    try:
+        data = await keepa_client.get_product(
+            asin=asin,
+            days=days,
+            history=True
+        )
+        
+        if not data:
+            raise HTTPException(404, f"Product not found: {asin}")
+        
+        return {
+            "asin": asin,
+            "price_history": data.get("price_history", {}),
+            "rank_history": data.get("rank_history", {}),
+            "current": data.get("current", {}),
+            "averages": data.get("averages", {}),
+        }
+        
+    except KeepaError as e:
+        raise HTTPException(400, str(e))
+
+
+@router.post("/batch")
+async def get_keepa_batch(
+    asins: List[str],
+    days: int = Query(90, ge=30, le=365),
+    current_user=Depends(get_current_user)
+):
+    """
+    Get Keepa data for multiple ASINs.
+    Maximum 100 ASINs per request.
+    """
+    
+    if len(asins) > 100:
+        raise HTTPException(400, "Maximum 100 ASINs per request")
+    
+    if len(asins) == 0:
+        return {"products": []}
+    
+    try:
+        products = await keepa_client.get_products_batch(
+            asins=asins,
+            days=days,
+            history=True
+        )
+        
+        return {
+            "products": products,
+            "count": len(products)
+        }
+        
+    except KeepaError as e:
+        raise HTTPException(400, str(e))
+
+
+@router.get("/tokens")
+async def get_token_status(current_user=Depends(get_current_user)):
+    """Get current Keepa API token balance."""
+    
+    return await keepa_client.get_token_status()
+
+
+@router.get("/sales-estimate/{asin}")
+async def get_sales_estimate(
+    asin: str,
+    current_user=Depends(get_current_user)
+):
+    """
+    Get sales velocity estimate based on rank drops.
+    Each rank drop roughly equals one sale.
+    """
+    
+    try:
+        data = await keepa_client.get_product(asin=asin, days=180, history=False)
+        
+        if not data:
+            raise HTTPException(404, f"Product not found: {asin}")
+        
+        drops = data.get("drops", {})
+        
+        # Estimate monthly sales from drops
+        drops_30 = drops.get("drops_30", 0) or 0
+        drops_90 = drops.get("drops_90", 0) or 0
+        drops_180 = drops.get("drops_180", 0) or 0
+        
+        return {
+            "asin": asin,
+            "sales_rank": data.get("current", {}).get("sales_rank"),
+            "category": data.get("sales_rank_category"),
+            "drops_30_days": drops_30,
+            "drops_90_days": drops_90,
+            "drops_180_days": drops_180,
+            "estimated_monthly_sales": drops_30,  # Rough estimate
+            "estimated_daily_sales": round(drops_30 / 30, 1),
+            "note": "Estimates based on BSR drops. Each drop ≈ 1 sale."
+        }
+        
+    except KeepaError as e:
+        raise HTTPException(400, str(e))
+

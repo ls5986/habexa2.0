@@ -1,0 +1,1622 @@
+id,user_id,source_channel_id,telegram_message_id,asin,supplier_price,moq,is_ready_to_ship,raw_message_text,message_date,created_at,supplier,image_url,amazon_title,buy_box_price,amazon_rating,review_count,bestseller_rank,category,calculated_profit,calculated_roi,calculated_margin,profit_score,enrichment_status,enriched_at,seller_name,is_sold_by_amazon,is_fulfilled_by_amazon,estimated_monthly_sales,estimated_90_day_sales,product_weight_lbs,product_length_inches,product_width_inches,product_height_inches,estimated_shipping_cost,shipping_method,is_bad_opportunity,opportunity_reason,net_profit_after_shipping,total_cost_per_unit,enrichment_error,supplier_id,telegram_message_fk,seller_account_id,is_fba,inbound_shipping_per_unit,gross_profit_per_unit,fees_total
+1696,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19806,B0D26VLX8C,16,300,true,"https://www.amazon.com/DP/B0D26VLX8C?th=1
+
+$16
+600 available 
+MOQ 300 
+BSR 50k (1%)
+39.50% ROI",2025-11-28 20:17:47+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/618z1dwoXTL._AC_SL1000_.jpg,Granite Ware Open Roasting Pan with Flat Rack (Speckled Black) - Accommodates up to 25 lb poultry or roast. A- Rectangular Roaster w/rack 19 x12 x2.7 in.,41.71,4.10,131,,Home & Kitchen,4.45,27.83,10.68,36,enriched,2025-11-28 22:25:35.60007+00,,false,true,65,195,4.09,,,,15.00,FBA Inbound,false,,4.45,37.26,,2643bb58-a58c-4494-8d6e-9418b3e79096,122,,true,,,
+1697,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19805,B09F74ZSYK,4,900,true,"https://www.amazon.com/DP/B09F74ZSYK
+
+$4
+1800 available 
+MOQ 900 
+BSR 45k (1%)
+30.00% ROI",2025-11-28 17:43:09+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/71Ey8-QQWBL._AC_SL1500_.jpg,"Centrum Multivitamin for Women, Multivitamin/Multimineral Supplement with Iron, Vitamin D3, B Vitamins and Antioxidant Vitamins C and E, Gluten Free, Non-GMO Ingredients - 65 Count",9.34,4.50,27,45068,"Health, Household & Baby Care",-0.31,-7.77,-3.33,0,enriched,2025-11-28 22:25:41.19037+00,,true,true,20,60,,,,,0.75,FBA Inbound,true,Sold by Amazon - high competition,-0.31,9.65,,2643bb58-a58c-4494-8d6e-9418b3e79096,46,,true,,,
+1698,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19804,B0CDZMLC4S,27,100,true,"https://www.amazon.com/Slim-Mint-Ultra-Thin-RFID-Blocking-Crush-Resistant/dp/B0CDZMLC4S/?th=1
+
+$27
+MOQ 100 
+BSR 219k (1%)
+33.15% ROI 
+Monthly Sales 100+",2025-11-28 17:32:17+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/51PBoE-tdsL._AC_SL1000_.jpg,"Slim Mint Wallet, Ultra-Thin, RFID-Blocking, AS-SEEN-ON-TV, ID Theft Protection, Easy to Carry, Reach Cards/Cash with the Touch of a Button, Optimizes Space, Aluminum Outer Shell, Crush-Resistant, 2PK 4 in. Black",47.99,4.00,231,,Home & Kitchen,5.29,19.60,11.03,32,enriched,2025-11-28 22:25:46.995433+00,,false,true,115,345,,0.75,2.85,4.35,8.50,FBA Inbound,false,,5.29,42.70,,2643bb58-a58c-4494-8d6e-9418b3e79096,222,,true,,,
+1699,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19803,B01MZZ0UCI,7,700,false,"https://www.amazon.com/dp/B01MZZ0UCI?th=1
+
+$7
+MOQ 700
+BSR 13k (1%)
+55.71% ROI",2025-11-28 17:11:27+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/81VCf6fhF5L._SL1500_.jpg,"Maybelline Color Sensational Inti-Matte Nudes Lipstick, Honey Pink, 0.15 oz. Honey Pink 0.26 Fl Oz (Pack of 1)",,4.30,45062,11599,Beauty & Personal Care,,,,,failed,2025-11-29 05:27:29.557783+00,,false,true,24,72,,0.85,0.85,2.93,0.75,FBA Inbound,true,Low profit margin (0.0%); Low sales velocity (24 units/month),,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,2643bb58-a58c-4494-8d6e-9418b3e79096,190,,true,,,
+1700,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19802,B07VFP2VS3,10,,true,"https://www.amazon.com/STARBUCKS-VERANDA-INSTANT-CAFFEINE-PACKETS/dp/B07VFP2VS3
+
+$10 
+9000 available 
+BSR 49k (2%)
+43.40% ROI 
+EXP 11/26",2025-11-28 02:16:11+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/71K9arQHbCL._SL1500_.jpg,STARBUCKS VIA VERANDA BLEND MIX INSTANT COFFEE CAFFEINE PACKETS IN BOX 1.4 OZ - 0762111953321,21.48,4.40,59,56751,Grocery & Gourmet Food,4.01,40.08,18.66,58,enriched,2025-11-28 22:25:57.112159+00,,false,true,19,57,,6.26,3.35,1.18,0.75,FBA Inbound,false,,4.01,17.47,,2643bb58-a58c-4494-8d6e-9418b3e79096,204,,true,,,
+1701,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19801,B00005UP2K,222,100,false,"https://www.amazon.com/dp/B00005UP2K?ref=undefined&th=1
+
+$222
+MOQ 100
+BSR 64 (1%)
+25.51% ROI 
+Monthly Sales 800+",2025-11-28 02:10:26+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/71hNoU5FYuL._AC_SL1500_.jpg,"KitchenAid Artisan Series 5 Quart Tilt Head Stand Mixer with Pouring Shield KSM150PS, White",349.95,4.70,16467,,Home & Kitchen,68.46,30.84,19.56,68,enriched,2025-11-28 22:26:03.679284+00,,true,true,8233,24699,22.80,,,,2.00,FBA Inbound,true,Sold by Amazon - high competition,68.46,281.49,,2643bb58-a58c-4494-8d6e-9418b3e79096,229,,true,,,
+1702,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19800,B086DFCS7Y,25.5,500,false,"https://www.amazon.com/NutriBullet-NBY-50100-Nutribullet-Baby-18-Piece/dp/B086DFCS7Y/?th=1
+
+$25.50 
+MOQ 500
+BSR 959 (1%)
+26.63% ROI 
+Monthly Sales 8k+",2025-11-27 15:21:25+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/614bM9yRiXL._AC_SL1500_.jpg,"NutriBullet NBY-50100 Baby Complete Food-Making System, 32-Oz, White, Blue, Clear 32-oz.",47.99,4.70,14173,,Home & Kitchen,9.29,36.44,19.36,58,enriched,2025-11-28 22:26:10.488105+00,,true,true,7086,21258,4.55,,,,1.00,FBA Inbound,true,Sold by Amazon - high competition,9.29,38.70,,2643bb58-a58c-4494-8d6e-9418b3e79096,38,,true,,,
+1703,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19797,B09P2QJKLW,46,,true,"https://www.amazon.com/Artist-Digital-Curling-Long-Lasting-Defined/dp/B09P2QJKLW/?th=1
+
+$46
+600 available 
+BSR 21k (1%)
+34.24% ROI",2025-11-26 22:00:40+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/51wZAIO8Z8L._SL1500_.jpg,"Hot Tools Pro Artist Black Gold Digital Salon Hair Curling Iron | Medium Loose Curls and Tousled Waves, (1-1/4 inch) 1-1/4 Inch BARREL HAIR_IRON",76.47,4.40,984,20456,Beauty & Personal Care,14.75,32.06,19.29,57,enriched,2025-11-28 22:26:16.649796+00,,true,true,22,66,,108.00,108.00,108.00,0.75,FBA Inbound,true,Sold by Amazon - high competition,14.75,61.72,,2643bb58-a58c-4494-8d6e-9418b3e79096,8,,true,,,
+1704,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19796,B0001YXFFM,7.5,300,true,"https://www.amazon.com/DP/B0001YXFFM/ref
+
+$7.50 
+600 available 
+MOQ 300 
+BSR 109k (1%)
+34.93% ROI",2025-11-26 21:58:06+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/71Jf8PGbmtL._AC_SL1500_.jpg,"Honeywell UVEX Stealth Safety Goggles with Clear Uvextreme Anti-Fog Lens, Gray Body & Neoprene Headband (S3960C), Universal",17.60,4.50,7318,,Tools & Home Improvement,-1.04,-13.87,-5.91,0,enriched,2025-11-28 22:26:22.721794+00,,false,true,3659,10977,,8.00,4.00,4.00,8.50,FBA Inbound,true,Low profit margin (-5.9%),-1.04,18.64,,2643bb58-a58c-4494-8d6e-9418b3e79096,171,,true,,,
+1705,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19795,B09D8QYHND,15,,true,"https://www.amazon.com/DP/B09D8QYHND?th=1
+
+$15
+125 available 
+Take all 
+30.33% ROI 
+Monthly Sales 9k+",2025-11-26 21:53:25+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/81r9yYqc9jL._AC_SL1500_.jpg,"Hartz Delectables Stew Lickable Wet Cat Treats for Adult & Senior Cats, Variety Pack, 30 Count Variety 1.4 Ounce (Pack of 30)",31.97,4.70,17379,81,Pet Supplies,6.67,44.50,20.88,65,enriched,2025-11-28 22:26:30.223542+00,,true,true,1111,3333,2.60,6.88,5.38,5.31,1.00,FBA Inbound,true,Sold by Amazon - high competition,6.67,25.30,,2643bb58-a58c-4494-8d6e-9418b3e79096,182,,true,,,
+1706,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19794,5369411622,21.0,300,false,"https://www.walmart.com/ip/Power-Saber-Energy-Blade-Green-with-Realistic-Safe-Battle-Action/5369411622
+
+$21
+MOQ 300",2025-11-26 21:50:26+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,,,,,,,,,,,,failed,2025-11-29 05:27:30.695253+00,,false,true,,,,,,,0.75,FBA Inbound,true,Low profit margin (0.0%),,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,2643bb58-a58c-4494-8d6e-9418b3e79096,167,,true,,,
+1707,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19793,5281113148,21.0,300,false,"https://www.walmart.com/ip/Power-Saber-Energy-Blade-Red-with-Realistic-Safe-Battle-Action/5281113148
+
+$21
+MOQ 300",2025-11-26 21:48:09+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,,,,,,,,,,,,failed,2025-11-29 05:27:53.243666+00,,false,true,,,,,,,0.75,FBA Inbound,true,Low profit margin (0.0%),,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,2643bb58-a58c-4494-8d6e-9418b3e79096,81,,true,,,
+1708,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19792,B0BS8SV27Y,10,500,true,"https://www.amazon.com/Mini-Brands-Exclusive-Collectibles-Accessories/dp/B0BS8SV27Y/
+
+$10
+MOQ 500 
+BSR 19k (1%)
+42.50% ROI 
+Monthly Sales 1k+",2025-11-26 21:33:58+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/81Su1zH4ByL._AC_SL1500_.jpg,"Mini Brands Series 5 (2 Pack) by ZURU Amazon Exclusive Mini Collectibles Full of Surprises, Mystery Minis and Accessories to Collect",,4.70,1823,,Toys & Games,,,,,failed,2025-11-29 05:27:58.912424+00,,false,true,911,2733,,3.74,3.74,3.74,0.75,FBA Inbound,true,Low profit margin (0.0%),,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,2643bb58-a58c-4494-8d6e-9418b3e79096,209,,true,,,
+1709,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19791,B0DJG58YNX,16,400,false,"https://www.amazon.com/Solid-Gold-Freeze-Dried-Food/DP/B0DJG58YNX/reff?th=1
+
+$16
+MOQ 400 
+BSR 983 (1%)
+38.75% ROI 
+Monthly Sales 300+",2025-11-26 18:22:27+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/81e33l7Z3LL._AC_SL1500_.jpg,"Solid Gold Freeze Dried Dog Food - W/Real Beef, Pumpkin & Superfoods - Freeze Dried Raw Dog Food Toppers for Picky Eaters to Serve as a Nutrient-Dense Meal Topper or High Protein Treats - 12oz 12 Ounce (Pack of 1)",26.06,4.50,717,1723,Pet Supplies,1.90,11.88,7.29,20,enriched,2025-11-28 22:26:44.088491+00,,false,true,112,336,,,,,0.75,FBA Inbound,true,Low profit margin (7.3%),1.90,24.16,,2643bb58-a58c-4494-8d6e-9418b3e79096,85,,true,,,
+1710,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19790,B0BL8K97S5,92,400,true,"[https://www.amazon.com/dp/B0BL8K97S5?ref](https://www.amazon.com/dp/B0BL8K97S5?ref)
+
+$92
+800 available 
+MOQ 400 
+BSR 240k (1%)
+32.59% ROI
+",2025-11-26 17:59:14+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/512HkguxkOL._AC_SL1422_.jpg,RYOBI 18V ONE+ Hybrid Forced Air Propane Heater,,4.00,19,,Home & Kitchen,,,,,failed,2025-11-29 05:28:23.253702+00,,false,true,9,27,19.75,19.75,15.13,13.19,2.50,FBA Inbound,true,Low profit margin (0.0%); Very low sales velocity (9 units/month),,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,2643bb58-a58c-4494-8d6e-9418b3e79096,187,,true,,,
+1711,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19789,B07KPXPGZS,54,600,true,"https://www.amazon.com/dp/B07KPXPGZS?ref
+
+$54
+600 available 
+BSR 29k (1%)
+Monthly Sales 400+",2025-11-26 17:43:36+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/61gr7EtcccL._AC_SL1000_.jpg,Milwaukee Electric - Hole Dozer BI-Metal Hole Saw KIT - 17PC,65.16,4.50,778,,Tools & Home Improvement,-4.61,-8.54,-7.08,0,enriched,2025-11-28 22:26:57.783111+00,,false,true,389,1167,3.52,,,,1.00,FBA Inbound,true,Low profit margin (-7.1%),-4.61,69.77,,2643bb58-a58c-4494-8d6e-9418b3e79096,168,,true,,,
+1712,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19788,B0BCXDDR3H,20,200,true,"https://www.amazon.com/dp/B0BCXDDR3H?psc=1
+
+$20
+800 Available
+MOQ 200 
+BSR 39k (1%)
+40.25% ROI",2025-11-26 14:59:59+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/31gIhUbSHrL.jpg,Kopari Moisture Whipped Ceramide Cream | Hydrate and Restore | Vegan Ceramides and Moisture-Retaining Hyaluronic Acid | 2.1 oz,26.40,4.70,303,39211,Beauty & Personal Care,-1.81,-9.05,-6.86,0,enriched,2025-11-28 22:27:04.63143+00,,false,true,20,60,,5.91,2.76,5.91,0.75,FBA Inbound,true,Low profit margin (-6.9%),-1.81,28.21,,2643bb58-a58c-4494-8d6e-9418b3e79096,56,,true,,,
+1713,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19787,B09PT23WRP,7.5,1872,false,"https://www.amazon.com/dp/B09PT23WRP?ref
+
+$7.50 
+1,872 Units Take All 
+Exp 09/2026
+FOB - GA
+43.73% ROI 
+Monthly Sales 1k+",2025-11-26 00:56:27+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/71WiZ0ZEPsL._AC_SL1500_.jpg,"Lotrimin Ultra with No Touch Applicator,1 Week Athlete's Foot Treatment Cream. Prescription Strength Butenafine Hydrochloride 1%,Cures Most Athlete’s Foot Between Toes,Antifungal,0.7 oz (20 Grams)",18.72,4.60,1974,30540,"Health, Household & Baby Care",4.16,55.49,22.23,73,enriched,2025-11-28 22:27:11.392185+00,,true,true,21,63,,2.75,1.00,6.75,0.75,FBA Inbound,true,Sold by Amazon - high competition,4.16,14.56,,2643bb58-a58c-4494-8d6e-9418b3e79096,114,,true,,,
+1714,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19786,B0CHSHWLV8,4.1,800,true,"https://www.amazon.com/Muddy-Bites-Chocolate-Waffle-Snack/DP/B0CHSHWLV8?th=1
+
+$4.10
+1600 available 
+MOQ 800 
+BSR 31k (1%)
+48.78% ROI 
+Monthly Sales 2k+",2025-11-25 22:19:17+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/51hV4h3GLLL._SL1000_.jpg,"Muddy Bites - Dark Chocolate - Waffle Cone Snack Bite Sized Filled Cone Bites for Snack or Dessert Made with Cane Sugar, Kosher, Fair Trade Certified",11.12,4.20,127,24303,Grocery & Gourmet Food,1.10,26.88,9.91,33,enriched,2025-11-28 22:27:17.091147+00,,true,true,21,63,,,,,0.75,FBA Inbound,true,Sold by Amazon - high competition,1.10,10.02,,2643bb58-a58c-4494-8d6e-9418b3e79096,89,,true,,,
+1715,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19785,B015YQOGYU,5,450,true,"https://www.amazon.com/Crock-Savory-Chicken-Seasoning-Packets/DP/B015YQOGYU
+
+$5
+900 available 
+MOQ 450 
+BSR 46k (2%)
+46.80% ROI",2025-11-25 21:58:26+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/81rsv6e0kRL._SL1500_.jpg,Crock Pot Savory Herb Chicken Seasoning Mix (Pack of 4) 1.5 oz Packets,11.99,4.30,310,44903,Grocery & Gourmet Food,-3.31,-66.17,-27.59,0,enriched,2025-11-28 22:27:22.759085+00,,false,true,20,60,,,,,8.50,FBA Inbound,true,Low profit margin (-27.6%),-3.31,15.30,,2643bb58-a58c-4494-8d6e-9418b3e79096,6,,true,,,
+1716,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19784,B0C384976L,5.2,1000,true,"https://www.amazon.com/DP/B0C384976L
+
+$5.20
+2000 available 
+MOQ 1000 
+BSR 13k (1%)
+39.81% ROI 
+Monthly Sales 1k+",2025-11-25 21:50:21+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/81vBXPEjkAL._SL1500_.jpg,"THAYERS Soak It Up 80HR Liquid Moisturizer, Face Moisturizer with Hyaluronic Acid and Snow Mushroom, Dermatologist Tested Skin Care for Normal to Dry Skin, 2.5 Oz 2.5 Fl Oz (Pack of 1)",13.16,4.60,939,13430,Beauty & Personal Care,1.74,33.38,13.19,43,enriched,2025-11-28 22:27:31.854348+00,,true,true,24,72,,5.10,2.40,5.82,0.75,FBA Inbound,true,Sold by Amazon - high competition,1.74,11.42,,2643bb58-a58c-4494-8d6e-9418b3e79096,107,,true,,,
+1717,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19783,B08VBVBS7N,29,200,true,"https://www.amazon.com/DP/B08VBVBS7N?th=1
+
+$29 
+200 available 
+Take all 
+BSR 96k (2%)
+34.24% ROI",2025-11-25 21:42:56+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/71TwlJdAzlL._SL1300_.jpg,"Method Fragrance Booster, Ginger Mango, Keeps Clothes Fresh For Up to 12 weeks, 14.8 Ounces (Pack of 6) Ginger Mango 14.8 Ounce (Pack of 6)",55.99,4.20,84,90982,"Health, Household & Baby Care",3.59,12.38,6.41,19,enriched,2025-11-28 22:39:46.348382+00,,false,true,18,54,,10.75,5.13,9.63,15.00,FBA Inbound,true,Low profit margin (6.4%),3.59,52.40,,2643bb58-a58c-4494-8d6e-9418b3e79096,170,,true,,,
+1718,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19782,B08YD33YL6,6,400,true,"https://www.amazon.com/DP/B08YD33YL6?th=1
+
+$6
+800 available 
+MOQ 400 
+BSR 58k (1%)
+31.67% ROI",2025-11-25 21:40:45+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/71tt9B6VUJL._SL1500_.jpg,"Method Fragrance Booster, Ginger Mango, Keeps Clothes Fresh For Up to 12 weeks, 14.8 Ounces (Pack of 1) Ginger Mango 14.8 Ounce (Pack of 1)",,4.30,206,90933,Grocery & Gourmet Food,,,,,failed,2025-11-29 05:27:39.556706+00,,false,true,18,54,,2.31,8.75,3.44,0.75,FBA Inbound,true,"Low profit margin (0.0%); Low sales velocity (18 units/month); Poor sales rank (#90,933)",,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,2643bb58-a58c-4494-8d6e-9418b3e79096,33,,true,,,
+1719,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19781,B08H3TSP2X,3.5,480,true,"https://www.amazon.com/Maybelline-Sensational-Ultimatte-Lightweight-Comfortable/dp/B08H3TSP2X?th=1
+
+$3.50 
+40k Available
+MOQ 480 
+BSR 4k (1%)
+72.00% ROI",2025-11-25 21:27:54+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/71k0CuF-hkL._SL1500_.jpg,"Maybelline Color Sensational Ultimatte Matte Lipstick, Non-Drying, Intense Color Pigment, More Truffle, Cocoa Brown, 1 Count 999 MORE TRUFFLE 0.06 Ounce (Pack of 1)",5.50,4.40,10197,3683,Beauty & Personal Care,-3.07,-87.86,-55.91,0,enriched,2025-11-28 22:39:59.372037+00,,true,true,96,288,,0.56,0.56,4.25,0.75,FBA Inbound,true,Sold by Amazon - high competition,-3.07,8.57,,2643bb58-a58c-4494-8d6e-9418b3e79096,55,,true,,,
+1720,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19780,B09J618JL4,3.5,480,true,"https://www.amazon.com/MAYBELLINE-Sensational-Ultimatte-Lipstick-Non-Drying/dp/B09J618JL4?th=1
+
+$3.50 
+5800 Available
+MOQ 480 
+BSR 4k (1%)
+62.29% ROI",2025-11-25 21:16:49+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/61eMLvuIM0L._SL1500_.jpg,"Maybelline Color Sensational Ultimatte Matte Lipstick, Non-Drying, Intense Color Pigment, More Blonde, Sandy Nude, 1 Count 588 MORE BLONDE 0.06 Ounce (Pack of 1)",8.85,4.40,10197,3683,Beauty & Personal Care,-0.23,-6.50,-2.57,0,enriched,2025-11-28 22:40:07.330678+00,,false,true,96,288,,0.56,0.56,4.25,0.75,FBA Inbound,true,Low profit margin (-2.6%),-0.23,9.08,,2643bb58-a58c-4494-8d6e-9418b3e79096,250,,true,,,
+1721,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19779,B08H3MJXZT,3,480,true,"https://www.amazon.com/Maybelline-New-York-Sensational-Lipstick-Lightweight/dp/B08H3MJXZT?th=1
+
+$3
+16k Available
+MOQ 480 
+BSR 4k (1%)
+68.67% ROI",2025-11-25 21:06:23+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/71VRYLTLVEL._SL1500_.jpg,"Maybelline Color Sensational Ultimatte Matte Lipstick, Non-Drying, Intense Color Pigment, More Rust, Rusty Red, 1 Count 899 MORE RUST 0.06 Ounce (Pack of 1)",8.11,4.40,10197,3683,Beauty & Personal Care,-0.36,-11.88,-4.40,0,enriched,2025-11-28 22:40:17.830701+00,,true,true,96,288,,0.56,0.56,4.25,0.75,FBA Inbound,true,Sold by Amazon - high competition,-0.36,8.47,,2643bb58-a58c-4494-8d6e-9418b3e79096,230,,true,,,
+1722,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19778,B08H3S94P5,3,480,true,"https://www.amazon.com/Maybelline-New-York-Sensational-Lipstick-Lightweight/dp/B08H3S94P5?th=1
+
+$3
+12k Available
+MOQ 480 
+BSR 4k (1%)
+77.00% ROI",2025-11-25 21:01:03+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/7124EX-SMBL._SL1500_.jpg,"Maybelline Color Sensational Ultimatte Matte Lipstick, Non-Drying, Intense Color Pigment, More Scarlet, Scarlet Red, 1 Count 299 MORE SCARLET 0.06 Ounce (Pack of 1)",7.97,4.40,10197,3683,Beauty & Personal Care,-0.48,-15.85,-5.97,0,enriched,2025-11-28 22:40:23.234815+00,,true,true,96,288,,0.56,0.56,4.25,0.75,FBA Inbound,true,Sold by Amazon - high competition,-0.48,8.45,,2643bb58-a58c-4494-8d6e-9418b3e79096,105,,true,,,
+1723,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19777,B0BLGJNQRB,5.5,1200,true,"https://www.amazon.com/dp/B0BLGJNQRB?ref=undefined&th=1
+
+$5.50 
+4,494 Units Available 
+MOQ 1,200
+FOB - NY
+35.64% ROI",2025-11-25 20:47:20+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/71eyHjooQsL._SL1500_.jpg,"Hello Peach Aluminum Free Deodorant for Women + Men, Natural Fragrance, Dermatologically tested, Baking Soda Free, Parabens Free, Dye Free, 24 Hour Odor Protection, (Pack of 2) Peach 2.6 Ounce (Pack of 2)",13.99,4.20,9120,672,Beauty & Personal Care,2.14,38.94,15.31,50,enriched,2025-11-28 22:28:16.341268+00,,true,true,141,423,,,,,0.75,FBA Inbound,true,Sold by Amazon - high competition,2.14,11.85,,2643bb58-a58c-4494-8d6e-9418b3e79096,103,,true,,,
+1724,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19776,B0BL8BVXD4,7.5,1000,true,"[https://www.amazon.com/dp/B0BL8BVXD4?ref=undefined&th=1](https://www.amazon.com/dp/B0BL8BVXD4?ref=undefined&th=1)
+
+$7.50 
+3000 available 
+MOQ 1000 
+BSR 19k (1%)
+32.80% ROI",2025-11-25 20:23:56+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/51D5lb-YJIL._SL1152_.jpg,Dolly Parton - Eau de Toilette - Perfume for Women - Scent from Above - 1.0 Fl Oz Scent From Above 1 Fl Oz (Pack of 1),17.99,4.50,1387,17749,Beauty & Personal Care,3.54,47.22,19.69,63,enriched,2025-11-28 22:28:21.752575+00,,false,true,23,69,,1.18,1.57,3.15,0.75,FBA Inbound,false,,3.54,14.45,,2643bb58-a58c-4494-8d6e-9418b3e79096,86,,true,,,
+1725,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19775,8506518437,400.0,,true,"https://www.walmart.com/ip/H-1-Pro-Series-Ace-R350-R450-Foldable-Electric-Scooter-350W-450W-Brushless-Motor-15-5-20-mph-Max-Speed-10-Self-Sealing-Tubeless-Tires-18-5-25-6-Mile/8506518437?sid=b31fe91d-8862-4b8c-b10b-dda98600c52d
+
+$400 
+90 available 
+Take all",2025-11-25 20:05:28+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,,,,,,,,,,,,failed,2025-11-29 05:28:24.356514+00,,false,true,,,,,,,0.75,FBA Inbound,true,Low profit margin (0.0%),,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,2643bb58-a58c-4494-8d6e-9418b3e79096,242,,true,,,
+1726,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19774,B0FHJGN2S6,17,,true,"[https://www.amazon.com/dp/B0FHJGN2S6](https://www.amazon.com/dp/B0FHJGN2S6)
+
+$17
+1040 available 
+Take all 
+25.65% ROI 
+Monthly Sales 5k+",2025-11-25 20:01:48+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/71Ad+G8XNRL._AC_SL1500_.jpg,"Magic: The Gathering | Avatar: The Last Airbender Beginner Box | 2-Player Card Game | Includes 2 Tutorial Decks, 8 Themed Half-Decks, 2 Playboards, 2 Spindowns, and More",31.75,3.50,56,,Toys & Games,5.24,30.81,16.50,49,enriched,2025-11-28 22:28:31.345549+00,,true,true,28,84,1.58,11.18,6.89,0.10,0.75,FBA Inbound,true,Sold by Amazon - high competition,5.24,26.51,,2643bb58-a58c-4494-8d6e-9418b3e79096,247,,true,,,
+1727,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19773,B003K2RYAY,24,500,false,"https://www.amazon.com/Bell-Laboratories-Talpirid-7150-Worms/dp/B003K2RYAY
+
+$24
+MOQ 500 
+BSR 7k (1%)
+37.33% ROI 
+Monthly Sales 800+",2025-11-25 15:58:11+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/811IsCRQk3L._AC_SL1500_.jpg,"Bell Laboratories Talpirid 7150 Mole Bait Worms, 20 Count",43.00,3.60,2632,,Garden & Outdoor,8.30,34.58,19.30,57,enriched,2025-11-28 22:40:48.306225+00,,false,true,1316,3948,,6.90,1.20,12.40,0.75,FBA Inbound,false,,8.30,34.70,,2643bb58-a58c-4494-8d6e-9418b3e79096,92,,true,,,
+1728,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19772,2962265771,18.0,500,false,"https://www.walmart.com/ip/Conair-Girlbomb-Lithium-Ion-Rechargeable-All-in-One-Electric-Shave-System-for-Bikini-Body-Face/2962265771?sid=04b972fb-8e80-48b6-bfc8-6883d31f7d1f
+
+$18 
+MOQ 500",2025-11-25 15:48:39+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,,,,,,,,,,,,failed,2025-11-29 05:27:34.723449+00,,false,true,,,,,,,0.75,FBA Inbound,true,Low profit margin (0.0%),,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,2643bb58-a58c-4494-8d6e-9418b3e79096,225,,true,,,
+1729,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19771,B07W2VM8M9,16,1440,true,"https://www.amazon.com/dp/B07W2VM8M9?ref
+
+$16
+1440 available 
+Take all 
+BSR 15k (1%)
+34.50% ROI 
+Monthly Sales 500+",2025-11-25 00:59:29+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/61zllSzzxCL._AC_SL1000_.jpg,"Sharpie Permanent Marker Fine Point,Fine Point Black Permanent Marker Quick Drying/Waterproof - 36 Count (1 Pack)",28.99,4.80,346,,Office Products,4.39,27.45,15.15,44,enriched,2025-11-28 22:28:46.449833+00,,false,true,173,519,,9.00,8.90,6.60,0.75,FBA Inbound,false,,4.39,24.60,,2643bb58-a58c-4494-8d6e-9418b3e79096,221,,true,,,
+1730,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19770,B004I8SYB2,11.75,,true,"[https://www.amazon.com/dp/B004I8SYB2?ref](https://www.amazon.com/dp/B004I8SYB2?ref)
+
+$11.75
+864 available 
+BSR 53k (1%)
+31.06% ROI",2025-11-25 00:56:41+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/81nnknKFM4L._AC_SL1500_.jpg,"HALLS Relief Honey Lemon Cough Drops, 20 Packs of 9 Drops (180 Total Drops) 9 Count (Pack of 20)",24.99,4.40,1090,53118,Grocery & Gourmet Food,4.74,40.35,18.97,59,enriched,2025-11-28 22:28:52.599751+00,,false,true,19,57,1.45,4.10,3.60,3.20,0.75,FBA Inbound,false,,4.74,20.25,,2643bb58-a58c-4494-8d6e-9418b3e79096,27,,true,,,
+1731,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19769,B0017ODK28,15.5,900,true,"https://www.amazon.com/dp/B0017ODK28?ref=undefined&th=1
+
+$15.50 
+1800 available 
+MOQ 900
+BSR 8k (1%)
+34.13% ROI 
+Monthly Sales 2k+",2025-11-24 22:17:11+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/81zVcWpaSIL._SL1500_.jpg,"SWEDISH FISH Mini Soft & Chewy Candy, Bulk Candy, 24 - 2 oz Bags Berry",33.42,4.60,3744,8180,Grocery & Gourmet Food,8.66,55.85,25.90,81,enriched,2025-11-28 22:28:59.450741+00,,true,true,82,246,,6.22,1.57,6.06,0.75,FBA Inbound,true,Sold by Amazon - high competition,8.66,24.76,,2643bb58-a58c-4494-8d6e-9418b3e79096,176,,true,,,
+1732,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19768,B095WFZHRB,16,1000,true,"[https://www.amazon.com/Olay-Regenerist-Retinol-Night-Cream/dp/B095WFZHRB/](https://www.amazon.com/Olay-Regenerist-Retinol-Night-Cream/dp/B095WFZHRB/)
+
+$16
+3000 available 
+MOQ 1000 
+BSR 16k (1%)
+33.00% ROI 
+Monthly Sales 1k+",2025-11-24 22:14:16+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/61PUecWaXFL._SL1500_.jpg,"Olay Retinol 24 MAX Night Eye Cream, 0.5 oz",29.93,4.40,684,18735,Beauty & Personal Care,5.19,32.44,17.34,51,enriched,2025-11-28 22:29:07.59161+00,,true,true,22,66,,3.86,1.93,1.93,0.75,FBA Inbound,true,Sold by Amazon - high competition,5.19,24.74,,2643bb58-a58c-4494-8d6e-9418b3e79096,39,,true,,,
+1733,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19767,B00OAINK14,5,600,true,"https://www.amazon.com/LOreal-Paris-Infallible-Pro-Spray-Extender/dp/B00OAINK14
+
+$5
+BSR 32k (1%)
+MOQ 600 
+47.40% ROI 
+Monthly Sales 700+",2025-11-24 22:08:15+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/513P-U0ZohL._SL1200_.jpg,"L'Oreal Paris Makeup Infallible Pro-Spray and Set Makeup Extender Setting Spray, 3.4 Ounce",15.99,4.50,5725,33730,Beauty & Personal Care,4.34,86.83,27.15,98,enriched,2025-11-28 22:29:14.647119+00,,false,true,20,60,,5.41,1.69,5.41,0.75,FBA Inbound,false,,4.34,11.65,,2643bb58-a58c-4494-8d6e-9418b3e79096,126,,true,,,
+1734,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19766,B073SCFZRZ,7.5,500,false,"https://www.amazon.com/dp/B073SCFZRZ/
+
+$7.50 
+MOQ 500 
+BSR 33k (1%)
+43.33% ROI",2025-11-24 22:04:15+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/91nZiEDXQPL._AC_SL1500_.jpg,Charades Game for Family Who's The Dude Identity Fun Games Gift for Reunion Adult Game Night Ages 16+ 440 Funny Scenarios,19.99,4.40,925,,Toys & Games,4.74,63.22,23.72,79,enriched,2025-11-28 22:29:20.328115+00,,true,true,462,1386,1.72,27.20,26.90,6.60,0.75,FBA Inbound,true,Sold by Amazon - high competition,4.74,15.25,,2643bb58-a58c-4494-8d6e-9418b3e79096,211,,true,,,
+1735,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19765,B09NRSY5YT,9,9600,true,"https://www.amazon.com/dp/B09NRSY5YT/?th=1
+
+$9
+9600 available 
+Take all 
+28.56% ROI 
+Monthly Sales 2k+",2025-11-24 21:59:47+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/81PP8Iooj6L._AC_SL1500_.jpg,"Hasbro Gaming Connect 4 Spin Game, Features Spinning Connect 4 Grid, 2 Player Board Games for Family and Kids, Strategy Board Games, Ages 8 and Up 2.5 x 12.5 x 10.5 inches",19.99,4.70,4069,,Toys & Games,3.74,41.57,18.72,58,enriched,2025-11-28 22:40:55.693202+00,,true,true,2034,6102,,2.50,12.50,10.50,0.75,FBA Inbound,true,Sold by Amazon - high competition,3.74,16.25,,2643bb58-a58c-4494-8d6e-9418b3e79096,203,,true,,,
+1736,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19764,B0779GQTWT,14,240,true,"https://www.amazon.com/dp/B0779GQTWT/?th=1
+
+$14
+240 MOQ
+600 Available
+BSR 25k (1%)
+31.71% ROI",2025-11-24 21:50:45+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/714nlN1isVL._SL1500_.jpg,"Genuine Authentic German Nivea Creme Cream, 8.45 Ounces,(Pack of 3) Unscented 8.45 Ounce (Pack of 3)",30.02,4.50,3374,25529,Beauty & Personal Care,3.02,21.55,10.05,31,enriched,2025-11-28 22:29:32.831353+00,,false,true,21,63,,4.92,3.82,3.78,8.50,FBA Inbound,false,,3.02,27.00,,2643bb58-a58c-4494-8d6e-9418b3e79096,71,,true,,,
+1737,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19763,B00J2L5FFS,3,720,false,"[https://www.amazon.com/dp/B00J2L5FFS?ref](https://www.amazon.com/dp/B00J2L5FFS?ref)
+
+$3
+720 Units Take All 
+Exp 03/26 
+FOB - NY
+53.67% ROI 
+Monthly Sales 1k+",2025-11-24 20:24:29+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/81KgltwsRJL._SL1500_.jpg,"Folgers Classic Medium Roast Coffee, 19 Single Serve Coffee Bags Classic Roast 19 Count (Pack of 1)",8.95,4.60,2805,8642,Grocery & Gourmet Food,-3.89,-129.75,-43.49,0,enriched,2025-11-28 22:29:38.958316+00,,false,true,81,243,,3.50,5.07,4.39,8.50,FBA Inbound,true,Low profit margin (-43.5%),-3.89,12.84,,2643bb58-a58c-4494-8d6e-9418b3e79096,93,,true,,,
+1738,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19762,B00G7PCHK8,5.5,4608,false,"https://www.amazon.com/dp/B00G7PCHK8?ref=undefined&th=1
+
+$5.50
+4,608 Units Take All 
+Exp 03/26 
+FOB - NY
+60.36% ROI 
+Monthly Sales 9339+",2025-11-24 20:18:42+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/611lPxfglvL._SL1500_.jpg,Degree Clinical Protection Antiperspirant Deodorant 72-Hour Sweat & Odor Protection Stress Control Antiperspirant for Women 1.7 oz Floral 1.7 Ounce (Pack of 1),8.99,4.50,14260,1112,Beauty & Personal Care,-2.11,-38.34,-23.45,0,enriched,2025-11-28 22:29:45.710793+00,,false,true,122,366,,2.56,1.64,4.81,0.75,FBA Inbound,true,Low profit margin (-23.4%),-2.11,11.10,,2643bb58-a58c-4494-8d6e-9418b3e79096,2,,true,,,
+1739,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19761,B07PHB5JKF,10,1700,false,"[https://www.amazon.com/dp/B07PHB5JKF?_encoding=UTF8&psc=1&ref](https://www.amazon.com/dp/B07PHB5JKF?_encoding=UTF8&psc=1&ref)
+
+$10
+1,700 Units Take All 
+FOB - NV
+BSR 6k (1%)
+33.00% ROI 
+Monthly Sales 7k+",2025-11-24 20:15:33+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/71fpBFzVBSL._AC_SL1399_.jpg,"iSmile Teeth Whitening Kit - LED Light, 35% Carbamide Peroxide, (3) 3ml Gel Syringes, (1) Remineralization Gel, and Tray.",21.98,4.30,27681,6623,"Health, Household & Baby Care",4.43,44.33,20.17,63,enriched,2025-11-28 22:29:51.578892+00,,false,true,86,258,,8.00,5.50,1.25,0.75,FBA Inbound,false,,4.43,17.55,,2643bb58-a58c-4494-8d6e-9418b3e79096,106,,true,,,
+1740,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19760,B013Q8E3IM,6.5,600,true,"https://www.amazon.com/dp/B013Q8E3IM?th=1
+
+$6.50 
+600 available 
+Take all 
+BSR 12k (1%)
+48.31% ROI",2025-11-24 18:08:00+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/81eHfmFucrL._AC_SL1500_.jpg,"Mucinex Fast-Max Maximum Strength Cold, Flu & Sore Throat, Multi-Symptom Relief, Pain Reliever, Fever Reducer, Cough Suppressant, Expectorant, Nasal Decongestant, 16 Liquid Gels Cold, Flu & Sore Throat - Old 16 Count (Pack of 1)",13.25,4.80,2660,11915,"Health, Household & Baby Care",-3.74,-57.50,-28.21,0,enriched,2025-11-28 22:29:57.354308+00,,false,true,24,72,,,,,8.50,FBA Inbound,true,Low profit margin (-28.2%),-3.74,16.99,,2643bb58-a58c-4494-8d6e-9418b3e79096,41,,true,,,
+1741,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19759,3592966010,7.0,600,false,"https://www.walmart.com/ip/Sejoy-Rechargeable-Toothbrush-Electric-7-Tooth-Heads-for-Adults-Kids-Power-Sonic-Brush-Soft-Cleaning-3-Modes-Smart-Timer-Home-Travel-Gift-Navy/3592966010
+
+
+$7
+MOQ 600",2025-11-24 18:01:54+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,,,,,,,,,,,,failed,2025-11-29 05:28:01.088644+00,,false,true,,,,,,,0.75,FBA Inbound,true,Low profit margin (0.0%),,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,2643bb58-a58c-4494-8d6e-9418b3e79096,94,,true,,,
+1742,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19758,B000VWBAGU,40,200,true,"[https://www.amazon.com/dp/B000VWBAGU?ref](https://www.amazon.com/dp/B000VWBAGU?ref)
+
+$40
+MOQ 200 
+BSR 70k (1%)
+30% ROI 
+
+Monthly Sales 200+",2025-11-24 03:11:28+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/61YZ0f3Lj3L._AC_SL1500_.jpg,FIRST ENDURANCE OptygenHP - Premium Endurance Supplement | Boost Power | Increase Performance and Endurance | Improves Oxygen Utilization| 120 Capsules,63.96,4.60,102,75522,"Health, Household & Baby Care",10.12,25.29,15.82,46,enriched,2025-11-28 22:30:05.292082+00,,false,true,18,54,,4.00,4.00,5.00,0.75,FBA Inbound,false,,10.12,53.84,,2643bb58-a58c-4494-8d6e-9418b3e79096,22,,true,,,
+1743,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19757,B07H634DYW,4,700,false,"https://www.amazon.com/dp/B07H634DYW?th=1
+
+$4
+MOQ 700
+BSR 20k (1%)
+66.75% ROI",2025-11-21 18:05:52+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/51OLlxVJPHL._SL1024_.jpg,"L'Oreal Paris Makeup Rouge Signature Matte Lip Stain, I Explore 0.23 Fl Oz (Pack of 1) I Explore",9.99,4.10,7548,25076,Beauty & Personal Care,0.24,6.04,2.42,7,enriched,2025-11-28 22:30:14.527333+00,,false,true,21,63,,0.79,0.73,4.27,0.75,FBA Inbound,true,Low profit margin (2.4%),0.24,9.75,,2643bb58-a58c-4494-8d6e-9418b3e79096,189,,true,,,
+1744,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19756,B0041SRUJ6,20,150,false,"https://www.amazon.com/dp/B0041SRUJ6?th=1
+
+$20
+MOQ 150 
+BSR 25k (1%)
+45.45% ROI",2025-11-21 17:52:01+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/41DYmktOw4L._AC_SL1000_.jpg,"Belkin 8-Outlet Surge Protector with Telephone Protection, 6ft Cord, White White 8-Outlet No ethernet",,4.70,4505,,Electronics,,,,,failed,2025-11-29 05:28:15.177825+00,,false,true,2252,6756,1.90,14.30,6.90,1.90,1.10,FBA Inbound,true,Low profit margin (0.0%),,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,2643bb58-a58c-4494-8d6e-9418b3e79096,110,,true,,,
+1745,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19755,B0DV2252GB,7,500,true,"https://www.amazon.com/dp/B0DV2252GB?_encoding=UTF8&psc=1&ref
+
+$7
+1000 available 
+MOQ 500 
+BSR 3k (1%)
+34.57% ROI 
+Monthly Sales 6k+",2025-11-21 01:23:29+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/61+QUVL8n0L._SL1500_.jpg,Beauty Secrets Drip & Clog Proof Nail Glue (1 Pack) Bundled with Zebra Cushion Nail File Medium Coarse 180/100 Grit by Beauty Secrets,15.95,4.50,217,2604,Industrial & Scientific,2.31,32.96,14.47,45,enriched,2025-11-28 22:41:01.364291+00,,false,true,103,309,,8.15,1.50,0.75,0.75,FBA Inbound,false,,2.31,13.64,,2643bb58-a58c-4494-8d6e-9418b3e79096,36,,true,,,
+1746,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19753,B07NSZHMWB,3.7,3360,false,"https://www.amazon.com/dp/B07NSZHMWB?ref
+
+$3.70 
+3,360 Units Take All 
+FOB - NY
+54.86% ROI 
+Monthly Sales 1k+",2025-11-20 21:59:53+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/71cbqJBtjjL._SL1500_.jpg,SheaMoisture Hair Mask Coconut & Hibiscus for Dry Curls Hair Mask with Shea Butter 11.5 oz Hibiscus 11.5 Ounce (Pack of 1),8.69,4.70,1404,17290,Beauty & Personal Care,-0.56,-15.23,-6.48,0,enriched,2025-11-28 22:30:34.512533+00,,true,true,23,69,,3.70,3.70,2.72,0.75,FBA Inbound,true,Sold by Amazon - high competition,-0.56,9.25,,2643bb58-a58c-4494-8d6e-9418b3e79096,121,,true,,,
+1747,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19752,B0CNJZ18YS,8,1934,false,"https://www.amazon.com/dp/B0CNJZ18YS?ref=undefined&th=1
+
+$8
+1,934 Units Take All 
+Exp 08/27 
+FOB - IL
+34.63% ROI",2025-11-20 21:55:58+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/81xg9HIOHfL._SL1500_.jpg,"Poligrip Denture Adhesive, Power Max Hold Plus Comfort Denture Adhesive Cream, 2.2 Ounces (Pack of 4)",17.80,4.10,421,60057,Beauty & Personal Care,2.88,36.00,16.18,50,enriched,2025-11-28 22:30:40.754944+00,,false,true,19,57,,,,,0.75,FBA Inbound,false,,2.88,14.92,,2643bb58-a58c-4494-8d6e-9418b3e79096,185,,true,,,
+1748,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19751,B072N7WRHS,6,1200,true,"https://www.amazon.com/dp/B072N7WRHS?ref=undefined&th=1
+
+$6
+7,200 Units Available 
+MOQ 1,200 
+Exp 7/26 
+FOB - NY
+Monthly Sales 10k+",2025-11-20 21:53:48+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/813vqSRUy4L._AC_SL1500_.jpg,"Renu Contact Lens Solution, Advanced Formula, Multi-Purpose Solution with Lens Case, Gently Cleans, Disinfects, Moisturizes & Hydrates Soft Lenses for All-Day Comfort, 12 Fl Oz (Pack of 2)",14.96,4.80,34481,1376,"Health, Household & Baby Care",2.47,41.10,16.48,54,enriched,2025-11-28 22:30:48.430841+00,,true,true,117,351,,2.56,5.13,6.63,0.75,FBA Inbound,true,Sold by Amazon - high competition,2.47,12.49,,2643bb58-a58c-4494-8d6e-9418b3e79096,172,,true,,,
+1749,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19750,B0B59D5VH8,4.5,1824,false,"https://www.amazon.com/dp/B0B59D5VH8?ref
+
+$4.50 
+1,824 Units Take All  
+Exp 09/26 
+FOB - GA
+47.56% ROI 
+Monthly Sales 900+",2025-11-20 19:41:07+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/51hI3YBpDuL._SL1000_.jpg,"Better Than Bouillon Organic Seasoned Vegetable Base, 21 oz, 100 Servings, Original Version, (Pack of 1) COSTCO ONLY ITEM",14.85,4.70,459,15744,Grocery & Gourmet Food,-0.38,-8.39,-2.54,0,enriched,2025-11-28 22:30:55.634512+00,,false,true,23,69,,3.50,3.50,4.70,8.50,FBA Inbound,true,Low profit margin (-2.5%),-0.38,15.23,,2643bb58-a58c-4494-8d6e-9418b3e79096,147,,true,,,
+1750,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19748,B00MWH64R2,12.5,500,true,"https://www.amazon.com/dp/B00MWH64R2
+
+$12.50 
+1000 available 
+MOQ 500 
+BSR 71k (1%)
+36.64% ROI",2025-11-20 19:35:16+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/71NRbkyLZKL._AC_SL1500_.jpg,"Seeking Health Multivitamin One Sensitive, Daily Vitamin Without B12, Folate, Copper, Iron, Iodine, Calcium, Choline, and Lutein, Antioxidant Support, Vegetarian and Vegan (45 Capsules)",35.00,4.20,127,64847,"Health, Household & Baby Care",13.00,104.00,37.14,100,enriched,2025-11-28 22:31:01.867342+00,,false,true,18,54,,2.75,2.75,4.75,0.75,FBA Inbound,false,,13.00,22.00,,2643bb58-a58c-4494-8d6e-9418b3e79096,60,,true,,,
+1751,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19747,B0DMWLS2YK,13.5,960,true,"https://www.amazon.com/dp/B0DMWLS2YK?ref
+
+$13.50 
+960 available 
+BSR 30k (1%)
+30.89% ROI 
+Monthly Sales 1k+",2025-11-20 19:31:56+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/719Ql6Hp4VL._AC_SL1500_.jpg,"Barbie Dream Besties Doll and Accessories, Zia Posable Fashion Doll with Removable Fashions & Wavy Brown Hair, 7 Hair & Moon Themed Pieces",24.99,4.70,117,,Toys & Games,3.49,25.86,13.97,41,enriched,2025-11-28 22:31:08.823575+00,,true,true,58,174,,2.76,11.73,1.34,0.75,FBA Inbound,true,Sold by Amazon - high competition,3.49,21.50,,2643bb58-a58c-4494-8d6e-9418b3e79096,254,,true,,,
+1752,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19746,B00HD1H8RW,3,2000,true,"https://www.amazon.com/vH-essentials-Vaginal-Odor-Treatment/dp/B00HD1H8RW/
+
+$3
+2k Available
+BSR 28k (1%)
+42.33% ROI",2025-11-20 19:13:34+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/61kPvwFRIhL._AC_SL1500_.jpg,"vH essentials Vaginal Odor Treatment - pH Balanced Vaginal Suppositories - 6 Tablets With Applicator, White",7.99,4.30,3038,34432,Beauty & Personal Care,-0.46,-15.28,-5.74,0,enriched,2025-11-28 22:31:15.669831+00,,false,true,20,60,,2.00,3.63,6.00,0.75,FBA Inbound,true,Low profit margin (-5.7%),-0.46,8.45,,2643bb58-a58c-4494-8d6e-9418b3e79096,63,,true,,,
+1753,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19745,B0CNWMSRJC,5,468,false,"https://www.amazon.com/dp/B0CNWMSRJC/?th=1
+
+$5
+MOQ 468
+BSR 15k (1%)
+38.20% ROI 
+Monthly Sales 200+",2025-11-20 19:07:46+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/81TloY9FS3L._AC_SL1500_.jpg,"Barbie Clothes and Accessories, Deluxe Keychain Donut Bag with Pink Sprinkle Dress and Candy Themed Accessories for Barbie Dolls Candytopia",13.99,4.70,165,,Toys & Games,2.64,52.83,18.88,64,enriched,2025-11-28 22:31:21.265185+00,,false,true,82,246,,3.15,1.57,3.94,0.75,FBA Inbound,false,,2.64,11.35,,2643bb58-a58c-4494-8d6e-9418b3e79096,91,,true,,,
+1754,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19744,B0BVRRJWBN,7.5,,true,"https://www.amazon.com/dp/B0BVRRJWBN/
+
+$7.50 
+390 available 
+Take all 
+BSR 31k (1%)
+31.47% ROI 
+Monthly Sales 700+",2025-11-20 19:00:07+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/81lohZYfr+L._AC_SL1500_.jpg,"Glade Automatic Spray Refill, Air Freshener for Home and Bathroom, Autumn Spiced Apple, 6.2 Oz, 2 Count",18.95,4.70,1210,36899,"Health, Household & Baby Care",0.11,1.43,0.57,1,enriched,2025-11-28 22:31:26.426392+00,,false,true,20,60,,,,,8.50,FBA Inbound,true,Low profit margin (0.6%),0.11,18.84,,2643bb58-a58c-4494-8d6e-9418b3e79096,3,,true,,,
+1755,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19743,B007SQ2K3Y,3.5,1280,false,"https://www.amazon.com/dp/B007SQ2K3Y/
+
+$3.50 
+MOQ 1280 
+BSR 33k (1%)
+67.14% ROI",2025-11-20 18:55:12+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/511RFMt5S6L._AC_SL1200_.jpg,"X-Acto X202 No. 2 Large Fine Point Blades (Pack of 5); For Precision Cutting of Medium to Heavy Weight Materials; Easily Cuts Wood, Paper, Plastic, Metal, Film and Acetate",9.80,4.80,436,,Home & Kitchen,1.33,38.00,13.57,46,enriched,2025-11-28 22:41:36.041392+00,,false,true,218,654,0.02,,,,0.50,FBA Inbound,false,,1.33,8.47,,2643bb58-a58c-4494-8d6e-9418b3e79096,226,,true,,,
+1756,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19742,B0DNGVFJBP,12,250,false,"https://www.amazon.com/dp/B0DNGVFJBP/
+
+$12
+250 MOQ
+BSR 7k (1%)
+30.25% ROI 
+Monthly Sales 4k+",2025-11-20 18:41:12+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/61HpiiLdW5L._SL1500_.jpg,"Lattafa Teriaq Intense for Unisex Eau de Parfum Spray, 3.4 Ounce / 100 ml",27.49,4.60,1287,6236,Beauty & Personal Care,7.12,59.30,25.89,82,enriched,2025-11-28 22:31:39.008311+00,,false,true,87,261,,1.80,1.80,6.00,0.75,FBA Inbound,false,,7.12,20.37,,2643bb58-a58c-4494-8d6e-9418b3e79096,150,,true,,,
+1757,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19741,B0959JT4PV,17,,true,"https://www.amazon.com/DP/B0959JT4PV?th=1&psc=1
+
+$17
+350 available 
+Take all 
+BSR 1k (1%)
+31.71% ROI 
+Monthly Sales 10k+",2025-11-20 12:46:04+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/51NMg2CC8IS._AC_SL1340_.jpg,Nike unisex-adult mens Balaclava One Size Black,30.70,4.70,6717,1786,All Departments,0.59,3.50,1.94,5,enriched,2025-11-28 22:31:44.095637+00,,false,true,111,333,,,,,8.50,FBA Inbound,true,Low profit margin (1.9%),0.59,30.11,,2643bb58-a58c-4494-8d6e-9418b3e79096,100,,true,,,
+1758,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19740,B0CYHGPP1L,260,150,true,"https://www.amazon.com/dp/B0CYHGPP1L?tag=camelweb-20&linkCode=ogi&th=1&language=en_US
+
+$260 
+150 available 
+32.05% ROI 
+Monthly Sales 100+",2025-11-20 00:49:40+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/613GeRd+1WL._AC_SL1500_.jpg,"Sonos Ace | Noise Cancelling Wireless Over-Ear Headphones with Bluetooth, 30-Hour Battery Life, Spatial Audio, Dolby Atmos, Dynamic Head Tracking - White White Headphones Only",279.00,4.20,967,,Electronics,-27.10,-10.42,-9.71,0,enriched,2025-11-28 22:31:50.62296+00,,true,true,483,1449,,6.30,3.35,7.52,0.75,FBA Inbound,true,Sold by Amazon - high competition,-27.10,306.10,,2643bb58-a58c-4494-8d6e-9418b3e79096,32,,true,,,
+1759,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19739,B009D028GC,24,1200,true,"https://www.amazon.com/dp/B009D028GC?ref=undefined&th=1
+
+$24
+7,200 Units Available 
+MOQ 1,200 
+FOB - NJ
+39.29% ROI 
+Monthly Sales 500+",2025-11-20 00:41:14+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/81j+RkvekAS._SL1500_.jpg,"Seventh Generation Baby Wipes, 768 count, Made for Sensitive Skin, Refill with Tape Seal, 64 Count (Pack of 12)",44.99,4.60,8680,4141,"Health, Household & Baby Care",-5.76,-23.99,-12.80,0,enriched,2025-11-28 22:31:57.992497+00,,false,true,94,282,,15.80,9.40,8.00,20.00,FBA Inbound,true,Low profit margin (-12.8%),-5.76,50.75,,2643bb58-a58c-4494-8d6e-9418b3e79096,130,,true,,,
+1760,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19738,B082G1K6QY,10,680,true,"https://www.amazon.com/dp/B082G1K6QY?ref=undefined&th=1
+
+$10 
+2,400 Units Available 
+MOQ 680
+FOB NY
+43.20% ROI",2025-11-20 00:36:08+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/610mDpbKt8L._SL1500_.jpg,"Avalon Organics Radiance Serum with Vitamin C, 1 Oz 1 Fl Oz (Pack of 1) Serum",15.25,4.00,1143,,Beauty & Personal Care,-1.29,-12.88,-8.44,0,enriched,2025-11-28 22:32:03.325696+00,,true,true,571,1713,,,,,0.75,FBA Inbound,true,Sold by Amazon - high competition,-1.29,16.54,,2643bb58-a58c-4494-8d6e-9418b3e79096,243,,true,,,
+1761,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19737,B0BQ1Q99GJ,19,510,false,"https://www.amazon.com/dp/B0BQ1Q99GJ?ref
+
+$19 
+510 Units Take All 
+FOB - NJ
+26.95% ROI",2025-11-20 00:33:38+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/71gNINgwmKL._SL1500_.jpg,"Olay Body Wash for Women, Ultra Moisture, Exfoliating Formula, 24hr Moisturizing, Hydrating & Replenshing, B3 Vitamin Complex, For All Skin Types, Sea Minerals Scent, 33 fl oz (Pack of 4)",39.88,4.80,215,55734,Beauty & Personal Care,8.40,44.20,21.06,65,enriched,2025-11-28 22:32:09.239136+00,,true,true,19,57,7.20,9.69,6.19,10.00,1.50,FBA Inbound,true,Sold by Amazon - high competition,8.40,31.48,,2643bb58-a58c-4494-8d6e-9418b3e79096,181,,true,,,
+1762,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19735,B07ZWPTHLD,14,600,true,"https://www.amazon.com/dp/B07ZWPTHLD?ref
+
+$14
+1,800 Units Available 
+MOQ 600
+FOB - CA
+32.29% ROI",2025-11-20 00:29:32+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/71U6eNJShUL._AC_SL1500_.jpg,Rubbermaid Assorted Food Storage Container Set - Case of: 1; Each Pack Qty: 24; Total Items Qty: 24,31.52,4.70,646,146936,Sports & Outdoors,0.29,2.09,0.93,2,enriched,2025-11-28 22:32:16.606541+00,,false,true,16,48,2.40,,,,12.50,FBA Inbound,true,Low profit margin (0.9%),0.29,31.23,,2643bb58-a58c-4494-8d6e-9418b3e79096,233,,true,,,
+1763,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19734,B00E99YKAY,11,600,false,"https://www.amazon.com/dp/B00E99YKAY?ref
+
+$11
+600 Units Take All 
+Exp 05/26
+FOB - CA
+36.18% ROI 
+Monthly Sales 400+",2025-11-20 00:23:37+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/716j4waqaeL._AC_SL1500_.jpg,"Spectrum Essentials Soft Gels, Vegan Ultra Omega-3 EPA and DHA with Vitamin D, 60 Count",,4.70,453,78445,"Health, Household & Baby Care",,,,,failed,2025-11-29 05:28:28.670154+00,,false,true,18,54,,2.00,2.00,3.50,0.75,FBA Inbound,true,"Low profit margin (0.0%); Low sales velocity (18 units/month); Poor sales rank (#78,445)",,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,2643bb58-a58c-4494-8d6e-9418b3e79096,249,,true,,,
+1764,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19733,B0BHFG4756,13,570,false,"https://www.amazon.com/dp/B0BHFG4756?ref=&th=1
+
+$13
+570 Units Take All 
+FOB - NJ
+23.08% ROI 
+Monthly Sales 1k+",2025-11-20 00:19:16+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/71+I3hfh5mL._AC_SL1500_.jpg,"Barbie The Movie Doll, Margot Robbie as, Collectible Doll Wearing Pink and White Gingham Dress with Daisy Chain Necklace Modern",14.97,4.80,6705,,Toys & Games,-4.53,-34.81,-30.23,0,enriched,2025-11-28 22:32:27.049054+00,,true,true,3352,10056,,3.00,7.00,13.00,0.75,FBA Inbound,true,Sold by Amazon - high competition,-4.53,19.50,,2643bb58-a58c-4494-8d6e-9418b3e79096,18,,true,,,
+1765,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19732,B08YD33YL6,6,400,true,"https://www.amazon.com/DP/B08YD33YL6?t=undefined&th=1
+
+$6
+800 available 
+MOQ 400 
+BSR 53k  (1%)
+31.67% ROI",2025-11-19 21:08:10+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/71tt9B6VUJL._SL1500_.jpg,"Method Fragrance Booster, Ginger Mango, Keeps Clothes Fresh For Up to 12 weeks, 14.8 Ounces (Pack of 1) Ginger Mango 14.8 Ounce (Pack of 1)",,4.30,206,90933,Grocery & Gourmet Food,,,,,failed,2025-11-29 05:27:39.556706+00,,false,true,18,54,,2.31,8.75,3.44,0.75,FBA Inbound,true,"Low profit margin (0.0%); Low sales velocity (18 units/month); Poor sales rank (#90,933)",,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,2643bb58-a58c-4494-8d6e-9418b3e79096,15,,true,,,
+1766,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19731,B00J4036EE,6,200,true,"https://www.amazon.com/DP/B00J4036EE?th=1
+
+$6
+400 available 
+MOQ 200 
+BSR 67k (1%)
+38.50% ROI
+Monthly Sales 200+",2025-11-19 21:04:43+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/51e6OJXTRmL._AC_SL1280_.jpg,BabyGanics Hand Sanitizer Mandarin Refill - 16 Ounces 16 Fl Oz (Pack of 1),19.90,4.60,442,87801,Beauty & Personal Care,6.66,111.08,33.49,100,enriched,2025-11-28 22:41:16.847663+00,,false,true,18,54,,8.50,3.50,2.10,0.75,FBA Inbound,false,,6.66,13.23,,2643bb58-a58c-4494-8d6e-9418b3e79096,246,,true,,,
+1767,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19730,B00P2SHFX0,14,200,true,"https://www.amazon.com/DP/B00P2SHFX0?th=1
+
+$14
+400 available 
+MOQ 200 
+BSR 46k (1%)
+54.29% ROI 
+Monthly Sales 200+",2025-11-19 21:01:39+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/71RqR0jKzEL._SL1500_.jpg,"Babyganics Foaming Hand Sanitizer Refill, Alcohol Free, Mandarin, Kills 99.9% of Common Bacteria, Moisturizing, 16 Fl Oz (Pack of 2) Mandarin 16 Fl Oz (Pack of 2)",32.99,4.80,4937,45350,"Health, Household & Baby Care",5.54,39.58,16.80,54,enriched,2025-11-28 22:41:09.541004+00,,false,true,20,60,,8.90,5.51,3.11,8.50,FBA Inbound,false,,5.54,27.45,,2643bb58-a58c-4494-8d6e-9418b3e79096,196,,true,,,
+1768,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19729,B0CN7B2VWN,13,400,true,"https://www.amazon.com/Bio-Advanced-Bowel-Support-Capsules/DP/B0CN7B2VWN
+
+$13
+800 available 
+MOQ 400
+42.92% ROI",2025-11-19 20:58:11+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/71epQQynaaL._AC_SL1500_.jpg,"Bio-K+ Advanced Bowel Support Probiotic – 50 Billion CFU – Vegan, Gluten-Free, Non-GMO – Supports Digestive Health & Regularity – for Men & Women – 20 Capsules",15.21,4.30,104,31698,"Health, Household & Baby Care",-4.32,-33.24,-28.41,0,enriched,2025-11-28 22:32:49.704621+00,,true,true,21,63,,2.20,2.20,4.90,0.75,FBA Inbound,true,Sold by Amazon - high competition,-4.32,19.53,,2643bb58-a58c-4494-8d6e-9418b3e79096,59,,true,,,
+1769,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19727,B013PSHZQ0,10,5000,true,"https://www.amazon.com/dp/B013PSHZQ0?ref=undefined&th=1
+
+$10 
+5000 available 
+795 (1%) BSR 
+39.40% ROI 
+Monthly Sales 3k+",2025-11-19 20:53:34+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/71-1WPtfP0L._SL1500_.jpg,"ChapStick Bulk Lip Balm, Candy Cane, 12-Pack – Fresh & Minty Lip Moisturizer, Stocking Stuffer, 0.15 Oz Ea Candy Cane 12 Count (Pack of 1)",20.99,4.90,8721,1049,Beauty & Personal Care,3.59,35.91,17.11,52,enriched,2025-11-28 22:32:55.649299+00,,false,true,124,372,,,,,0.75,FBA Inbound,false,,3.59,17.40,,2643bb58-a58c-4494-8d6e-9418b3e79096,179,,true,,,
+1770,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19726,B0DMP6GSTH,10,,true,"https://www.amazon.com/BUBO-Equivalent-Bathroom-Daylight-Non-Dimmable/DP/B0DMP6GSTH/?th=1
+
+$10 
+489 available 
+Take all 
+BSR 26k (1%)
+96.50% ROI",2025-11-19 20:24:43+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/61HULrKDL7L._AC_SL1500_.jpg,"BUBO Vanity Light Bulbs for Bathroom Over Mirror, 60 Watt Equivalent, Soft White 2700K, G25 Globe Light Bulb 800 Lumens, Round Bulb with E26 Medium Base, 7W, Non-Dimmable, 12 Pack Soft White 12 Pack",33.29,4.60,165,,Tools & Home Improvement,13.55,135.47,40.69,100,enriched,2025-11-28 22:33:02.987357+00,,true,true,82,246,1.20,12.60,9.93,3.25,0.75,FBA Inbound,true,Sold by Amazon - high competition,13.55,19.74,,2643bb58-a58c-4494-8d6e-9418b3e79096,80,,true,,,
+1771,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19725,B07SVF89W9,12,500,false,"https://www.amazon.com/dp/B07SVF89W9?th=1
+
+$12
+MOQ 500 
+BSR 10k (1%)
+44.33% ROI 
+Monthly Sales 1k+",2025-11-19 19:36:13+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/71qnmsRmNbL._SL1500_.jpg,"ZitSticka Killa Pimple Patches for Face - World's Most Potent Pimple Patch with Fast-Acting Microdarts - Starts Working within 6 Hours for Deep, Early-Stage Zits - Regular 8 Count with Cleana Swab 8 Count (Pack of 1)",19.99,4.30,4130,10808,Beauty & Personal Care,0.74,6.18,3.71,10,enriched,2025-11-28 22:33:10.132068+00,,false,true,24,72,,,,,0.75,FBA Inbound,true,Low profit margin (3.7%),0.74,19.25,,2643bb58-a58c-4494-8d6e-9418b3e79096,231,,true,,,
+1772,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19724,B01HI0B0YO,4.7,5000,false,"https://www.amazon.com/dp/B01HI0B0YO/
+
+$4.70 
+5k MOQ
+BSR 30k (1%)
+Monthly Sales 600+",2025-11-19 18:45:27+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/51iGes7VhEL._SL1500_.jpg,"L'Oreal Paris Voluminous Smoldering Eyeliner, Blackest Black (Packaging May Vary) 0.01 Fl Oz (Pack of 1)",9.99,4.50,1387,34831,Beauty & Personal Care,-0.46,-9.76,-4.59,0,enriched,2025-11-28 22:33:17.788578+00,,false,true,20,60,,0.51,1.88,7.06,0.75,FBA Inbound,true,Low profit margin (-4.6%),-0.46,10.45,,2643bb58-a58c-4494-8d6e-9418b3e79096,17,,true,,,
+1773,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19723,B0FCZFRV89,32,756,true,"https://www.amazon.com/dp/B0FCZFRV89?aod=1&th=1
+
+$32
+756 available 
+BSR 48k (1%)
+41.59% ROI",2025-11-19 17:35:41+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/61y0LeyGfML._SL1468_.jpg,"LMNT Zero Sugar Electrolytes - | Drink Mix | 30-Count (30 count, lemonade) lemonade 0.2 Ounce (Pack of 30)",59.99,4.90,19,56845,Grocery & Gourmet Food,10.49,32.79,17.49,53,enriched,2025-11-28 22:33:23.513427+00,,false,true,19,57,,,,,8.50,FBA Inbound,false,,10.49,49.50,,2643bb58-a58c-4494-8d6e-9418b3e79096,90,,true,,,
+1774,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001470748541,19722,B004CCP7XC,4,1200,true,"https://www.amazon.com/dp/B004CCP7XC?ref
+
+$4
+12,000 Units Available 
+MOQ 1,200 
+FOB - NY
+51.00% ROI 
+Monthly Sales 5k+",2025-11-18 22:42:44+00,2025-11-28 22:19:42.863845+00,💎 DenariusBlack.com 💎,https://m.media-amazon.com/images/I/61CBZZkP4pL._SL1500_.jpg,"Schick Intuition Sensitive Skin Womens Razor Refills with Vitamin E & Aloe, Pack of 1(count of 3)",9.99,4.80,6339,7435,Beauty & Personal Care,0.24,6.04,2.42,7,enriched,2025-11-28 22:33:28.870263+00,,false,true,84,252,,3.76,1.79,4.31,0.75,FBA Inbound,true,Low profit margin (2.4%),0.24,9.75,,2643bb58-a58c-4494-8d6e-9418b3e79096,68,,true,,,
+1775,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13186,B0D26VLX8C,16,300,true,"https://www.amazon.com/DP/B0D26VLX8C?th=1
+
+$16
+600 available 
+MOQ 300 
+BSR 50k (1%)
+39.50% ROI",2025-11-28 20:17:47+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/618z1dwoXTL._AC_SL1000_.jpg,Granite Ware Open Roasting Pan with Flat Rack (Speckled Black) - Accommodates up to 25 lb poultry or roast. A- Rectangular Roaster w/rack 19 x12 x2.7 in.,41.71,4.10,131,,Home & Kitchen,12.65,79.08,30.34,100,enriched,2025-11-28 23:34:34.757547+00,,false,true,65,195,4.09,,,,1.80,FBA Inbound,false,,12.65,29.06,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,72,,true,,,
+1776,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13185,B09F74ZSYK,4,900,true,"https://www.amazon.com/DP/B09F74ZSYK
+
+$4
+1800 available 
+MOQ 900 
+BSR 45k (1%)
+30.00% ROI",2025-11-28 17:43:20+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/71Ey8-QQWBL._AC_SL1500_.jpg,"Centrum Multivitamin for Women, Multivitamin/Multimineral Supplement with Iron, Vitamin D3, B Vitamins and Antioxidant Vitamins C and E, Gluten Free, Non-GMO Ingredients - 65 Count",9.34,4.50,27,45070,"Health, Household & Baby Care",-0.31,-7.77,-3.33,0,enriched,2025-11-28 23:34:44.131722+00,,true,true,20,60,,,,,0.75,FBA Inbound,true,"Sold by Amazon - high competition; Low sales velocity (20 units/month); Low sales rank (#45,070)",-0.31,9.65,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,256,,true,,,
+1777,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13184,B0CDZMLC4S,27,100,true,"https://www.amazon.com/Slim-Mint-Ultra-Thin-RFID-Blocking-Crush-Resistant/dp/B0CDZMLC4S/?th=1
+
+$27
+MOQ 100 
+BSR 219k (1%)
+33.15% ROI 
+Monthly Sales 100+",2025-11-28 17:32:13+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/51PBoE-tdsL._AC_SL1000_.jpg,"Slim Mint Wallet, Ultra-Thin, RFID-Blocking, AS-SEEN-ON-TV, ID Theft Protection, Easy to Carry, Reach Cards/Cash with the Touch of a Button, Optimizes Space, Aluminum Outer Shell, Crush-Resistant, 2PK 4 in. Black",47.99,4.00,231,,Home & Kitchen,10.29,38.12,21.45,64,enriched,2025-11-28 23:34:50.680485+00,,false,true,115,345,0.20,0.75,2.85,4.35,0.50,FBA Inbound,false,,10.29,37.70,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,208,,true,,,
+1778,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13183,B01MZZ0UCI,7,700,false,"https://www.amazon.com/dp/B01MZZ0UCI?th=1
+
+$7
+MOQ 700
+BSR 13k (1%)
+55.71% ROI",2025-11-28 17:11:39+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/81VCf6fhF5L._SL1500_.jpg,"Maybelline Color Sensational Inti-Matte Nudes Lipstick, Honey Pink, 0.15 oz. Honey Pink 0.26 Fl Oz (Pack of 1)",,4.30,45062,11599,Beauty & Personal Care,,,,,failed,2025-11-29 05:27:29.557783+00,,false,true,24,72,,0.85,0.85,2.93,0.75,FBA Inbound,true,Low profit margin (0.0%); Low sales velocity (24 units/month),,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,5fe649bc-3e5c-4215-bced-d44f09bdfab5,188,,true,,,
+1779,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13182,B07VFP2VS3,10,,true,"https://www.amazon.com/STARBUCKS-VERANDA-INSTANT-CAFFEINE-PACKETS/dp/B07VFP2VS3
+
+$10 
+9000 available 
+BSR 49k (2%)
+43.40% ROI 
+EXP 11/26",2025-11-28 02:16:05+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/71K9arQHbCL._SL1500_.jpg,STARBUCKS VIA VERANDA BLEND MIX INSTANT COFFEE CAFFEINE PACKETS IN BOX 1.4 OZ - 0762111953321,21.48,4.40,59,56748,Grocery & Gourmet Food,4.01,40.08,18.66,58,enriched,2025-11-28 23:35:00.334117+00,,false,true,19,57,,6.26,3.35,1.18,0.75,FBA Inbound,true,"Low sales velocity (19 units/month); Poor sales rank (#56,748)",4.01,17.47,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,148,,true,,,
+1780,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13181,B00005UP2K,222,100,true,"https://www.amazon.com/dp/B00005UP2K?ref=undefined&th=1
+
+$222
+MOQ 100
+BSR 64 (1%)
+25.51% ROI 
+Monthly Sales 800+",2025-11-28 02:12:03+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/71hNoU5FYuL._AC_SL1500_.jpg,"KitchenAid Artisan Series 5 Quart Tilt Head Stand Mixer with Pouring Shield KSM150PS, White",349.95,4.70,16467,,Home & Kitchen,66.96,30.16,19.13,66,enriched,2025-11-28 23:35:07.476642+00,,true,true,8233,24699,22.80,,,,3.50,FBA Inbound,true,Sold by Amazon - high competition,66.96,282.99,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,101,,true,,,
+1781,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13180,B086DFCS7Y,25.5,500,false,"https://www.amazon.com/NutriBullet-NBY-50100-Nutribullet-Baby-18-Piece/dp/B086DFCS7Y/?th=1
+
+$25.50 
+MOQ 500
+BSR 959 (1%)
+26.63% ROI 
+Monthly Sales 8k+",2025-11-27 15:21:17+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/614bM9yRiXL._AC_SL1500_.jpg,"NutriBullet NBY-50100 Baby Complete Food-Making System, 32-Oz, White, Blue, Clear 32-oz.",47.99,4.70,14173,,Home & Kitchen,8.49,33.30,17.69,53,enriched,2025-11-28 23:35:13.62101+00,,true,true,7086,21258,4.55,,,,1.80,FBA Inbound,true,Sold by Amazon - high competition,8.49,39.50,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,153,,true,,,
+1782,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13178,B09P2QJKLW,46,,true,"https://www.amazon.com/Artist-Digital-Curling-Long-Lasting-Defined/dp/B09P2QJKLW/?th=1
+
+$46
+600 available 
+BSR 21k (1%)
+34.24% ROI",2025-11-26 22:00:47+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/51wZAIO8Z8L._SL1500_.jpg,"Hot Tools Pro Artist Black Gold Digital Salon Hair Curling Iron | Medium Loose Curls and Tousled Waves, (1-1/4 inch) 1-1/4 Inch BARREL HAIR_IRON",76.47,4.40,984,20456,Beauty & Personal Care,14.75,32.06,19.29,57,enriched,2025-11-28 23:35:18.628118+00,,true,true,22,66,,108.00,108.00,108.00,0.75,FBA Inbound,true,"Sold by Amazon - high competition; Low sales velocity (22 units/month); Low sales rank (#20,456)",14.75,61.72,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,139,,true,,,
+1783,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13177,B0001YXFFM,7.5,300,true,"https://www.amazon.com/DP/B0001YXFFM/ref
+
+$7.50 
+600 available 
+MOQ 300 
+BSR 109k (1%)
+34.93% ROI",2025-11-26 21:58:02+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/71Jf8PGbmtL._AC_SL1500_.jpg,"Honeywell UVEX Stealth Safety Goggles with Clear Uvextreme Anti-Fog Lens, Gray Body & Neoprene Headband (S3960C), Universal",21.75,4.50,7318,,Tools & Home Improvement,6.74,89.83,30.98,100,enriched,2025-11-28 23:35:25.29017+00,,false,true,3659,10977,,8.00,4.00,4.00,0.75,FBA Inbound,false,,6.74,15.01,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,111,,true,,,
+1784,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13176,B09D8QYHND,15,,true,"https://www.amazon.com/DP/B09D8QYHND?th=1
+
+$15
+125 available 
+Take all 
+30.33% ROI 
+Monthly Sales 9k+",2025-11-26 21:53:29+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/81r9yYqc9jL._AC_SL1500_.jpg,"Hartz Delectables Stew Lickable Wet Cat Treats for Adult & Senior Cats, Variety Pack, 30 Count Variety 1.4 Ounce (Pack of 30)",31.97,4.70,17379,81,Pet Supplies,6.57,43.83,20.56,64,enriched,2025-11-28 23:35:31.505482+00,,true,true,1111,3333,2.60,6.88,5.38,5.31,1.10,FBA Inbound,true,Sold by Amazon - high competition,6.57,25.40,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,118,,true,,,
+1785,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13175,5369411622,21.0,300,false,"https://www.walmart.com/ip/Power-Saber-Energy-Blade-Green-with-Realistic-Safe-Battle-Action/5369411622
+
+$21
+MOQ 300",2025-11-26 21:50:19+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,,,,,,,,,,,,failed,2025-11-29 05:27:30.695253+00,,false,true,,,,,,,0.75,FBA Inbound,true,Low profit margin (0.0%),,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,5fe649bc-3e5c-4215-bced-d44f09bdfab5,87,,true,,,
+1786,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13174,5281113148,21.0,300,false,"https://www.walmart.com/ip/Power-Saber-Energy-Blade-Red-with-Realistic-Safe-Battle-Action/5281113148
+
+$21
+MOQ 300",2025-11-26 21:48:13+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,,,,,,,,,,,,failed,2025-11-29 05:27:53.243666+00,,false,true,,,,,,,0.75,FBA Inbound,true,Low profit margin (0.0%),,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,5fe649bc-3e5c-4215-bced-d44f09bdfab5,64,,true,,,
+1787,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13173,B0BS8SV27Y,10,500,true,"https://www.amazon.com/Mini-Brands-Exclusive-Collectibles-Accessories/dp/B0BS8SV27Y/
+
+$10
+MOQ 500 
+BSR 19k (1%)
+42.50% ROI 
+Monthly Sales 1k+",2025-11-26 21:33:53+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/81Su1zH4ByL._AC_SL1500_.jpg,"Mini Brands Series 5 (2 Pack) by ZURU Amazon Exclusive Mini Collectibles Full of Surprises, Mystery Minis and Accessories to Collect",,4.70,1823,,Toys & Games,,,,,failed,2025-11-29 05:27:58.912424+00,,false,true,911,2733,,3.74,3.74,3.74,0.75,FBA Inbound,true,Low profit margin (0.0%),,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,5fe649bc-3e5c-4215-bced-d44f09bdfab5,141,,true,,,
+1788,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13172,B0DJG58YNX,16,400,false,"[https://www.amazon.com/Solid-Gold-Freeze-Dried-Food/DP/B0DJG58YNX/reff?th=1](https://www.amazon.com/Solid-Gold-Freeze-Dried-Food/DP/B0DJG58YNX/reff?th=1)
+
+$16
+MOQ 400 
+BSR 983 (1%)
+38.75% ROI 
+Monthly Sales 300+",2025-11-26 18:22:40+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/81e33l7Z3LL._AC_SL1500_.jpg,"Solid Gold Freeze Dried Dog Food - W/Real Beef, Pumpkin & Superfoods - Freeze Dried Raw Dog Food Toppers for Picky Eaters to Serve as a Nutrient-Dense Meal Topper or High Protein Treats - 12oz 12 Ounce (Pack of 1)",26.06,4.50,717,1723,Pet Supplies,1.90,11.88,7.29,20,enriched,2025-11-28 23:35:45.949241+00,,false,true,112,336,,,,,0.75,FBA Inbound,true,Low profit margin (7.3%),1.90,24.16,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,152,,true,,,
+1789,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13171,B0BL8K97S5,92,400,true,"https://www.amazon.com/dp/B0BL8K97S5?ref
+
+$92
+800 available 
+MOQ 400 
+BSR 240k (1%)
+32.59% ROI",2025-11-26 17:59:07+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/512HkguxkOL._AC_SL1422_.jpg,RYOBI 18V ONE+ Hybrid Forced Air Propane Heater,,4.00,19,,Home & Kitchen,,,,,failed,2025-11-29 05:28:23.253702+00,,false,true,9,27,19.75,19.75,15.13,13.19,2.50,FBA Inbound,true,Low profit margin (0.0%); Very low sales velocity (9 units/month),,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,5fe649bc-3e5c-4215-bced-d44f09bdfab5,115,,true,,,
+1790,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13170,B07KPXPGZS,54,600,true,"[https://www.amazon.com/dp/B07KPXPGZS?ref](https://www.amazon.com/dp/B07KPXPGZS?ref)
+
+$54
+600 available 
+BSR 29k (1%)
+Monthly Sales 400+",2025-11-26 17:43:46+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/61gr7EtcccL._AC_SL1000_.jpg,Milwaukee Electric - Hole Dozer BI-Metal Hole Saw KIT - 17PC,65.16,4.50,778,,Tools & Home Improvement,-5.41,-10.03,-8.31,0,enriched,2025-11-28 23:35:55.393302+00,,false,true,389,1167,3.52,,,,1.80,FBA Inbound,true,Low profit margin (-8.3%),-5.41,70.57,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,11,,true,,,
+1791,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13169,B0BCXDDR3H,20,200,true,"https://www.amazon.com/dp/B0BCXDDR3H?psc=1
+
+$20
+800 Available
+MOQ 200 
+BSR 39k (1%)
+40.25% ROI",2025-11-26 14:59:53+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/31gIhUbSHrL.jpg,Kopari Moisture Whipped Ceramide Cream | Hydrate and Restore | Vegan Ceramides and Moisture-Retaining Hyaluronic Acid | 2.1 oz,26.40,4.70,304,39220,Beauty & Personal Care,-1.81,-9.05,-6.86,0,enriched,2025-11-28 23:36:01.808854+00,,false,true,20,60,,5.91,2.76,5.91,0.75,FBA Inbound,true,"Low profit margin (-6.9%); Low sales velocity (20 units/month); Low sales rank (#39,220)",-1.81,28.21,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,23,,true,,,
+1792,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13168,B09PT23WRP,7.5,1872,true,"[https://www.amazon.com/dp/B09PT23WRP?ref](https://www.amazon.com/dp/B09PT23WRP?ref)
+
+$7.50 
+1,872 Units Take All 
+Exp 09/2026
+FOB - GA
+43.73% ROI 
+Monthly Sales 1k+",2025-11-26 00:56:44+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/71WiZ0ZEPsL._AC_SL1500_.jpg,"Lotrimin Ultra with No Touch Applicator,1 Week Athlete's Foot Treatment Cream. Prescription Strength Butenafine Hydrochloride 1%,Cures Most Athlete’s Foot Between Toes,Antifungal,0.7 oz (20 Grams)",18.72,4.60,1974,30540,"Health, Household & Baby Care",4.16,55.49,22.23,73,enriched,2025-11-28 23:36:08.840859+00,,true,true,21,63,,2.75,1.00,6.75,0.75,FBA Inbound,true,"Sold by Amazon - high competition; Low sales velocity (21 units/month); Low sales rank (#30,540)",4.16,14.56,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,227,,true,,,
+1793,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13167,B0CHSHWLV8,4.1,800,true,"https://www.amazon.com/Muddy-Bites-Chocolate-Waffle-Snack/DP/B0CHSHWLV8?th=1
+
+$4.10
+1600 available 
+MOQ 800 
+BSR 31k (1%)
+48.78% ROI 
+Monthly Sales 2k+",2025-11-25 22:19:00+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/51hV4h3GLLL._SL1000_.jpg,"Muddy Bites - Dark Chocolate - Waffle Cone Snack Bite Sized Filled Cone Bites for Snack or Dessert Made with Cane Sugar, Kosher, Fair Trade Certified",11.12,4.20,127,24302,Grocery & Gourmet Food,1.10,26.88,9.91,33,enriched,2025-11-28 23:36:14.977225+00,,true,true,21,63,,,,,0.75,FBA Inbound,true,"Sold by Amazon - high competition; Low sales velocity (21 units/month); Low sales rank (#24,302)",1.10,10.02,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,34,,true,,,
+1794,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13166,B015YQOGYU,5,450,true,"https://www.amazon.com/Crock-Savory-Chicken-Seasoning-Packets/DP/B015YQOGYU
+
+$5
+900 available 
+MOQ 450 
+BSR 46k (2%)
+46.80% ROI",2025-11-25 21:58:32+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/81rsv6e0kRL._SL1500_.jpg,Crock Pot Savory Herb Chicken Seasoning Mix (Pack of 4) 1.5 oz Packets,11.99,4.30,310,44902,Grocery & Gourmet Food,0.94,18.83,7.85,25,enriched,2025-11-28 23:36:19.604411+00,,false,true,20,60,,,,,0.75,FBA Inbound,true,"Low profit margin (7.8%); Low sales velocity (20 units/month); Low sales rank (#44,902)",0.94,11.05,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,9,,true,,,
+1795,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13165,B0C384976L,5.2,1000,true,"https://www.amazon.com/DP/B0C384976L
+
+$5.20
+2000 available 
+MOQ 1000 
+BSR 13k (1%)
+39.81% ROI 
+Monthly Sales 1k+",2025-11-25 21:50:15+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/81vBXPEjkAL._SL1500_.jpg,"THAYERS Soak It Up 80HR Liquid Moisturizer, Face Moisturizer with Hyaluronic Acid and Snow Mushroom, Dermatologist Tested Skin Care for Normal to Dry Skin, 2.5 Oz 2.5 Fl Oz (Pack of 1)",13.16,4.60,939,13429,Beauty & Personal Care,1.74,33.38,13.19,43,enriched,2025-11-28 23:36:27.906448+00,,true,true,24,72,,5.10,2.40,5.82,0.75,FBA Inbound,true,Sold by Amazon - high competition; Low sales velocity (24 units/month),1.74,11.42,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,82,,true,,,
+1796,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13164,B08VBVBS7N,29,200,true,"https://www.amazon.com/DP/B08VBVBS7N?th=1
+
+$29 
+200 available 
+Take all 
+BSR 96k (2%)
+34.24% ROI",2025-11-25 21:43:04+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/71TwlJdAzlL._SL1300_.jpg,"Method Fragrance Booster, Ginger Mango, Keeps Clothes Fresh For Up to 12 weeks, 14.8 Ounces (Pack of 6) Ginger Mango 14.8 Ounce (Pack of 6)",55.99,4.20,84,90982,"Health, Household & Baby Care",14.34,49.45,25.61,78,enriched,2025-11-28 23:36:33.573689+00,,false,true,18,54,,10.75,5.13,9.63,0.75,FBA Inbound,true,"Low sales velocity (18 units/month); Poor sales rank (#90,982)",14.34,41.65,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,40,,true,,,
+1797,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13163,B08YD33YL6,6,400,true,"https://www.amazon.com/DP/B08YD33YL6?th=1
+
+$6
+800 available 
+MOQ 400 
+BSR 58k (1%)
+31.67% ROI",2025-11-25 21:40:38+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/71tt9B6VUJL._SL1500_.jpg,"Method Fragrance Booster, Ginger Mango, Keeps Clothes Fresh For Up to 12 weeks, 14.8 Ounces (Pack of 1) Ginger Mango 14.8 Ounce (Pack of 1)",,4.30,206,90933,Grocery & Gourmet Food,,,,,failed,2025-11-29 05:27:39.556706+00,,false,true,18,54,,2.31,8.75,3.44,0.75,FBA Inbound,true,"Low profit margin (0.0%); Low sales velocity (18 units/month); Poor sales rank (#90,933)",,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,5fe649bc-3e5c-4215-bced-d44f09bdfab5,241,,true,,,
+1798,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13162,B08H3TSP2X,3.5,480,true,"https://www.amazon.com/Maybelline-Sensational-Ultimatte-Lightweight-Comfortable/dp/B08H3TSP2X?th=1
+
+$3.50 
+40k Available
+MOQ 480 
+BSR 4k (1%)
+72.00% ROI",2025-11-25 21:27:59+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/71k0CuF-hkL._SL1500_.jpg,"Maybelline Color Sensational Ultimatte Matte Lipstick, Non-Drying, Intense Color Pigment, More Truffle, Cocoa Brown, 1 Count 999 MORE TRUFFLE 0.06 Ounce (Pack of 1)",5.50,4.40,10197,3683,Beauty & Personal Care,-3.07,-87.86,-55.91,0,enriched,2025-11-28 23:36:44.378683+00,,true,true,96,288,,0.56,0.56,4.25,0.75,FBA Inbound,true,Sold by Amazon - high competition,-3.07,8.57,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,175,,true,,,
+1799,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13161,B09J618JL4,3.5,480,true,"https://www.amazon.com/MAYBELLINE-Sensational-Ultimatte-Lipstick-Non-Drying/dp/B09J618JL4?th=1
+
+$3.50 
+5800 Available
+MOQ 480 
+BSR 4k (1%)
+62.29% ROI",2025-11-25 21:16:44+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/61eMLvuIM0L._SL1500_.jpg,"Maybelline Color Sensational Ultimatte Matte Lipstick, Non-Drying, Intense Color Pigment, More Blonde, Sandy Nude, 1 Count 588 MORE BLONDE 0.06 Ounce (Pack of 1)",8.85,4.40,10197,3683,Beauty & Personal Care,-0.23,-6.50,-2.57,0,enriched,2025-11-28 23:36:55.537177+00,,true,true,96,288,,0.56,0.56,4.25,0.75,FBA Inbound,true,Sold by Amazon - high competition,-0.23,9.08,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,162,,true,,,
+1800,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13160,B08H3MJXZT,3,480,true,"https://www.amazon.com/Maybelline-New-York-Sensational-Lipstick-Lightweight/dp/B08H3MJXZT?th=1
+
+$3
+16k Available
+MOQ 480 
+BSR 4k (1%)
+68.67% ROI",2025-11-25 21:06:31+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/71VRYLTLVEL._SL1500_.jpg,"Maybelline Color Sensational Ultimatte Matte Lipstick, Non-Drying, Intense Color Pigment, More Rust, Rusty Red, 1 Count 899 MORE RUST 0.06 Ounce (Pack of 1)",8.11,4.40,10197,3683,Beauty & Personal Care,-0.36,-11.88,-4.40,0,enriched,2025-11-28 23:37:02.132757+00,,true,true,96,288,,0.56,0.56,4.25,0.75,FBA Inbound,true,Sold by Amazon - high competition,-0.36,8.47,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,177,,true,,,
+1801,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13159,B08H3S94P5,3,480,true,"https://www.amazon.com/Maybelline-New-York-Sensational-Lipstick-Lightweight/dp/B08H3S94P5?th=1
+
+$3
+12k Available
+MOQ 480 
+BSR 4k (1%)
+77.00% ROI",2025-11-25 21:00:57+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/7124EX-SMBL._SL1500_.jpg,"Maybelline Color Sensational Ultimatte Matte Lipstick, Non-Drying, Intense Color Pigment, More Scarlet, Scarlet Red, 1 Count 299 MORE SCARLET 0.06 Ounce (Pack of 1)",7.97,4.40,10197,3683,Beauty & Personal Care,-0.48,-15.85,-5.97,0,enriched,2025-11-28 23:37:08.919038+00,,true,true,96,288,,0.56,0.56,4.25,0.75,FBA Inbound,true,Sold by Amazon - high competition,-0.48,8.45,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,207,,true,,,
+1802,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13158,B0BLGJNQRB,5.5,1200,true,"[https://www.amazon.com/dp/B0BLGJNQRB?ref=undefined&th=1](https://www.amazon.com/dp/B0BLGJNQRB?ref=undefined&th=1)
+
+$5.50 
+4,494 Units Available 
+MOQ 1,200
+FOB - NY
+35.64% ROI",2025-11-25 20:48:20+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/71eyHjooQsL._SL1500_.jpg,"Hello Peach Aluminum Free Deodorant for Women + Men, Natural Fragrance, Dermatologically tested, Baking Soda Free, Parabens Free, Dye Free, 24 Hour Odor Protection, (Pack of 2) Peach 2.6 Ounce (Pack of 2)",13.99,4.20,9120,672,Beauty & Personal Care,2.14,38.94,15.31,50,enriched,2025-11-28 23:37:15.393615+00,,true,true,141,423,,,,,0.75,FBA Inbound,true,Sold by Amazon - high competition,2.14,11.85,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,1,,true,,,
+1803,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13157,B0BL8BVXD4,7.5,1000,true,"https://www.amazon.com/dp/B0BL8BVXD4?ref=undefined&th=1
+
+$7.50 
+3000 available 
+MOQ 1000 
+BSR 19k (1%)
+32.80% ROI",2025-11-25 20:23:47+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/51D5lb-YJIL._SL1152_.jpg,Dolly Parton - Eau de Toilette - Perfume for Women - Scent from Above - 1.0 Fl Oz Scent From Above 1 Fl Oz (Pack of 1),17.99,4.50,1387,17748,Beauty & Personal Care,3.54,47.22,19.69,63,enriched,2025-11-28 23:37:21.034731+00,,false,true,23,69,,1.18,1.57,3.15,0.75,FBA Inbound,true,Low sales velocity (23 units/month),3.54,14.45,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,57,,true,,,
+1804,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13155,8506518437,400,90,true,"[https://www.walmart.com/ip/H-1-Pro-Series-Ace-R350-R450-Foldable-Electric-Scooter-350W-450W-Brushless-Motor-15-5-20-mph-Max-Speed-10-Self-Sealing-Tubeless-Tires-18-5-25-6-Mile/8506518437?sid=b31fe91d-8862-4b8c-b10b-dda98600c52d](https://www.walmart.com/ip/H-1-Pro-Series-Ace-R350-R450-Foldable-Electric-Scooter-350W-450W-Brushless-Motor-15-5-20-mph-Max-Speed-10-Self-Sealing-Tubeless-Tires-18-5-25-6-Mile/8506518437?sid=b31fe91d-8862-4b8c-b10b-dda98600c52d)
+
+$400 
+90 available 
+Take all",2025-11-25 20:05:44+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,,,,,,,,,,,,failed,2025-11-29 05:28:24.356514+00,,false,true,,,,,,,0.75,FBA Inbound,true,Low profit margin (0.0%),,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,5fe649bc-3e5c-4215-bced-d44f09bdfab5,78,,true,,,
+1805,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13154,B0FHJGN2S6,17,1040,true,"https://www.amazon.com/dp/B0FHJGN2S6
+
+$17
+1040 available 
+Take all 
+25.65% ROI 
+Monthly Sales 5k+",2025-11-25 20:01:35+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/71Ad+G8XNRL._AC_SL1500_.jpg,"Magic: The Gathering | Avatar: The Last Airbender Beginner Box | 2-Player Card Game | Includes 2 Tutorial Decks, 8 Themed Half-Decks, 2 Playboards, 2 Spindowns, and More",31.75,3.50,56,,Toys & Games,4.89,28.75,15.39,46,enriched,2025-11-28 23:37:27.367887+00,,true,true,28,84,1.58,11.18,6.89,0.10,1.10,FBA Inbound,true,Sold by Amazon - high competition; Low sales velocity (28 units/month),4.89,26.86,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,133,,true,,,
+1806,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13153,B003K2RYAY,24,500,true,"[https://www.amazon.com/Bell-Laboratories-Talpirid-7150-Worms/dp/B003K2RYAY](https://www.amazon.com/Bell-Laboratories-Talpirid-7150-Worms/dp/B003K2RYAY)
+
+$24
+MOQ 500 
+BSR 7k (1%)
+37.33% ROI 
+Monthly Sales 800+",2025-11-25 15:58:19+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/811IsCRQk3L._AC_SL1500_.jpg,"Bell Laboratories Talpirid 7150 Mole Bait Worms, 20 Count",43.00,3.60,2632,,Garden & Outdoor,8.30,34.58,19.30,57,enriched,2025-11-28 23:37:34.488834+00,,false,true,1316,3948,,6.90,1.20,12.40,0.75,FBA Inbound,false,,8.30,34.70,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,174,,true,,,
+1807,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13152,2962265771,18.0,500,false,"https://www.walmart.com/ip/Conair-Girlbomb-Lithium-Ion-Rechargeable-All-in-One-Electric-Shave-System-for-Bikini-Body-Face/2962265771?sid=04b972fb-8e80-48b6-bfc8-6883d31f7d1f
+
+$18 
+MOQ 500",2025-11-25 15:48:39+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,,,,,,,,,,,,failed,2025-11-29 05:27:34.723449+00,,false,true,,,,,,,0.75,FBA Inbound,true,Low profit margin (0.0%),,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,5fe649bc-3e5c-4215-bced-d44f09bdfab5,157,,true,,,
+1808,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13151,B07W2VM8M9,16,1440,true,"[https://www.amazon.com/dp/B07W2VM8M9?ref](https://www.amazon.com/dp/B07W2VM8M9?ref)
+
+$16
+1440 available 
+Take all 
+BSR 15k (1%)
+34.50% ROI 
+Monthly Sales 500+",2025-11-25 00:59:38+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/61zllSzzxCL._AC_SL1000_.jpg,"Sharpie Permanent Marker Fine Point,Fine Point Black Permanent Marker Quick Drying/Waterproof - 36 Count (1 Pack)",28.99,4.80,346,,Office Products,4.39,27.45,15.15,44,enriched,2025-11-28 23:37:40.628902+00,,false,true,173,519,,9.00,8.90,6.60,0.75,FBA Inbound,false,,4.39,24.60,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,156,,true,,,
+1809,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13150,B004I8SYB2,11.75,,true,"https://www.amazon.com/dp/B004I8SYB2?ref
+
+$11.75
+864 available 
+BSR 53k (1%)
+31.06% ROI",2025-11-25 00:56:30+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/81nnknKFM4L._AC_SL1500_.jpg,"HALLS Relief Honey Lemon Cough Drops, 20 Packs of 9 Drops (180 Total Drops) 9 Count (Pack of 20)",24.99,4.40,1090,53121,Grocery & Gourmet Food,4.74,40.35,18.97,59,enriched,2025-11-28 23:37:46.490457+00,,false,true,19,57,1.40,4.10,3.60,3.20,0.75,FBA Inbound,true,"Low sales velocity (19 units/month); Poor sales rank (#53,121)",4.74,20.25,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,43,,true,,,
+1810,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13149,B0017ODK28,15.5,900,true,"[https://www.amazon.com/dp/B0017ODK28?ref=undefined&th=1](https://www.amazon.com/dp/B0017ODK28?ref=undefined&th=1)
+
+$15.50 
+1800 available 
+MOQ 900
+BSR 8k (1%)
+34.13% ROI 
+Monthly Sales 2k+",2025-11-24 22:17:21+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/81zVcWpaSIL._SL1500_.jpg,"SWEDISH FISH Mini Soft & Chewy Candy, Bulk Candy, 24 - 2 oz Bags Berry",33.42,4.60,3744,8180,Grocery & Gourmet Food,8.66,55.85,25.90,81,enriched,2025-11-28 23:37:53.212606+00,,true,true,82,246,,6.22,1.57,6.06,0.75,FBA Inbound,true,Sold by Amazon - high competition,8.66,24.76,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,50,,true,,,
+1811,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13148,B095WFZHRB,16,1000,true,"https://www.amazon.com/Olay-Regenerist-Retinol-Night-Cream/dp/B095WFZHRB/
+
+$16
+3000 available 
+MOQ 1000 
+BSR 16k (1%)
+33.00% ROI 
+Monthly Sales 1k+",2025-11-24 22:14:08+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/61PUecWaXFL._SL1500_.jpg,"Olay Retinol 24 MAX Night Eye Cream, 0.5 oz",29.93,4.40,684,18739,Beauty & Personal Care,5.19,32.44,17.34,51,enriched,2025-11-28 23:37:59.432591+00,,true,true,22,66,,3.86,1.93,1.93,0.75,FBA Inbound,true,Sold by Amazon - high competition; Low sales velocity (22 units/month),5.19,24.74,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,138,,true,,,
+1812,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13147,B00OAINK14,5,600,true,"https://www.amazon.com/LOreal-Paris-Infallible-Pro-Spray-Extender/dp/B00OAINK14
+
+$5
+BSR 32k (1%)
+MOQ 600 
+47.40% ROI 
+Monthly Sales 700+",2025-11-24 22:08:09+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/513P-U0ZohL._SL1200_.jpg,"L'Oreal Paris Makeup Infallible Pro-Spray and Set Makeup Extender Setting Spray, 3.4 Ounce",14.94,4.50,5725,33728,Beauty & Personal Care,3.45,68.98,23.09,81,enriched,2025-11-28 23:38:04.641081+00,,false,true,20,60,,5.41,1.69,5.41,0.75,FBA Inbound,true,"Low sales velocity (20 units/month); Low sales rank (#33,728)",3.45,11.49,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,212,,true,,,
+1813,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13146,B073SCFZRZ,7.5,500,true,"https://www.amazon.com/dp/B073SCFZRZ/
+
+$7.50 
+MOQ 500 
+BSR 33k (1%)
+43.33% ROI",2025-11-24 22:04:20+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/91nZiEDXQPL._AC_SL1500_.jpg,Charades Game for Family Who's The Dude Identity Fun Games Gift for Reunion Adult Game Night Ages 16+ 440 Funny Scenarios,19.99,4.40,925,,Toys & Games,4.39,58.55,21.97,74,enriched,2025-11-28 23:38:10.327668+00,,true,true,462,1386,1.72,27.20,26.90,6.60,1.10,FBA Inbound,true,Sold by Amazon - high competition,4.39,15.60,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,49,,true,,,
+1814,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13145,B09NRSY5YT,9,9600,true,"https://www.amazon.com/dp/B09NRSY5YT/?th=1
+
+$9
+9600 available 
+Take all 
+28.56% ROI 
+Monthly Sales 2k+",2025-11-24 21:59:40+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/81PP8Iooj6L._AC_SL1500_.jpg,"Hasbro Gaming Connect 4 Spin Game, Features Spinning Connect 4 Grid, 2 Player Board Games for Family and Kids, Strategy Board Games, Ages 8 and Up 2.5 x 12.5 x 10.5 inches",19.99,4.70,4069,,Toys & Games,3.74,41.57,18.72,58,enriched,2025-11-28 23:38:16.245304+00,,false,true,2034,6102,,2.50,12.50,10.50,0.75,FBA Inbound,false,,3.74,16.25,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,236,,true,,,
+1815,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13144,B0779GQTWT,14,240,true,"https://www.amazon.com/dp/B0779GQTWT/?th=1
+
+$14
+240 MOQ
+600 Available
+BSR 25k (1%)
+31.71% ROI",2025-11-24 21:50:52+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/714nlN1isVL._SL1500_.jpg,"Genuine Authentic German Nivea Creme Cream, 8.45 Ounces,(Pack of 3) Unscented 8.45 Ounce (Pack of 3)",29.74,4.50,3374,25529,Beauty & Personal Care,7.03,50.21,23.63,73,enriched,2025-11-28 23:38:22.976536+00,,false,true,21,63,,4.92,3.82,3.78,0.75,FBA Inbound,true,"Low sales velocity (21 units/month); Low sales rank (#25,529)",7.03,22.71,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,112,,true,,,
+1816,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13143,B00J2L5FFS,3,720,false,"https://www.amazon.com/dp/B00J2L5FFS?ref
+
+$3
+720 Units Take All 
+Exp 03/26 
+FOB - NY
+53.67% ROI 
+Monthly Sales 1k+",2025-11-24 20:24:10+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/81KgltwsRJL._SL1500_.jpg,"Folgers Classic Medium Roast Coffee, 19 Single Serve Coffee Bags Classic Roast 19 Count (Pack of 1)",8.95,4.60,2805,8643,Grocery & Gourmet Food,0.36,11.92,3.99,14,enriched,2025-11-28 23:38:29.14155+00,,false,true,81,243,,3.50,5.07,4.39,0.75,FBA Inbound,true,Low profit margin (4.0%),0.36,8.59,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,245,,true,,,
+1817,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13142,B00G7PCHK8,5.5,4608,false,"[https://www.amazon.com/dp/B00G7PCHK8?ref=undefined&th=1](https://www.amazon.com/dp/B00G7PCHK8?ref=undefined&th=1)
+
+$5.50
+4,608 Units Take All 
+Exp 03/26 
+FOB - NY
+60.36% ROI 
+Monthly Sales 9339+",2025-11-24 20:18:56+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/611lPxfglvL._SL1500_.jpg,Degree Clinical Protection Antiperspirant Deodorant 72-Hour Sweat & Odor Protection Stress Control Antiperspirant for Women 1.7 oz Floral 1.7 Ounce (Pack of 1),8.99,4.50,14260,1112,Beauty & Personal Care,-2.11,-38.34,-23.45,0,enriched,2025-11-28 23:38:36.036538+00,,false,true,122,366,,2.56,1.64,4.81,0.75,FBA Inbound,true,Low profit margin (-23.4%),-2.11,11.10,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,142,,true,,,
+1818,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13141,B07PHB5JKF,10,1700,true,"https://www.amazon.com/dp/B07PHB5JKF?_encoding=UTF8&psc=1&ref
+
+$10
+1,700 Units Take All 
+FOB - NV
+BSR 6k (1%)
+33.00% ROI 
+Monthly Sales 7k+",2025-11-24 20:15:20+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/71fpBFzVBSL._AC_SL1399_.jpg,"iSmile Teeth Whitening Kit - LED Light, 35% Carbamide Peroxide, (3) 3ml Gel Syringes, (1) Remineralization Gel, and Tray.",21.98,4.30,27681,6624,"Health, Household & Baby Care",4.43,44.33,20.17,63,enriched,2025-11-28 23:38:40.895639+00,,false,true,86,258,,8.00,5.50,1.25,0.75,FBA Inbound,false,,4.43,17.55,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,51,,true,,,
+1819,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13140,B013Q8E3IM,6.5,600,true,"https://www.amazon.com/dp/B013Q8E3IM?th=1
+
+$6.50 
+600 available 
+Take all 
+BSR 12k (1%)
+48.31% ROI",2025-11-24 18:07:50+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/81eHfmFucrL._AC_SL1500_.jpg,"Mucinex Fast-Max Maximum Strength Cold, Flu & Sore Throat, Multi-Symptom Relief, Pain Reliever, Fever Reducer, Cough Suppressant, Expectorant, Nasal Decongestant, 16 Liquid Gels Cold, Flu & Sore Throat - Old 16 Count (Pack of 1)",13.29,4.80,2660,11914,"Health, Household & Baby Care",0.55,8.41,4.11,12,enriched,2025-11-28 23:38:46.48393+00,,false,true,24,72,,,,,0.75,FBA Inbound,true,Low profit margin (4.1%); Low sales velocity (24 units/month),0.55,12.74,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,223,,true,,,
+1820,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13139,3592966010,7.0,600,false,"https://www.walmart.com/ip/Sejoy-Rechargeable-Toothbrush-Electric-7-Tooth-Heads-for-Adults-Kids-Power-Sonic-Brush-Soft-Cleaning-3-Modes-Smart-Timer-Home-Travel-Gift-Navy/3592966010
+
+
+$7
+MOQ 600",2025-11-24 18:01:58+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,,,,,,,,,,,,failed,2025-11-29 05:28:01.088644+00,,false,true,,,,,,,0.75,FBA Inbound,true,Low profit margin (0.0%),,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,5fe649bc-3e5c-4215-bced-d44f09bdfab5,194,,true,,,
+1821,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13138,B000VWBAGU,40,200,false,"https://www.amazon.com/dp/B000VWBAGU?ref
+
+$40
+MOQ 200 
+BSR 70k (1%)
+30% ROI 
+
+Monthly Sales 200+",2025-11-24 03:11:10+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/61YZ0f3Lj3L._AC_SL1500_.jpg,FIRST ENDURANCE OptygenHP - Premium Endurance Supplement | Boost Power | Increase Performance and Endurance | Improves Oxygen Utilization| 120 Capsules,63.96,4.60,102,75525,"Health, Household & Baby Care",10.12,25.29,15.82,46,enriched,2025-11-28 23:38:57.478519+00,,false,true,18,54,,4.00,4.00,5.00,0.75,FBA Inbound,true,"Low sales velocity (18 units/month); Poor sales rank (#75,525)",10.12,53.84,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,173,,true,,,
+1822,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13137,B07H634DYW,4,700,false,"https://www.amazon.com/dp/B07H634DYW?th=1
+
+$4
+MOQ 700
+BSR 20k (1%)
+66.75% ROI",2025-11-21 18:05:55+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/51OLlxVJPHL._SL1024_.jpg,"L'Oreal Paris Makeup Rouge Signature Matte Lip Stain, I Explore 0.23 Fl Oz (Pack of 1) I Explore",9.99,4.10,7548,25082,Beauty & Personal Care,0.24,6.04,2.42,7,enriched,2025-11-28 23:39:03.874115+00,,false,true,21,63,,0.79,0.73,4.27,0.75,FBA Inbound,true,"Low profit margin (2.4%); Low sales velocity (21 units/month); Low sales rank (#25,082)",0.24,9.75,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,19,,true,,,
+1823,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13136,B0041SRUJ6,20,150,false,"https://www.amazon.com/dp/B0041SRUJ6?th=1
+
+$20
+MOQ 150 
+BSR 25k (1%)
+45.45% ROI",2025-11-21 17:51:57+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/41DYmktOw4L._AC_SL1000_.jpg,"Belkin 8-Outlet Surge Protector with Telephone Protection, 6ft Cord, White White 8-Outlet No ethernet",,4.70,4505,,Electronics,,,,,failed,2025-11-29 05:28:15.177825+00,,false,true,2252,6756,1.90,14.30,6.90,1.90,1.10,FBA Inbound,true,Low profit margin (0.0%),,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,5fe649bc-3e5c-4215-bced-d44f09bdfab5,135,,true,,,
+1824,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13135,B0DV2252GB,7,500,true,"https://www.amazon.com/dp/B0DV2252GB?_encoding=UTF8&psc=1&ref
+
+$7
+1000 available 
+MOQ 500 
+BSR 3k (1%)
+34.57% ROI 
+Monthly Sales 6k+",2025-11-21 01:23:37+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/61+QUVL8n0L._SL1500_.jpg,Beauty Secrets Drip & Clog Proof Nail Glue (1 Pack) Bundled with Zebra Cushion Nail File Medium Coarse 180/100 Grit by Beauty Secrets,15.49,4.50,217,2604,Industrial & Scientific,1.92,27.38,12.37,38,enriched,2025-11-28 23:39:15.569956+00,,false,true,103,309,,8.15,1.50,0.75,0.75,FBA Inbound,false,,1.92,13.57,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,62,,true,,,
+1825,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13134,B07NSZHMWB,3.7,3360,true,"https://www.amazon.com/dp/B07NSZHMWB?ref
+
+$3.70 
+3,360 Units Take All 
+FOB - NY
+54.86% ROI 
+Monthly Sales 1k+",2025-11-20 21:59:44+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/71cbqJBtjjL._SL1500_.jpg,SheaMoisture Hair Mask Coconut & Hibiscus for Dry Curls Hair Mask with Shea Butter 11.5 oz Hibiscus 11.5 Ounce (Pack of 1),8.69,4.70,1404,17295,Beauty & Personal Care,-0.56,-15.23,-6.48,0,enriched,2025-11-28 23:39:21.207853+00,,true,true,23,69,,3.70,3.70,2.72,0.75,FBA Inbound,true,Sold by Amazon - high competition; Low sales velocity (23 units/month),-0.56,9.25,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,48,,true,,,
+1826,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13133,B0CNJZ18YS,8,1934,false,"https://www.amazon.com/dp/B0CNJZ18YS?ref=undefined&th=1
+
+$8
+1,934 Units Take All 
+Exp 08/27 
+FOB - IL
+34.63% ROI",2025-11-20 21:56:05+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/81xg9HIOHfL._SL1500_.jpg,"Poligrip Denture Adhesive, Power Max Hold Plus Comfort Denture Adhesive Cream, 2.2 Ounces (Pack of 4)",17.80,4.10,421,60063,Beauty & Personal Care,2.88,36.00,16.18,50,enriched,2025-11-28 23:39:27.274163+00,,false,true,19,57,,,,,0.75,FBA Inbound,true,"Low sales velocity (19 units/month); Poor sales rank (#60,063)",2.88,14.92,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,163,,true,,,
+1827,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13132,B072N7WRHS,6,1200,true,"https://www.amazon.com/dp/B072N7WRHS?ref=undefined&th=1
+
+$6
+7,200 Units Available 
+MOQ 1,200 
+Exp 7/26 
+FOB - NY
+Monthly Sales 10k+",2025-11-20 21:53:38+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/813vqSRUy4L._AC_SL1500_.jpg,"Renu Contact Lens Solution, Advanced Formula, Multi-Purpose Solution with Lens Case, Gently Cleans, Disinfects, Moisturizes & Hydrates Soft Lenses for All-Day Comfort, 12 Fl Oz (Pack of 2)",14.96,4.80,34481,1377,"Health, Household & Baby Care",2.47,41.10,16.48,54,enriched,2025-11-28 23:39:33.52935+00,,true,true,117,351,,2.56,5.13,6.63,0.75,FBA Inbound,true,Sold by Amazon - high competition,2.47,12.49,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,5,,true,,,
+1828,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13131,B0B59D5VH8,4.5,1824,false,"https://www.amazon.com/dp/B0B59D5VH8?ref
+
+$4.50 
+1,824 Units Take All  
+Exp 09/26 
+FOB - GA
+47.56% ROI 
+Monthly Sales 900+",2025-11-20 19:41:14+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/51hI3YBpDuL._SL1000_.jpg,"Better Than Bouillon Organic Seasoned Vegetable Base, 21 oz, 100 Servings, Original Version, (Pack of 1) COSTCO ONLY ITEM",14.85,4.70,459,15746,Grocery & Gourmet Food,3.87,86.06,26.08,95,enriched,2025-11-28 23:39:39.314028+00,,false,true,23,69,,3.50,3.50,4.70,0.75,FBA Inbound,true,Low sales velocity (23 units/month),3.87,10.98,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,220,,true,,,
+1829,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13129,B00MWH64R2,12.5,500,true,"https://www.amazon.com/dp/B00MWH64R2
+
+$12.50 
+1000 available 
+MOQ 500 
+BSR 71k (1%)
+36.64% ROI",2025-11-20 19:35:27+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/71NRbkyLZKL._AC_SL1500_.jpg,"Seeking Health Multivitamin One Sensitive, Daily Vitamin Without B12, Folate, Copper, Iron, Iodine, Calcium, Choline, and Lutein, Antioxidant Support, Vegetarian and Vegan (45 Capsules)",35.00,4.20,127,64861,"Health, Household & Baby Care",13.75,110.00,39.29,100,enriched,2025-11-28 23:39:44.639667+00,,false,true,18,54,0.35,2.75,2.75,4.75,0.50,FBA Inbound,true,"Low sales velocity (18 units/month); Poor sales rank (#64,861)",13.75,21.25,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,99,,true,,,
+1830,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13128,B0DMWLS2YK,13.5,,true,"https://www.amazon.com/dp/B0DMWLS2YK?ref
+
+$13.50 
+960 available 
+BSR 30k (1%)
+30.89% ROI 
+Monthly Sales 1k+",2025-11-20 19:31:45+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/719Ql6Hp4VL._AC_SL1500_.jpg,"Barbie Dream Besties Doll and Accessories, Zia Posable Fashion Doll with Removable Fashions & Wavy Brown Hair, 7 Hair & Moon Themed Pieces",24.99,4.70,117,,Toys & Games,3.49,25.86,13.97,41,enriched,2025-11-28 23:39:50.744413+00,,true,true,58,174,,2.76,11.73,1.34,0.75,FBA Inbound,true,Sold by Amazon - high competition,3.49,21.50,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,260,,true,,,
+1831,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13127,B00HD1H8RW,3,2000,true,"https://www.amazon.com/vH-essentials-Vaginal-Odor-Treatment/dp/B00HD1H8RW/
+
+$3
+2k Available
+BSR 28k (1%)
+42.33% ROI",2025-11-20 19:13:30+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/61kPvwFRIhL._AC_SL1500_.jpg,"vH essentials Vaginal Odor Treatment - pH Balanced Vaginal Suppositories - 6 Tablets With Applicator, White",7.99,4.30,3038,34436,Beauty & Personal Care,-0.46,-15.28,-5.74,0,enriched,2025-11-28 23:39:56.56883+00,,false,true,20,60,,2.00,3.63,6.00,0.75,FBA Inbound,true,"Low profit margin (-5.7%); Low sales velocity (20 units/month); Low sales rank (#34,436)",-0.46,8.45,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,120,,true,,,
+1832,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13126,B0CNWMSRJC,5,468,false,"https://www.amazon.com/dp/B0CNWMSRJC/?th=1
+
+$5
+MOQ 468
+BSR 15k (1%)
+38.20% ROI 
+Monthly Sales 200+",2025-11-20 19:07:49+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/81TloY9FS3L._AC_SL1500_.jpg,"Barbie Clothes and Accessories, Deluxe Keychain Donut Bag with Pink Sprinkle Dress and Candy Themed Accessories for Barbie Dolls Candytopia",13.99,4.70,165,,Toys & Games,2.64,52.83,18.88,64,enriched,2025-11-28 23:40:03.51684+00,,false,true,82,246,,3.15,1.57,3.94,0.75,FBA Inbound,false,,2.64,11.35,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,12,,true,,,
+1833,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13125,B0BVRRJWBN,7.5,,true,"https://www.amazon.com/dp/B0BVRRJWBN/
+
+$7.50 
+390 available 
+Take all 
+BSR 31k (1%)
+31.47% ROI 
+Monthly Sales 700+",2025-11-20 19:00:06+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/81lohZYfr+L._AC_SL1500_.jpg,"Glade Automatic Spray Refill, Air Freshener for Home and Bathroom, Autumn Spiced Apple, 6.2 Oz, 2 Count",18.95,4.70,1210,36899,"Health, Household & Baby Care",4.36,58.10,22.99,75,enriched,2025-11-28 23:40:08.592474+00,,false,true,20,60,,,,,0.75,FBA Inbound,true,"Low sales velocity (20 units/month); Low sales rank (#36,899)",4.36,14.59,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,75,,true,,,
+1834,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13124,B007SQ2K3Y,3.5,1280,true,"https://www.amazon.com/dp/B007SQ2K3Y/
+
+$3.50 
+MOQ 1280 
+BSR 33k (1%)
+67.14% ROI",2025-11-20 18:55:16+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/511RFMt5S6L._AC_SL1200_.jpg,"X-Acto X202 No. 2 Large Fine Point Blades (Pack of 5); For Precision Cutting of Medium to Heavy Weight Materials; Easily Cuts Wood, Paper, Plastic, Metal, Film and Acetate",9.80,4.80,436,,Home & Kitchen,0.58,16.57,5.92,20,enriched,2025-11-28 23:40:13.853463+00,,false,true,218,654,,,,,0.75,FBA Inbound,true,Low profit margin (5.9%),0.58,9.22,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,66,,true,,,
+1835,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13123,B0DNGVFJBP,12,250,false,"https://www.amazon.com/dp/B0DNGVFJBP/
+
+$12
+250 MOQ
+BSR 7k (1%)
+30.25% ROI 
+Monthly Sales 4k+",2025-11-20 18:41:09+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/61HpiiLdW5L._SL1500_.jpg,"Lattafa Teriaq Intense for Unisex Eau de Parfum Spray, 3.4 Ounce / 100 ml",26.98,4.60,1287,6237,Beauty & Personal Care,6.68,55.69,24.77,78,enriched,2025-11-28 23:40:20.296066+00,,false,true,87,261,,1.80,1.80,6.00,0.75,FBA Inbound,false,,6.68,20.30,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,58,,true,,,
+1836,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13122,B0959JT4PV,17,,true,"https://www.amazon.com/DP/B0959JT4PV?th=1&psc=1
+
+$17
+350 available 
+Take all 
+BSR 1k (1%)
+31.71% ROI 
+Monthly Sales 10k+",2025-11-20 12:46:12+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/51NMg2CC8IS._AC_SL1340_.jpg,Nike unisex-adult mens Balaclava One Size Black,30.69,4.70,6717,1786,All Departments,4.84,28.45,15.76,46,enriched,2025-11-28 23:40:25.587156+00,,false,true,111,333,,,,,0.75,FBA Inbound,false,,4.84,25.85,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,97,,true,,,
+1837,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13121,B0CYHGPP1L,260,150,true,"https://www.amazon.com/dp/B0CYHGPP1L?tag=camelweb-20&linkCode=ogi&th=1&language=en_US
+
+$260 
+150 available 
+32.05% ROI 
+Monthly Sales 100+",2025-11-20 00:49:27+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/613GeRd+1WL._AC_SL1500_.jpg,"Sonos Ace | Noise Cancelling Wireless Over-Ear Headphones with Bluetooth, 30-Hour Battery Life, Spatial Audio, Dolby Atmos, Dynamic Head Tracking - White White Headphones Only",279.00,4.20,967,,Electronics,-27.10,-10.42,-9.71,0,enriched,2025-11-28 23:40:32.560954+00,,true,true,483,1449,,6.30,3.35,7.52,0.75,FBA Inbound,true,Sold by Amazon - high competition,-27.10,306.10,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,28,,true,,,
+1838,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13120,B009D028GC,24,1200,true,"https://www.amazon.com/dp/B009D028GC?ref=undefined&th=1
+
+$24
+7,200 Units Available 
+MOQ 1,200 
+FOB - NJ
+39.29% ROI 
+Monthly Sales 500+",2025-11-20 00:41:21+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/81j+RkvekAS._SL1500_.jpg,"Seventh Generation Baby Wipes, 768 count, Made for Sensitive Skin, Refill with Tape Seal, 64 Count (Pack of 12)",44.99,4.60,8680,4141,"Health, Household & Baby Care",9.99,41.63,22.21,67,enriched,2025-11-28 23:40:39.131211+00,,false,true,94,282,,15.80,9.40,8.00,0.75,FBA Inbound,false,,9.99,35.00,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,251,,true,,,
+1839,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13119,B082G1K6QY,10,680,true,"https://www.amazon.com/dp/B082G1K6QY?ref=undefined&th=1
+
+$10 
+2,400 Units Available 
+MOQ 680
+FOB NY
+43.20% ROI",2025-11-20 00:36:00+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/610mDpbKt8L._SL1500_.jpg,"Avalon Organics Radiance Serum with Vitamin C, 1 Oz 1 Fl Oz (Pack of 1) Serum",15.25,4.00,1143,20726,Beauty & Personal Care,-1.29,-12.88,-8.44,0,enriched,2025-11-28 23:40:44.86892+00,,true,true,22,66,,1.38,1.38,5.00,0.75,FBA Inbound,true,"Sold by Amazon - high competition; Low sales velocity (22 units/month); Low sales rank (#20,726)",-1.29,16.54,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,146,,true,,,
+1840,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13118,B0BQ1Q99GJ,19,510,true,"https://www.amazon.com/dp/B0BQ1Q99GJ?ref
+
+$19 
+510 Units Take All 
+FOB - NJ
+26.95% ROI",2025-11-20 00:33:45+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/71gNINgwmKL._SL1500_.jpg,"Olay Body Wash for Women, Ultra Moisture, Exfoliating Formula, 24hr Moisturizing, Hydrating & Replenshing, B3 Vitamin Complex, For All Skin Types, Sea Minerals Scent, 33 fl oz (Pack of 4)",39.88,4.80,215,55727,Beauty & Personal Care,8.10,42.62,20.31,63,enriched,2025-11-28 23:40:50.090131+00,,true,true,19,57,7.20,9.69,6.19,10.00,1.80,FBA Inbound,true,"Sold by Amazon - high competition; Low sales velocity (19 units/month); Poor sales rank (#55,727)",8.10,31.78,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,154,,true,,,
+1841,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13116,B07ZWPTHLD,14,600,true,"https://www.amazon.com/dp/B07ZWPTHLD?ref
+
+$14
+1,800 Units Available 
+MOQ 600
+FOB - CA
+32.29% ROI",2025-11-20 00:29:41+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/71U6eNJShUL._AC_SL1500_.jpg,Rubbermaid Assorted Food Storage Container Set - Case of: 1; Each Pack Qty: 24; Total Items Qty: 24,31.52,4.70,646,146951,Sports & Outdoors,7.19,51.37,22.82,72,enriched,2025-11-28 23:40:56.653874+00,,false,true,16,48,2.40,,,,1.10,FBA Inbound,true,"Low sales velocity (16 units/month); Poor sales rank (#146,951)",7.19,24.33,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,20,,true,,,
+1842,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13115,B00E99YKAY,11,600,false,"https://www.amazon.com/dp/B00E99YKAY?ref
+
+$11
+600 Units Take All 
+Exp 05/26
+FOB - CA
+36.18% ROI 
+Monthly Sales 400+",2025-11-20 00:23:30+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/716j4waqaeL._AC_SL1500_.jpg,"Spectrum Essentials Soft Gels, Vegan Ultra Omega-3 EPA and DHA with Vitamin D, 60 Count",,4.70,453,78445,"Health, Household & Baby Care",,,,,failed,2025-11-29 05:28:28.670154+00,,false,true,18,54,,2.00,2.00,3.50,0.75,FBA Inbound,true,"Low profit margin (0.0%); Low sales velocity (18 units/month); Poor sales rank (#78,445)",,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,5fe649bc-3e5c-4215-bced-d44f09bdfab5,31,,true,,,
+1843,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13114,B0BHFG4756,13,570,false,"https://www.amazon.com/dp/B0BHFG4756?ref=&th=1
+
+$13
+570 Units Take All 
+FOB - NJ
+23.08% ROI 
+Monthly Sales 1k+",2025-11-20 00:19:30+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/71+I3hfh5mL._AC_SL1500_.jpg,"Barbie The Movie Doll, Margot Robbie as, Collectible Doll Wearing Pink and White Gingham Dress with Daisy Chain Necklace Modern",14.97,4.80,6705,,Toys & Games,-4.53,-34.81,-30.23,0,enriched,2025-11-28 23:41:08.856099+00,,true,true,3352,10056,,3.00,7.00,13.00,0.75,FBA Inbound,true,Sold by Amazon - high competition,-4.53,19.50,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,255,,true,,,
+1844,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13113,B08YD33YL6,6,400,true,"https://www.amazon.com/DP/B08YD33YL6?t=undefined&th=1
+
+$6
+800 available 
+MOQ 400 
+BSR 53k  (1%)
+31.67% ROI",2025-11-19 21:08:00+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/71tt9B6VUJL._SL1500_.jpg,"Method Fragrance Booster, Ginger Mango, Keeps Clothes Fresh For Up to 12 weeks, 14.8 Ounces (Pack of 1) Ginger Mango 14.8 Ounce (Pack of 1)",,4.30,206,90933,Grocery & Gourmet Food,,,,,failed,2025-11-29 05:27:39.556706+00,,false,true,18,54,,2.31,8.75,3.44,0.75,FBA Inbound,true,"Low profit margin (0.0%); Low sales velocity (18 units/month); Poor sales rank (#90,933)",,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,5fe649bc-3e5c-4215-bced-d44f09bdfab5,262,,true,,,
+1845,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13112,B00J4036EE,6,200,true,"https://www.amazon.com/DP/B00J4036EE?th=1
+
+$6
+400 available 
+MOQ 200 
+BSR 67k (1%)
+38.50% ROI
+Monthly Sales 200+",2025-11-19 21:04:47+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/51e6OJXTRmL._AC_SL1280_.jpg,BabyGanics Hand Sanitizer Mandarin Refill - 16 Ounces 16 Fl Oz (Pack of 1),20.17,4.60,442,87801,Beauty & Personal Care,6.89,114.91,34.18,100,enriched,2025-11-28 23:41:14.039963+00,,false,true,18,54,,8.50,3.50,2.10,0.75,FBA Inbound,true,"Low sales velocity (18 units/month); Poor sales rank (#87,801)",6.89,13.28,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,70,,true,,,
+1846,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13111,B00P2SHFX0,14,200,true,"https://www.amazon.com/DP/B00P2SHFX0?th=1
+
+$14
+400 available 
+MOQ 200 
+BSR 46k (1%)
+54.29% ROI 
+Monthly Sales 200+",2025-11-19 21:01:35+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/71RqR0jKzEL._SL1500_.jpg,"Babyganics Foaming Hand Sanitizer Refill, Alcohol Free, Mandarin, Kills 99.9% of Common Bacteria, Moisturizing, 16 Fl Oz (Pack of 2) Mandarin 16 Fl Oz (Pack of 2)",32.99,4.80,4937,45357,"Health, Household & Baby Care",9.79,69.94,29.68,96,enriched,2025-11-28 23:41:20.920575+00,,false,true,20,60,,8.90,5.51,3.11,0.75,FBA Inbound,true,"Low sales velocity (20 units/month); Low sales rank (#45,357)",9.79,23.20,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,54,,true,,,
+1847,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13110,B0CN7B2VWN,13,400,true,"https://www.amazon.com/Bio-Advanced-Bowel-Support-Capsules/DP/B0CN7B2VWN
+
+$13
+800 available 
+MOQ 400
+42.92% ROI",2025-11-19 20:58:14+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/71epQQynaaL._AC_SL1500_.jpg,"Bio-K+ Advanced Bowel Support Probiotic – 50 Billion CFU – Vegan, Gluten-Free, Non-GMO – Supports Digestive Health & Regularity – for Men & Women – 20 Capsules",15.21,4.30,104,31702,"Health, Household & Baby Care",-4.32,-33.24,-28.41,0,enriched,2025-11-28 23:41:27.515012+00,,true,true,21,63,,2.20,2.20,4.90,0.75,FBA Inbound,true,"Sold by Amazon - high competition; Low sales velocity (21 units/month); Low sales rank (#31,702)",-4.32,19.53,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,178,,true,,,
+1848,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13108,B013PSHZQ0,10,5000,true,"https://www.amazon.com/dp/B013PSHZQ0?ref=undefined&th=1
+
+$10 
+5000 available 
+795 (1%) BSR 
+39.40% ROI 
+Monthly Sales 3k+",2025-11-19 20:53:37+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/71-1WPtfP0L._SL1500_.jpg,"ChapStick Bulk Lip Balm, Candy Cane, 12-Pack – Fresh & Minty Lip Moisturizer, Stocking Stuffer, 0.15 Oz Ea Candy Cane 12 Count (Pack of 1)",20.99,4.90,8721,1049,Beauty & Personal Care,3.59,35.91,17.11,52,enriched,2025-11-28 23:41:41.191251+00,,false,true,124,372,,,,,0.75,FBA Inbound,false,,3.59,17.40,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,7,,true,,,
+1849,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13107,B0DMP6GSTH,10,,true,"https://www.amazon.com/BUBO-Equivalent-Bathroom-Daylight-Non-Dimmable/DP/B0DMP6GSTH/?th=1
+
+$10 
+489 available 
+Take all 
+BSR 26k (1%)
+96.50% ROI",2025-11-19 20:24:39+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/61HULrKDL7L._AC_SL1500_.jpg,"BUBO Vanity Light Bulbs for Bathroom Over Mirror, 60 Watt Equivalent, Soft White 2700K, G25 Globe Light Bulb 800 Lumens, Round Bulb with E26 Medium Base, 7W, Non-Dimmable, 12 Pack Soft White 12 Pack",33.29,4.60,165,,Tools & Home Improvement,13.55,135.47,40.69,100,enriched,2025-11-28 23:41:49.291279+00,,true,true,82,246,1.20,12.60,9.93,3.25,0.75,FBA Inbound,true,Sold by Amazon - high competition,13.55,19.74,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,218,,true,,,
+1850,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13106,B07SVF89W9,12,500,false,"https://www.amazon.com/dp/B07SVF89W9?th=1
+
+$12
+MOQ 500 
+BSR 10k (1%)
+44.33% ROI 
+Monthly Sales 1k+",2025-11-19 19:36:17+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/71qnmsRmNbL._SL1500_.jpg,"ZitSticka Killa Pimple Patches for Face - World's Most Potent Pimple Patch with Fast-Acting Microdarts - Starts Working within 6 Hours for Deep, Early-Stage Zits - Regular 8 Count with Cleana Swab 8 Count (Pack of 1)",19.99,4.30,4130,10811,Beauty & Personal Care,0.74,6.18,3.71,10,enriched,2025-11-28 23:41:55.250912+00,,false,true,24,72,,,,,0.75,FBA Inbound,true,Low profit margin (3.7%); Low sales velocity (24 units/month),0.74,19.25,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,113,,true,,,
+1851,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13105,B01HI0B0YO,4.7,5000,false,"https://www.amazon.com/dp/B01HI0B0YO/
+
+$4.70 
+5k MOQ
+BSR 30k (1%)
+Monthly Sales 600+",2025-11-19 18:45:23+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/51iGes7VhEL._SL1500_.jpg,"L'Oreal Paris Voluminous Smoldering Eyeliner, Blackest Black (Packaging May Vary) 0.01 Fl Oz (Pack of 1)",9.99,4.50,1387,34830,Beauty & Personal Care,-0.46,-9.76,-4.59,0,enriched,2025-11-28 23:42:05.107042+00,,false,true,20,60,,0.51,1.88,7.06,0.75,FBA Inbound,true,"Low profit margin (-4.6%); Low sales velocity (20 units/month); Low sales rank (#34,830)",-0.46,10.45,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,197,,true,,,
+1852,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001586572844,13104,B0FCZFRV89,32,756,true,"https://www.amazon.com/dp/B0FCZFRV89?aod=1&th=1
+
+$32
+756 available 
+BSR 48k (1%)
+41.59% ROI",2025-11-19 17:35:54+00,2025-11-28 23:34:25.112862+00,✨️ Drachma Distribution ✨️,https://m.media-amazon.com/images/I/61y0LeyGfML._SL1468_.jpg,"LMNT Zero Sugar Electrolytes - | Drink Mix | 30-Count (30 count, lemonade) lemonade 0.2 Ounce (Pack of 30)",59.99,4.90,19,56852,Grocery & Gourmet Food,14.74,46.07,24.57,75,enriched,2025-11-28 23:42:09.979297+00,,false,true,19,57,,,,,0.75,FBA Inbound,true,"Low sales velocity (19 units/month); Poor sales rank (#56,852)",14.74,45.25,,5fe649bc-3e5c-4215-bced-d44f09bdfab5,149,,true,,,
+1853,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8037,B0FHC1M6PD,24,100,false,"$24
+MOQ: 100
+BSR: 1%
+https://www.amazon.com/DP/B0FHC1M6PD",2025-11-28 19:02:09+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/81xNZZN-oVL._AC_SL1500_.jpg,"Live It Up Super Greens Powder | All-Natural Plant-Based Superfood Blend w Probiotics, Digestive Enzymes | Supports Gut Health, Immunity, Energy, & Daily Wellness | No Added Sugar - Berry, 30 Servings Greens - Berry",42.39,4.20,117,9767,"Health, Household & Baby Care",7.78,32.42,18.36,54,enriched,2025-11-29 00:04:39.501039+00,,false,true,79,237,,,,,0.75,FBA Inbound,false,,7.78,34.61,,889fd825-97d2-4564-9bd1-65f1f8fec403,192,,true,,,
+1854,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8036,B0D26VLX8C,8,300,false,"$8
+QTY/MOQ: 600/300
+BSR: 1%
+https://www.amazon.com/DP/B0D26VLX8C",2025-11-28 19:02:09+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/618z1dwoXTL._AC_SL1000_.jpg,Granite Ware Open Roasting Pan with Flat Rack (Speckled Black) - Accommodates up to 25 lb poultry or roast. A- Rectangular Roaster w/rack 19 x12 x2.7 in.,41.71,4.10,131,,Home & Kitchen,20.65,258.17,49.52,100,enriched,2025-11-28 23:34:34.757547+00,,false,true,65,195,4.09,,,,1.80,FBA Inbound,false,,20.65,21.06,,889fd825-97d2-4564-9bd1-65f1f8fec403,134,,true,,,
+1855,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8035,B08ZYX72HK,25,300,true,"$25/unit
+MOQ: 300
+BSR: 1%
+https://www.amazon.com/DP/B08ZYX72HK/ref",2025-11-28 17:00:23+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/51Fw74V7I4L._AC_SL1280_.jpg,"Carbon Express Maxima RED Contour SD in Mossy Oak, 6-Pack of Fletched Arrows, Available in 350 & 400 Spine 400 Spine 6-pack fletched",69.97,4.50,51,49870,Sports & Outdoors,30.22,120.90,43.20,100,enriched,2025-11-29 00:04:45.710777+00,,false,true,19,57,,,,,0.75,FBA Inbound,true,"Low sales velocity (19 units/month); Low sales rank (#49,870)",30.22,39.75,,889fd825-97d2-4564-9bd1-65f1f8fec403,79,,true,,,
+1856,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8034,B000NV7ONM,11.5,300,false,"$11.50
+QTY/MOQ: 600/300
+https://www.amazon.com/DP/B000NV7ONM?",2025-11-28 17:00:22+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/717r8aHkP-L._AC_SL1500_.jpg,"Stearns Adult Life Vest, USCG Approved Type III Life Jacket, PFD for Boating, Swimming, Watersports, & More, Standard & Oversized Fits Oversized Fit Blue",39.53,4.60,9289,24434,Sports & Outdoors,17.35,150.87,43.89,100,enriched,2025-11-29 00:04:50.60691+00,,true,true,21,63,1.20,,,,0.75,FBA Inbound,true,"Sold by Amazon - high competition; Low sales velocity (21 units/month); Low sales rank (#24,434)",17.35,22.18,,889fd825-97d2-4564-9bd1-65f1f8fec403,127,,true,,,
+1857,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8033,B07MXG24MN,3,800,true,"Centrum Offer
+$3
+MOQ: 800
+BSR: 1%
+https://www.amazon.com/DP/B07MXG24MN?",2025-11-28 17:00:22+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/71EC06psu7L._AC_SL1500_.jpg,"Centrum Silver Adult (80 Count) Multivitamin/Multimineral Supplement Tablet, Vitamin D3, Age 50+",7.99,4.80,692,30725,"Health, Household & Baby Care",-0.46,-15.28,-5.74,0,enriched,2025-11-29 00:04:56.409799+00,,true,true,21,63,,,,,0.75,FBA Inbound,true,"Sold by Amazon - high competition; Low sales velocity (21 units/month); Low sales rank (#30,725)",-0.46,8.45,,889fd825-97d2-4564-9bd1-65f1f8fec403,88,,true,,,
+1858,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8032,B09F74ZSYK,3.5,1800,true,"**Centrum Offer**
+**
+**$3.5
+QTY/MOQ: 1800/900
+BSR: 1%
+
+https://www.amazon.com/DP/B09F74ZSYK",2025-11-28 17:00:21+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/71Ey8-QQWBL._AC_SL1500_.jpg,"Centrum Multivitamin for Women, Multivitamin/Multimineral Supplement with Iron, Vitamin D3, B Vitamins and Antioxidant Vitamins C and E, Gluten Free, Non-GMO Ingredients - 65 Count",9.34,4.50,27,45070,"Health, Household & Baby Care",0.19,5.40,2.02,6,enriched,2025-11-28 23:34:44.131722+00,,true,true,20,60,,,,,0.75,FBA Inbound,true,"Sold by Amazon - high competition; Low sales velocity (20 units/month); Low sales rank (#45,070)",0.19,9.15,,889fd825-97d2-4564-9bd1-65f1f8fec403,16,,true,,,
+1859,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8031,B00JK960X8,44,500,false,"$44
+MOQ: 500
+BSR: 1%
+
+https://www.amazon.com/DP/B00JK960X8?",2025-11-28 17:00:20+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/71OfwL21wfL._AC_SL1500_.jpg,"Calphalon Classic Stainless Steel Sauce Pan, 3.5-Quart, Impact-Bonded Aluminum Base, Stay-Cool Handles 3.5Qt Sauce Pan with Lid",,4.80,759,,Home & Kitchen,,,,,failed,2025-11-29 05:28:40.306419+00,,false,true,379,1137,4.60,,,,1.80,FBA Inbound,true,Low profit margin (0.0%),,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,889fd825-97d2-4564-9bd1-65f1f8fec403,234,,true,,,
+1860,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8030,B0BV12GBST,82,100,true,"**Calphaion Offer**
+$82/unit
+QTY/MOQ: 100/50
+BSR: 1%
+**
+**https://www.amazon.com/DP/B0BV12GBST?",2025-11-28 17:00:20+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/71faitiqL-L._AC_SL1500_.jpg,Calphalon Classic Hard-Anodized Nonstick Cookware Kitchen Essentials Set 6-Piece Nonstick w/ AquaShield™,179.99,4.40,74,,Home & Kitchen,63.49,77.43,35.28,100,enriched,2025-11-29 00:05:09.105242+00,,true,true,37,111,14.72,,,,2.50,FBA Inbound,true,Sold by Amazon - high competition,63.49,116.50,,889fd825-97d2-4564-9bd1-65f1f8fec403,45,,true,,,
+1861,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8029,B00XBXCU38,4,250,true,"**McVities Offer**
+
+$4
+MOQ: 250**
+**https://www.amazon.com/DP/B00XBXCU38",2025-11-28 17:00:19+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/6130a5FxuHL._SL1500_.jpg,McVities Rich Tea Biscuits 200g,14.70,4.20,945,,Grocery & Gourmet Food,4.24,106.12,28.88,100,enriched,2025-11-29 00:05:23.6479+00,,false,true,472,1416,,,,,0.75,FBA Inbound,false,,4.24,10.46,,889fd825-97d2-4564-9bd1-65f1f8fec403,10,,true,,,
+1862,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8028,B09GL3G8YD,7,400,true,"Heinz
+$7 2- pk
+MOQ: 400 2- pk
+BSR: 1%
+
+https://www.amazon.com/DP/B09GL3G8YD",2025-11-28 17:00:19+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/61+Yf9o+X3L._SL1500_.jpg,Heinz (United Kingdom) Salad Cream Squeeze Top down 425-gram 2-Pack Imported from UK,18.90,4.70,271,24166,Grocery & Gourmet Food,4.81,68.79,25.48,86,enriched,2025-11-29 00:05:28.976934+00,,false,true,22,66,,,,,0.75,FBA Inbound,true,"Low sales velocity (22 units/month); Low sales rank (#24,166)",4.81,14.08,,889fd825-97d2-4564-9bd1-65f1f8fec403,205,,true,,,
+1863,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8027,B00UAP5R7G,6.5,350,true,"**Cadbury Offer
+**$6.5
+Take all 350 - 6 pk
+
+https://www.amazon.com/DP/B00UAP5R7G",2025-11-28 17:00:18+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/516QewPnDBL._SL1000_.jpg,"Cadbury Dairy Milk Fruit and Nut Chocolate Bar, 49 g (Pack of 6)",14.99,4.20,160,38961,Grocery & Gourmet Food,1.99,30.64,13.29,42,enriched,2025-11-29 00:05:34.517398+00,,false,true,20,60,,0.39,0.39,0.39,0.75,FBA Inbound,true,"Low sales velocity (20 units/month); Low sales rank (#38,961)",1.99,13.00,,889fd825-97d2-4564-9bd1-65f1f8fec403,37,,true,,,
+1864,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8026,B00891G9AC,5.5,300,true,"$5.50
+Take all 300
+BSR: 1%
+https://www.amazon.com/DP/B00891G9AC/REF",2025-11-28 17:00:18+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/81YYpUqnGwL._SL1500_.jpg,Bird's Vanilla Flavored Custard Powder 600g (Pack of 2),21.94,4.50,800,36944,Grocery & Gourmet Food,8.90,161.80,40.56,100,enriched,2025-11-29 00:05:41.285082+00,,false,true,20,60,,,,,0.75,FBA Inbound,true,"Low sales velocity (20 units/month); Low sales rank (#36,944)",8.90,13.04,,889fd825-97d2-4564-9bd1-65f1f8fec403,131,,true,,,
+1865,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8025,B0B5HP3XXM,13,396,true,"$13
+Take all 396
+https://www.amazon.com/DP/B0B5HP3XXM?",2025-11-26 17:30:34+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/71+kJY12tSL._SL1500_.jpg,"DOVE MEN + CARE Cleansing Bar Soap Charcoal + Clove Oil 4 Count to Rebuild Skin in the Shower, a 4in1 Hair, Body, Face & Shaving Bar with Plant-Based Cleanser and Natural Oils 5 oz Charcoal & Clove Oil 5 Ounce (Pack of 4)",33.11,4.50,2460,15607,Beauty & Personal Care,10.89,83.80,32.90,100,enriched,2025-11-29 00:05:48.159604+00,,true,true,23,69,,2.50,3.63,5.49,0.75,FBA Inbound,true,Sold by Amazon - high competition; Low sales velocity (23 units/month),10.89,22.22,,889fd825-97d2-4564-9bd1-65f1f8fec403,216,,true,,,
+1866,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8024,B0DJG58YNX,12,400,false,"$12
+MOQ: 400
+
+https://www.amazon.com/Solid-Gold-Freeze-Dried-Food/DP/B0DJG58YNX/reff",2025-11-26 17:30:33+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/81e33l7Z3LL._AC_SL1500_.jpg,"Solid Gold Freeze Dried Dog Food - W/Real Beef, Pumpkin & Superfoods - Freeze Dried Raw Dog Food Toppers for Picky Eaters to Serve as a Nutrient-Dense Meal Topper or High Protein Treats - 12oz 12 Ounce (Pack of 1)",26.06,4.50,717,1723,Pet Supplies,5.90,49.17,22.64,71,enriched,2025-11-28 23:35:45.949241+00,,false,true,112,336,,,,,0.75,FBA Inbound,false,,5.90,20.16,,889fd825-97d2-4564-9bd1-65f1f8fec403,145,,true,,,
+1867,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8023,5281113148,17.0,300,false,"$17
+MOQ: 300
+https://www.walmart.com/ip/Power-Saber-Energy-Blade-Red-with-Realistic-Safe-Battle-Action/5281113148?",2025-11-26 17:30:33+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,,,,,,,,,,,,failed,2025-11-29 05:27:53.243666+00,,false,true,,,,,,,0.75,FBA Inbound,true,Low profit margin (0.0%),,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,889fd825-97d2-4564-9bd1-65f1f8fec403,159,,true,,,
+1868,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8022,5369411622,17.5,300,false,"$17.50
+MOQ: 300
+https://www.walmart.com/ip/Power-Saber-Energy-Blade-Green-with-Realistic-Safe-Battle-Action/5369411622",2025-11-26 17:30:32+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,,,,,,,,,,,,failed,2025-11-29 05:27:30.695253+00,,false,true,,,,,,,0.75,FBA Inbound,true,Low profit margin (0.0%),,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,889fd825-97d2-4564-9bd1-65f1f8fec403,200,,true,,,
+1869,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8021,B0001YXFFM,6.1,300,true,"$6.10
+QTY/MOQ: 600/300
+BSR: 1%
+https://www.amazon.com/DP/B0001YXFFM/ref",2025-11-26 17:30:32+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/71Jf8PGbmtL._AC_SL1500_.jpg,"Honeywell UVEX Stealth Safety Goggles with Clear Uvextreme Anti-Fog Lens, Gray Body & Neoprene Headband (S3960C), Universal",21.75,4.50,7318,,Tools & Home Improvement,8.14,133.40,37.41,100,enriched,2025-11-28 23:35:25.29017+00,,false,true,3659,10977,,8.00,4.00,4.00,0.75,FBA Inbound,false,,8.14,13.61,,889fd825-97d2-4564-9bd1-65f1f8fec403,76,,true,,,
+1870,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8020,B00CTSY6G0,15,300,true,"$15
+TAKE ALL 300 Units
+BSR: 16K
+Used like New
+https://www.amazon.com/DP/B00CTSY6G0?th=1",2025-11-26 17:30:31+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/51Qv0ZDoKqS._AC_SL1500_.jpg,"Honeywell Home RTH2300B1038 5-2 Day Programmable Thermostat, White 2.50 L x 6.38 W x 7.94 H",53.95,4.40,10006,,Tools & Home Improvement,26.61,177.38,49.32,100,enriched,2025-11-29 00:05:55.192133+00,,false,true,5003,15009,,,,,0.75,FBA Inbound,false,,26.61,27.34,,889fd825-97d2-4564-9bd1-65f1f8fec403,257,,true,,,
+1871,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8019,B01A9HHQPK,11,70,true,"$11
+Take all 70 Units
+BSR: 1%
+https://www.amazon.com/DP/B01A9HHQPK?th=1",2025-11-26 17:30:31+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/61FxoGe1kJL._AC_SL1500_.jpg,Bell Pint Toddler Bike Helmets Solid Pink,28.49,4.20,440,80926,Sports & Outdoors,8.97,81.51,31.47,100,enriched,2025-11-29 00:06:05.869685+00,,true,true,18,54,,,,,0.75,FBA Inbound,true,"Sold by Amazon - high competition; Low sales velocity (18 units/month); Poor sales rank (#80,926)",8.97,19.52,,889fd825-97d2-4564-9bd1-65f1f8fec403,215,,true,,,
+1872,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8018,B0DJG58YNX,12,1200,false,"$12
+QTY/MOQ: 1200/400
+BSR: 1K
+
+https://www.amazon.com/Solid-Gold-Freeze-Dried-Food/DP/B0DJG58YNX",2025-11-25 21:01:34+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/81e33l7Z3LL._AC_SL1500_.jpg,"Solid Gold Freeze Dried Dog Food - W/Real Beef, Pumpkin & Superfoods - Freeze Dried Raw Dog Food Toppers for Picky Eaters to Serve as a Nutrient-Dense Meal Topper or High Protein Treats - 12oz 12 Ounce (Pack of 1)",26.06,4.50,717,1723,Pet Supplies,5.90,49.17,22.64,71,enriched,2025-11-28 23:35:45.949241+00,,false,true,112,336,,,,,0.75,FBA Inbound,false,,5.90,20.16,,889fd825-97d2-4564-9bd1-65f1f8fec403,144,,true,,,
+1873,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8017,B0C3HCD34R,22,125,true,"$22 
+Take all 125 units
+bsr: 45
+https://www.amazon.com/DP/B0C3HCD34R",2025-11-25 21:01:33+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/610NdWdTLiL._AC_SL1500_.jpg,"Soundcore by Anker Q20i Hybrid Active Noise Cancelling Headphones, Wireless Over-Ear Bluetooth, 40H Long ANC Playtime, Hi-Res Audio, Big Bass, Customize via an App, Transparency Mode Black",37.99,4.60,43795,,Electronics,6.04,27.46,15.90,46,enriched,2025-11-29 00:06:14.855659+00,,false,true,21897,65691,,6.93,7.28,3.15,0.75,FBA Inbound,false,,6.04,31.95,,889fd825-97d2-4564-9bd1-65f1f8fec403,67,,true,,,
+1874,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8016,B09D8QYHND,13,125,true,"$13 
+Take all 125 Units
+BSR: 91
+https://www.amazon.com/DP/B09D8QYHND",2025-11-25 21:01:33+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/81r9yYqc9jL._AC_SL1500_.jpg,"Hartz Delectables Stew Lickable Wet Cat Treats for Adult & Senior Cats, Variety Pack, 30 Count Variety 1.4 Ounce (Pack of 30)",31.97,4.70,17379,81,Pet Supplies,8.57,65.96,26.82,88,enriched,2025-11-28 23:35:31.505482+00,,true,true,1111,3333,2.60,6.88,5.38,5.31,1.10,FBA Inbound,true,Sold by Amazon - high competition,8.57,23.40,,889fd825-97d2-4564-9bd1-65f1f8fec403,232,,true,,,
+1875,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8014,B08YD33YL6,5.25,400,true,"$5.25
+QTY/MOQ: 800/400
+BSR: 1%
+https://www.amazon.com/DP/B08YD33YL6?th=1",2025-11-25 21:01:32+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/71tt9B6VUJL._SL1500_.jpg,"Method Fragrance Booster, Ginger Mango, Keeps Clothes Fresh For Up to 12 weeks, 14.8 Ounces (Pack of 1) Ginger Mango 14.8 Ounce (Pack of 1)",,4.30,206,90933,Grocery & Gourmet Food,,,,,failed,2025-11-29 05:27:39.556706+00,,false,true,18,54,,2.31,8.75,3.44,0.75,FBA Inbound,true,"Low profit margin (0.0%); Low sales velocity (18 units/month); Poor sales rank (#90,933)",,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,889fd825-97d2-4564-9bd1-65f1f8fec403,161,,true,,,
+1876,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8013,B08VBVBS7N,27,200,true,"$27
+Take all 200
+https://www.amazon.com/DP/B08VBVBS7N?th=1",2025-11-25 21:01:31+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/71TwlJdAzlL._SL1300_.jpg,"Method Fragrance Booster, Ginger Mango, Keeps Clothes Fresh For Up to 12 weeks, 14.8 Ounces (Pack of 6) Ginger Mango 14.8 Ounce (Pack of 6)",55.99,4.20,84,90982,"Health, Household & Baby Care",16.34,60.52,29.19,91,enriched,2025-11-28 23:36:33.573689+00,,false,true,18,54,,10.75,5.13,9.63,0.75,FBA Inbound,true,"Low sales velocity (18 units/month); Poor sales rank (#90,982)",16.34,39.65,,889fd825-97d2-4564-9bd1-65f1f8fec403,14,,true,,,
+1877,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8012,B0DSL8YNDY,8,100,false,"$8/unit
+QTY/MOQ: 2000/100
+https://www.amazon.com/DP/B0DSL8YNDY?th=1",2025-11-25 21:01:31+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/71Qn4nBvyOL._AC_SL1500_.jpg,Portable Charger Power Bank - Travel Essentials Battery Pack 35W AC Plug GaN 10000mAh Built in Cable USB C Phone Fast Charging Powerbank Compatible with iPhone 16 15 14 13 iPad MacBook Samsung 10000mAh A-Grey,37.24,4.50,193,,All Departments,19.40,242.55,52.11,100,enriched,2025-11-29 00:06:23.43235+00,,true,true,96,288,,1.00,1.00,1.00,0.75,FBA Inbound,true,Sold by Amazon - high competition,19.40,17.84,,889fd825-97d2-4564-9bd1-65f1f8fec403,61,,true,,,
+1878,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8011,B07L3LXC8D,15,170,true,"$15
+Take all 170 units
+https://www.amazon.com/DP/B07L3LXC8D/",2025-11-25 21:01:30+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/71RU4rXKdtL._AC_SL1500_.jpg,Babyganics Diapers Size 5 | Latex & Chlorine Free | Formulated with Seed Oil Blend | Maximum Leak Control | 58 Diapers Bulk Pack Size 5 (58 Count),39.99,3.90,281,82757,"Health, Household & Baby Care",14.74,98.28,36.86,100,enriched,2025-11-29 00:06:28.601378+00,,false,true,18,54,,9.21,12.01,8.98,0.75,FBA Inbound,true,"Low sales velocity (18 units/month); Poor sales rank (#82,757)",14.74,25.25,,889fd825-97d2-4564-9bd1-65f1f8fec403,24,,true,,,
+1879,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8010,B0BVTHZVCB,45,650,true,"$45
+Take all 650 units
+BSR: 2%
+https://www.amazon.com/Hot-Mom-Electric-Automatic-Bluetooth/DP/B0BVTHZVCB",2025-11-25 21:01:30+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/81eJ1Hrz2uL._SL1500_.jpg,"Hot Mom Upgrade Cotton Electric Baby Bouncer for Infant,Bluetooth Baby Swing Enabled Automatic, Baby Rocker Inset Music Speaker, Baby Chair Intelligent Timing & LED Touch Screen (Charcoal Gray)",148.89,4.00,89,,Baby,74.06,164.57,49.74,100,enriched,2025-11-29 00:06:43.590848+00,,false,true,44,132,11.11,7.48,20.40,24.00,2.50,FBA Inbound,false,,74.06,74.83,,889fd825-97d2-4564-9bd1-65f1f8fec403,240,,true,,,
+1880,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8009,B08DJ7X5WC,2,300,false,"$2
+Take all 300 units
+Expired
+https://www.amazon.com/DP/B08DJ7X5WC",2025-11-25 20:24:02+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/617C28kbU6L._SL1200_.jpg,"Germ-X Moisturizing Original Hand Sanitizer, 32 oz 32 Fl Oz (Pack of 1)",13.99,4.50,425,,Beauty & Personal Care,5.64,282.08,40.33,100,enriched,2025-11-29 00:06:50.969089+00,,false,true,212,636,,,,,0.75,FBA Inbound,false,,5.64,8.35,,889fd825-97d2-4564-9bd1-65f1f8fec403,140,,true,,,
+1881,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8008,B0CB9BL5KS,18.25,350,false,"$18.25
+MOQ: 350
+BSR: 3K
+
+https://www.amazon.com/dog-food-toppers-treats/DP/B0CB9BL5KS?th=1",2025-11-25 17:00:11+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/71Q8rk5JNKL._AC_SL1500_.jpg,"Solid Gold Air Dried Dog Food Toppers for Dry Food - Healthy Dog Treats w/Real Chicken & Superfoods - Serve as a Complete Meal, Topper or Treats - Supports Muscle Growth, Immunity & Digestion - 2lb Chicken 2 Pound (Pack of 1)",39.19,4.60,1160,3453,Pet Supplies,9.96,54.58,25.42,80,enriched,2025-11-29 00:06:58.191307+00,,false,true,98,294,2.00,,,,1.10,FBA Inbound,false,,9.96,29.23,,889fd825-97d2-4564-9bd1-65f1f8fec403,180,,true,,,
+1882,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8007,B09SVPWPMV,18,350,false,"$18
+MOQ: 350
+BSR: 1%
+https://www.amazon.com/Miracle-Noodle-Keto-Meal-Calorie/DP/B09SVPWPMV",2025-11-25 17:00:11+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/81awLCcTjHL._AC_SL1500_.jpg,"Miracle Noodle Thai Peanut Ready To Eat Meal, 10 Oz (Pack of 6), Plant Based Shirataki Konjac Noodles, 70 Calories Per Serving, Low Carb, Gluten-Free",38.49,3.40,111,93474,Sports & Outdoors,10.47,58.15,27.19,85,enriched,2025-11-29 00:07:04.283245+00,,false,true,17,51,,,,,0.75,FBA Inbound,true,"Low sales velocity (17 units/month); Poor sales rank (#93,474)",10.47,28.02,,889fd825-97d2-4564-9bd1-65f1f8fec403,206,,true,,,
+1883,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8006,B09SVQGNLG,18,350,false,"$18
+MOQ: 350
+BSR: 7k
+https://www.amazon.com/Miracle-Noodle-Keto-Meal-Teriyaki/DP/B09SVQGNLG?th=1",2025-11-25 17:00:10+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/81gNaJrwqOL._SL1500_.jpg,"Miracle Noodle Ready to Eat Teriyaki Pasta, 9.2 Oz (Pack of 6), Plant Based Shirataki Konjac Noodles, 45 Calories, 3g Net Carbs Per Serving, Keto, Gluten-Free",38.49,4.00,3475,,Sports & Outdoors,10.47,58.15,27.19,85,enriched,2025-11-29 00:07:09.277601+00,,false,true,1737,5211,,,,,0.75,FBA Inbound,false,,10.47,28.02,,889fd825-97d2-4564-9bd1-65f1f8fec403,4,,true,,,
+1884,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8005,B0CY5JZNX2,6.5,400,true,"$6.5
+MOQ: 400
+https://www.amazon.com/Probiotic-Limosilactobacillus-fermentum-Vitamin-Shelf-Stable/dp/B0CY5JZNX2",2025-11-25 17:00:10+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/61jKElfBi8L._AC_SL1500_.jpg,"Bio K+ Daily Probiotic for Kids, Probiotic Powder with 500 CFU Limosilactobacillus fermentum LC40® and 60 IU Vitamin D3, Shelf-Stable, Non GMO, Gluten Free - 28 Single-Serve Packets Kids Probiotic",25.48,4.20,33,280008,"Health, Household & Baby Care",10.91,167.82,42.81,100,enriched,2025-11-29 00:07:15.524056+00,,true,true,15,45,,,,,0.75,FBA Inbound,true,"Sold by Amazon - high competition; Low sales velocity (15 units/month); Poor sales rank (#280,008)",10.91,14.57,,889fd825-97d2-4564-9bd1-65f1f8fec403,102,,true,,,
+1885,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8004,B0CHSHWLV8,3.1,800,true,"$3.1
+QTY/MOQ: 1600/800
+BSR: 1%
+
+https://www.amazon.com/Muddy-Bites-Chocolate-Waffle-Snack/DP/B0CHSHWLV8?th=1",2025-11-25 17:00:09+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/51hV4h3GLLL._SL1000_.jpg,"Muddy Bites - Dark Chocolate - Waffle Cone Snack Bite Sized Filled Cone Bites for Snack or Dessert Made with Cane Sugar, Kosher, Fair Trade Certified",11.12,4.20,127,24302,Grocery & Gourmet Food,2.10,67.81,18.90,72,enriched,2025-11-28 23:36:14.977225+00,,true,true,21,63,,,,,0.75,FBA Inbound,true,"Sold by Amazon - high competition; Low sales velocity (21 units/month); Low sales rank (#24,302)",2.10,9.02,,889fd825-97d2-4564-9bd1-65f1f8fec403,183,,true,,,
+1886,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8003,B0B1VWGZCF,3.5,400,true,"$3.5
+QTY/MOQ: 800/400
+BSR: 2%
+https://www.amazon.com/Clusterbucks-Superfood-Clusters-Keto-Friendly-Regeneratively/DP/B0B1VWGZCF?th=1",2025-11-25 17:00:09+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/81OUcAM1ceL._SL1500_.jpg,"Clusterbucks Superfood Clusters – Grain-Free, Keto-Friendly Granola with Regeneratively Grown Sprouted Buckwheat– Gluten-Free, Low-Carb, Organic Healthy Snack (6 Ounce (Pack of 1), Snickerdoodle) Snickerdoodle 6 Ounce (Pack of 1)",7.13,4.00,122,63486,Grocery & Gourmet Food,-1.69,-48.27,-23.70,0,enriched,2025-11-29 00:07:20.715792+00,,false,true,19,57,,,,,0.75,FBA Inbound,true,"Low profit margin (-23.7%); Low sales velocity (19 units/month); Poor sales rank (#63,486)",-1.69,8.82,,889fd825-97d2-4564-9bd1-65f1f8fec403,84,,true,,,
+1887,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8002,B083SD3MB9,3.35,450,false,"$3.35
+QTY/MOQ: 900/450
+BSR: 30K
+
+https://www.amazon.com/Lil-Bucks-Sprouted-Buckwheat-Grain-Free/DP/B083SD3MB9?th=1",2025-11-25 17:00:08+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/71uIm3AK35L._SL1500_.jpg,"Lil Bucks Sprouted Regeneratively Grown Buckwheat Seeds– Paleo Cereal, Gluten-Free Granola, High in Protein, Low Sugar, Organic Superseed Crunch (ORIGINAL, 1 Pack) ORIGINAL 6 Ounce (Pack of 1)",11.99,4.60,343,26960,Grocery & Gourmet Food,2.59,77.36,21.61,82,enriched,2025-11-29 00:07:26.926629+00,,false,true,21,63,,,,,0.75,FBA Inbound,true,"Low sales velocity (21 units/month); Low sales rank (#26,960)",2.59,9.40,,889fd825-97d2-4564-9bd1-65f1f8fec403,136,,true,,,
+1888,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8001,B083VVGHXC,3.25,400,true,"$3.25
+QTY/MOQ: 800/400
+BSR: 30K
+https://www.amazon.com/Lil-Bucks-Sprouted-Buckwheat-Grain-Free/DP/B083VVGHXC?th=1",2025-11-25 17:00:08+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/71ZXrsgb4OL._SL1500_.jpg,"Lil Bucks Sprouted Regeneratively Grown Buckwheat Seeds– Paleo Cereal, Gluten-Free Granola, High in Protein, Low Sugar, Organic Superseed Crunch (CINNAMON, 1 Pack) CINNAMON 6 Ounce (Pack of 1)",10.84,4.60,343,26960,Grocery & Gourmet Food,1.71,52.74,15.81,58,enriched,2025-11-29 00:07:32.201684+00,,false,true,21,63,,5.00,8.00,2.00,0.75,FBA Inbound,true,"Low sales velocity (21 units/month); Low sales rank (#26,960)",1.71,9.13,,889fd825-97d2-4564-9bd1-65f1f8fec403,109,,true,,,
+1889,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,8000,B083SD6Z6L,3.35,766,true,"$3.35
+QTY: 766
+BSR: 30K
+https://www.amazon.com/Lil-Bucks-Sprouted-Buckwheat-Grain-Free/DP/B083SD6Z6L?th=1/ref",2025-11-25 17:00:07+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/71NE5C49xCL._SL1500_.jpg,"Lil Bucks Sprouted Regeneratively Grown Buckwheat Seeds– Paleo Cereal, Gluten-Free Granola, High in Protein, Low Sugar, Organic Superseed Crunch (CACAO, 1 Pack) CACAO 6 Ounce (Pack of 1)",11.99,4.60,343,26960,Grocery & Gourmet Food,2.59,77.36,21.61,82,enriched,2025-11-29 00:07:38.821143+00,,false,true,21,63,,5.00,8.00,2.00,0.75,FBA Inbound,true,"Low sales velocity (21 units/month); Low sales rank (#26,960)",2.59,9.40,,889fd825-97d2-4564-9bd1-65f1f8fec403,29,,true,,,
+1890,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7999,B015YQOGYU,4,450,false,"$4
+QTY/MOQ: 900/450
+BSR: 2%
+https://www.amazon.com/Crock-Savory-Chicken-Seasoning-Packets/DP/B015YQOGYU",2025-11-25 17:00:07+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/81rsv6e0kRL._SL1500_.jpg,Crock Pot Savory Herb Chicken Seasoning Mix (Pack of 4) 1.5 oz Packets,11.99,4.30,310,44902,Grocery & Gourmet Food,1.94,48.54,16.19,57,enriched,2025-11-28 23:36:19.604411+00,,false,true,20,60,,,,,0.75,FBA Inbound,true,"Low sales velocity (20 units/month); Low sales rank (#44,902)",1.94,10.05,,889fd825-97d2-4564-9bd1-65f1f8fec403,132,,true,,,
+1891,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7998,B0DFD2WLJ8,4,600,false,"$4
+MOQ: 600
+BSR: 1%
+https://www.amazon.com/DP/B0DFD2WLJ8?",2025-11-25 17:00:06+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/71ZeHCOwMkL._SL1500_.jpg,Dove Whole Body Deodorant Aluminum Free pH Balancing Cream Raspberry & Rose for 72h Odor Control 2.5 Oz,11.98,4.10,601,40911,Beauty & Personal Care,1.93,48.32,16.14,56,enriched,2025-11-29 00:07:44.10669+00,,true,true,20,60,,1.53,2.34,5.40,0.75,FBA Inbound,true,"Sold by Amazon - high competition; Low sales velocity (20 units/month); Low sales rank (#40,911)",1.93,10.05,,889fd825-97d2-4564-9bd1-65f1f8fec403,164,,true,,,
+1892,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7997,B0C384976L,4.65,1000,false,"$4.65
+QTY/MOQ: 2000/1000
+BSR: 13K
+https://www.amazon.com/DP/B0C384976L",2025-11-25 17:00:05+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/81vBXPEjkAL._SL1500_.jpg,"THAYERS Soak It Up 80HR Liquid Moisturizer, Face Moisturizer with Hyaluronic Acid and Snow Mushroom, Dermatologist Tested Skin Care for Normal to Dry Skin, 2.5 Oz 2.5 Fl Oz (Pack of 1)",13.16,4.60,939,13429,Beauty & Personal Care,2.29,49.16,17.37,59,enriched,2025-11-28 23:36:27.906448+00,,true,true,24,72,,5.10,2.40,5.82,0.75,FBA Inbound,true,Sold by Amazon - high competition; Low sales velocity (24 units/month),2.29,10.87,,889fd825-97d2-4564-9bd1-65f1f8fec403,213,,true,,,
+1893,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7996,2962265771,14.0,500,false,"**Conair Offer**
+**
+**$14
+MOQ: 500
+BSR: 1%
+
+https://www.walmart.com/ip/Conair-Girlbomb-Lithium-Ion-Rechargeable-All-in-One-Electric-Shave-System-for-Bikini-Body-Face/2962265771?sid=04b972fb-8e80-48b6-bfc8-6883d31f7d1f",2025-11-25 14:52:47+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,,,,,,,,,,,,failed,2025-11-29 05:27:34.723449+00,,false,true,,,,,,,0.75,FBA Inbound,true,Low profit margin (0.0%),,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,889fd825-97d2-4564-9bd1-65f1f8fec403,158,,true,,,
+1894,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7995,B073Z9NF3Y,2.5,500,true,"$2.5/UNIT
+Take all 500 Units
+BSR: 5k
+https://www.amazon.com/dp/B073Z9NF3Y?th=1",2025-11-24 19:00:19+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/616dMJNOK2S._AC_SL1500_.jpg,"Pro Microphone Shock Mount - Mic Holder Compatible w/Blue Yeti, Snowball & Pro Microphones Black-2",10.49,4.50,3862,,Electronics,2.17,86.66,20.65,85,enriched,2025-11-29 00:07:50.556518+00,,false,true,1931,5793,,1.46,6.14,8.70,0.75,FBA Inbound,false,,2.17,8.32,,889fd825-97d2-4564-9bd1-65f1f8fec403,191,,true,,,
+1895,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7994,B07J6FWK57,2,275,true,"$2/UNIT
+QTY/MOQ: 550/275
+BSR: 1%
+https://www.amazon.com/DP/B07J6FWK57?th=1",2025-11-24 19:00:18+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/61Ju2NSnYfL._AC_SL1500_.jpg,"Hussell Car Charger Adapter - 3.0 Portable USB w/Fast Charge Technology & Dual Ports - Compatible w/Apple iPhone, Android, Tablet or Other USB Device - White Elephant, Stocking Stuffers",7.27,4.60,37578,,Electronics,-0.07,-3.53,-0.97,0,enriched,2025-11-29 00:08:04.682329+00,,false,true,18789,56367,,,,,0.75,FBA Inbound,true,Low profit margin (-1.0%),-0.07,7.34,,889fd825-97d2-4564-9bd1-65f1f8fec403,224,,true,,,
+1896,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7993,B01H2DESFK,5.25,300,false,"$5.25/unit
+QTY/MOQ: 600/300
+https://www.amazon.com/DP/B01H2DESFK?th=1",2025-11-24 19:00:18+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/815Wnev3mRL._AC_SL1500_.jpg,"Magical Flames Fire Color Packets (12 Pack), Vibrant Multi-Color Fire for Fire Pits, Campfires, Bonfires & Fireplaces - Camping Essentials & Outdoor Party Accessories",22.26,4.60,8839,,Garden & Outdoor,9.42,179.45,42.32,100,enriched,2025-11-29 00:08:12.426915+00,,false,true,4419,13257,,2.50,4.50,2.50,0.75,FBA Inbound,false,,9.42,12.84,,889fd825-97d2-4564-9bd1-65f1f8fec403,52,,true,,,
+1897,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7992,B0956734Z4,4,300,false,"$4/unit
+QTY/MOQ: 600/300
+BSR: 106
+https://www.amazon.com/DP/B0956734Z4?th=1",2025-11-24 19:00:17+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/8196O+fKVnL._AC_SL1500_.jpg,"Magical Flames Fire Color Packets (5 Pack), Vibrant Multi-Color Fire for Fire Pits, Campfires, Bonfires & Fireplaces - Camping Essentials & Outdoor Party Accessories Jumbo 5-Pack",10.99,4.60,43462,,Home & Kitchen,1.09,27.29,9.93,33,enriched,2025-11-29 00:08:19.141131+00,,false,true,21731,65193,,8.00,6.00,1.00,0.75,FBA Inbound,true,Low profit margin (9.9%),1.09,9.90,,889fd825-97d2-4564-9bd1-65f1f8fec403,95,,true,,,
+1898,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7991,B01LY5TRDF,3,400,true,"$3
+Take all 400 Units
+BSR: 1%
+https://www.amazon.com/DP/B01LY5TRDF",2025-11-24 19:00:17+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/715js5M-dSS._AC_SL1500_.jpg,"KT-Sports Exercise Bike Seat Cushion Comfort Gel Bicycle Seat Cover Padded Seat Covers for Bikes with Anti-Slip Design and Drawstring, Comfy Soft Mountain Road Bike Accessories for Men and Women",10.21,4.30,3180,25660,Sports & Outdoors,1.43,47.62,13.99,52,enriched,2025-11-29 00:08:27.877616+00,,false,true,21,63,,,,,0.75,FBA Inbound,true,"Low sales velocity (21 units/month); Low sales rank (#25,660)",1.43,8.78,,889fd825-97d2-4564-9bd1-65f1f8fec403,124,,true,,,
+1899,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7990,B00X691JA2,3,350,false,"$3
+QTY/MOQ: 700/350
+BSR: 8K
+https://www.amazon.com/DP/B00X691JA2?th=1",2025-11-24 19:00:16+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/71wyC2ARdXL._AC_SL1427_.jpg,"Compression Socks for Plantar Fasciitis & Achilles Tendonitis Relief – Pair of Ankle Compression Sleeves for Foot Swelling, Heel Spurs, Pain & Fatigue – Comfortable Arch Support Brace for Daily Use (White, Small) White Small",8.99,4.20,49092,9212,"Health, Household & Baby Care",0.39,13.05,4.35,15,enriched,2025-11-29 00:08:33.940969+00,,false,true,80,240,,6.00,4.00,1.00,0.75,FBA Inbound,true,Low profit margin (4.3%),0.39,8.60,,889fd825-97d2-4564-9bd1-65f1f8fec403,214,,true,,,
+1900,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7989,B075SMYK8N,3,200,true,"$3
+Take all 200 Units
+BSR: 8k
+https://www.amazon.com/DP/B075SMYK8N?th=1",2025-11-24 19:00:16+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/71mX45MhQYL._AC_SL1427_.jpg,"Compression Socks for Plantar Fasciitis & Achilles Tendonitis Relief – Pair of Ankle Compression Sleeves for Foot Swelling, Heel Spurs, Pain & Fatigue – Comfortable Arch Support Brace for Daily Use (Nude, X-Large) Nude X-Large",8.99,4.20,49092,9212,"Health, Household & Baby Care",0.39,13.05,4.35,15,enriched,2025-11-29 00:08:39.644301+00,,false,true,80,240,,,,,0.75,FBA Inbound,true,Low profit margin (4.3%),0.39,8.60,,889fd825-97d2-4564-9bd1-65f1f8fec403,186,,true,,,
+1901,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7988,B00X691L7I,2.75,400,true,"$2.75
+Take all 400 Units
+BSR: 8k
+https://www.amazon.com/DP/B00X691L7I?th=1",2025-11-24 19:00:15+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/71wyC2ARdXL._AC_SL1427_.jpg,"Compression Socks for Plantar Fasciitis & Achilles Tendonitis Relief – Pair of Ankle Compression Sleeves for Foot Swelling, Heel Spurs, Pain & Fatigue – Comfortable Arch Support Brace for Daily Use (White, Medium) White Medium",7.75,4.20,49092,9212,"Health, Household & Baby Care",-0.41,-15.00,-5.32,0,enriched,2025-11-29 00:08:46.327338+00,,false,true,80,240,,9.45,5.83,0.43,0.75,FBA Inbound,true,Low profit margin (-5.3%),-0.41,8.16,,889fd825-97d2-4564-9bd1-65f1f8fec403,219,,true,,,
+1902,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7987,B07F7NGWCC,2.5,450,true,"$2.50/unit
+QTY/MOQ: 900/450
+BSR: 1%
+
+https://www.amazon.com/DP/B07F7NGWCC?th=1",2025-11-24 19:00:15+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/819vJ79wtTL._AC_SL1500_.jpg,"E Tronic Edge Running Headbands for Men, Women, Boys and Girls, Sports Sweatbands for Basketball, Yoga, Exercise, Workout, Quick Drying and Non-Slip Workout Stretchy Hairband Black 1PACK",8.47,4.30,11171,235424,Sports & Outdoors,0.45,17.98,5.31,19,enriched,2025-11-29 00:08:54.77445+00,,true,true,15,45,,,,,0.75,FBA Inbound,true,"Sold by Amazon - high competition; Low sales velocity (15 units/month); Poor sales rank (#235,424)",0.45,8.02,,889fd825-97d2-4564-9bd1-65f1f8fec403,244,,true,,,
+1903,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7986,B07JK3N61P,3.75,500,true,"$3.75/unit
+500 Units take all
+BSR: 8K
+
+https://www.amazon.com/DP/B07JK3N61P?aod=1&th=1",2025-11-24 19:00:14+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/813xTOWLxcL._SL1500_.jpg,"McCormick Pure Pumpkin Pie Spice Blend Extract, 2 fl oz 2 Fl Oz (Pack of 1)",12.98,4.50,2172,9652,Grocery & Gourmet Food,3.03,80.88,23.37,87,enriched,2025-11-29 00:08:59.947818+00,,false,true,79,237,,1.10,2.16,4.94,0.75,FBA Inbound,false,,3.03,9.95,,889fd825-97d2-4564-9bd1-65f1f8fec403,117,,true,,,
+1904,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7985,B0B59D5VH8,3.65,700,true,"$3.65/unit
+MOQ: 700
+BSR: 1%
+
+https://www.amazon.com/DP/B0B59D5VH8?thh",2025-11-24 19:00:14+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/51hI3YBpDuL._SL1000_.jpg,"Better Than Bouillon Organic Seasoned Vegetable Base, 21 oz, 100 Servings, Original Version, (Pack of 1) COSTCO ONLY ITEM",14.85,4.70,459,15746,Grocery & Gourmet Food,4.72,129.38,31.80,100,enriched,2025-11-28 23:39:39.314028+00,,false,true,23,69,,3.50,3.50,4.70,0.75,FBA Inbound,true,Low sales velocity (23 units/month),4.72,10.13,,889fd825-97d2-4564-9bd1-65f1f8fec403,237,,true,,,
+1905,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7984,B07PGL6CT3,11,400,true,"$11
+Take all 400
+https://www.amazon.com/Mr-Clean-Procter-Gamble-Eraser/dp/B07PGL6CT3",2025-11-24 19:00:13+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/71KBR-JfrNL._AC_SL1500_.jpg,Mr. Clean 24376040 Mr Clean Magic Eraser Sheets Original 1-Pack (90618),23.95,4.50,2190,49491,"Health, Household & Baby Care",5.11,46.43,21.33,66,enriched,2025-11-29 00:09:05.628983+00,,false,true,19,57,,12.76,9.25,9.76,0.75,FBA Inbound,true,"Low sales velocity (19 units/month); Low sales rank (#49,491)",5.11,18.84,,889fd825-97d2-4564-9bd1-65f1f8fec403,259,,true,,,
+1906,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7983,B0D5JGFVSS,3.5,700,true,"$3.50
+MOQ: 700
+BSR: 1%
+
+https://www.amazon.com/Sambucol-Black-Elderberry-Night-Relief/dp/B0D5JGFVSS",2025-11-24 19:00:13+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/719WTBzCOFL._AC_SL1500_.jpg,"Sambucol Black Elderberry Day & Night Relief - Feel Better Faster, Cough & Mucus Relief for Adults, Immune Support, Non-Drowsy Daytime Relief, Restful Sleep, Melatonin-Free - 24 Capsules, 1 Pack",9.74,4.30,65,73862,"Health, Household & Baby Care",0.53,15.11,5.43,18,enriched,2025-11-29 00:09:11.372109+00,,false,true,18,54,,4.90,3.05,1.55,0.75,FBA Inbound,true,"Low profit margin (5.4%); Low sales velocity (18 units/month); Poor sales rank (#73,862)",0.53,9.21,,889fd825-97d2-4564-9bd1-65f1f8fec403,21,,true,,,
+1907,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7982,B00JY1H11W,7.5,350,true,"**Sambucol Offer
+**
+$7.5
+MOQ: 350
+BSR: 1%
+
+https://www.amazon.com/Black-Elderberry-Pastilles-Count-Sambucol/DP/B00JY1H11W",2025-11-24 19:00:12+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/71hK4wCu7IL._AC_SL1500_.jpg,"Sambucol Black Elderberry Throat Lozenge - With Honey, Vitamin C & Zinc, Elderberry Lozenges Sore Throat & Cough, Soothes Scratchy Throat, Supports Immunity, Soft & Chewy - 3-Pack (60 Total Pastilles) 20 Count (Pack of 3)",20.99,4.50,1399,62296,"Health, Household & Baby Care",6.84,91.22,32.59,100,enriched,2025-11-29 00:09:18.283637+00,,false,true,19,57,0.20,,,,0.50,FBA Inbound,true,"Low sales velocity (19 units/month); Poor sales rank (#62,296)",6.84,14.15,,889fd825-97d2-4564-9bd1-65f1f8fec403,199,,true,,,
+1908,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7981,B013Q8E3IM,4,600,true,"**Mucinex Offer**
+**
+**$4/unit
+Take all 600
+BSR: 12k
+EXP: 04/26
+
+https://www.amazon.com/DP/B013Q8E3IM?tH",2025-11-24 18:00:23+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/81eHfmFucrL._AC_SL1500_.jpg,"Mucinex Fast-Max Maximum Strength Cold, Flu & Sore Throat, Multi-Symptom Relief, Pain Reliever, Fever Reducer, Cough Suppressant, Expectorant, Nasal Decongestant, 16 Liquid Gels Cold, Flu & Sore Throat - Old 16 Count (Pack of 1)",13.29,4.80,2660,11914,"Health, Household & Baby Care",3.05,76.16,22.92,84,enriched,2025-11-28 23:38:46.48393+00,,false,true,24,72,,,,,0.75,FBA Inbound,true,Low sales velocity (24 units/month),3.05,10.24,,889fd825-97d2-4564-9bd1-65f1f8fec403,83,,true,,,
+1909,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7980,B0CBR3KRMB,4.25,1000,true,"$4.25
+QTY/MOQ: 2000/1000
+BSR: 4K
+Sale:S 2k+
+Exp: 04/26
+
+https://www.amazon.com/DP/B0CBR3KRMB",2025-11-24 18:00:22+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/61eJIasoe5L._SL1500_.jpg,"e.l.f. SKIN Suntouchable Whoa Glow SPF 30, Sunscreen & Makeup Primer For A Glowy Finish, Made With Hyaluronic Acid, Vegan & Cruelty-Free, Packaging May Vary, Sunlight 1.69 Ounce (Pack of 1) Sunlight",15.00,4.40,3381,4413,Beauty & Personal Care,4.25,100.00,28.33,100,enriched,2025-11-29 00:09:30.950161+00,,true,true,93,279,,,,,0.75,FBA Inbound,true,Sold by Amazon - high competition,4.25,10.75,,889fd825-97d2-4564-9bd1-65f1f8fec403,26,,true,,,
+1910,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7979,B0BCXDDR3H,17,300,false,"$17
+QTY/MOQ: 600/300
+BSR: 1%
+https://www.amazon.com/DP/B0BCXDDR3H/ref",2025-11-24 18:00:22+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/31gIhUbSHrL.jpg,Kopari Moisture Whipped Ceramide Cream | Hydrate and Restore | Vegan Ceramides and Moisture-Retaining Hyaluronic Acid | 2.1 oz,26.40,4.70,304,39220,Beauty & Personal Care,1.19,7.00,4.51,12,enriched,2025-11-28 23:36:01.808854+00,,false,true,20,60,,5.91,2.76,5.91,0.75,FBA Inbound,true,"Low profit margin (4.5%); Low sales velocity (20 units/month); Low sales rank (#39,220)",1.19,25.21,,889fd825-97d2-4564-9bd1-65f1f8fec403,96,,true,,,
+1911,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7978,B01MU1KNK9,5,400,true,"$5/unit
+QTY/MOQ: 800/400
+BSR: 1%
+https://www.amazon.com/DP/B01MU1KNK9/",2025-11-24 18:00:21+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/91dzZBgtdyL._AC_SL1500_.jpg,"Wilton Perfect Results Premium Non-Stick Pizza Pan, 14 Inch 14 in. Pizza Pan",20.93,4.70,14147,,Home & Kitchen,8.04,160.81,38.42,100,enriched,2025-11-29 00:09:37.997142+00,,false,true,7073,21219,1.19,,,,0.75,FBA Inbound,false,,8.04,12.89,,889fd825-97d2-4564-9bd1-65f1f8fec403,13,,true,,,
+1912,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7977,B0DRYM2624,60,126,false,"$60
+MOQ: 126 Units
+BSR: 1%
+https://www.amazon.com/DP/B0DRYM2624?t",2025-11-24 18:00:21+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/61qnLgyfj2L._AC_SL1500_.jpg,"Shaved Ice Machine, Portable Ice Maker with Rapid Cooling and Food-Grade Stainless Steel Material, Adjustable Snowflake Ice Making Speed, Ice Cream Maker for Home, Office, Restaurant, Bar, Party Black",169.99,3.00,59,,Home & Kitchen,75.99,126.65,44.70,100,enriched,2025-11-29 00:09:43.347856+00,,false,true,29,87,20.20,,,,3.50,FBA Inbound,true,Low sales velocity (29 units/month),75.99,94.00,,889fd825-97d2-4564-9bd1-65f1f8fec403,166,,true,,,
+1913,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7976,3592966010,5.0,600,false,"$5
+MOQ: 600
+
+https://www.walmart.com/ip/Sejoy-Rechargeable-Toothbrush-Electric-7-Tooth-Heads-for-Adults-Kids-Power-Sonic-Brush-Soft-Cleaning-3-Modes-Smart-Timer-Home-Travel-Gift-Navy/3592966010",2025-11-24 18:00:20+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,,,,,,,,,,,,failed,2025-11-29 05:28:01.088644+00,,false,true,,,,,,,0.75,FBA Inbound,true,Low profit margin (0.0%),,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,889fd825-97d2-4564-9bd1-65f1f8fec403,155,,true,,,
+1914,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7975,B0FP593CDY,30,150,true,"$30
+Take all 150 Units
+BSR: 1%
+
+https://www.amazon.com/DP/B0FP593CDY?th=1",2025-11-24 18:00:19+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/81p2Clm5EdL._AC_SL1500_.jpg,"6 Tier Rotating Bookshelf 360° Solid Wood Spinning Book Shelf Tower on Wheels Rolling Revolving Bookcase for Small Spaces, Corner, Bedroom, Kids Room, Office — Walnut",159.30,4.00,34,,Home & Kitchen,96.91,323.02,60.83,100,enriched,2025-11-29 00:09:49.475124+00,,false,true,17,51,40.00,,,,3.50,FBA Inbound,true,Low sales velocity (17 units/month),96.91,62.39,,889fd825-97d2-4564-9bd1-65f1f8fec403,42,,true,,,
+1915,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7974,B0CY5JZNX2,6,400,false,"$6
+MOQ: 400
+
+https://www.amazon.com/Probiotic-Limosilactobacillus-fermentum-Vitamin-Shelf-Stable/DP/B0CY5JZNX2",2025-11-24 18:00:19+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/61jKElfBi8L._AC_SL1500_.jpg,"Bio K+ Daily Probiotic for Kids, Probiotic Powder with 500 CFU Limosilactobacillus fermentum LC40® and 60 IU Vitamin D3, Shelf-Stable, Non GMO, Gluten Free - 28 Single-Serve Packets Kids Probiotic",25.48,4.20,33,280008,"Health, Household & Baby Care",11.41,190.13,44.77,100,enriched,2025-11-29 00:07:15.524056+00,,true,true,15,45,,,,,0.75,FBA Inbound,true,"Sold by Amazon - high competition; Low sales velocity (15 units/month); Poor sales rank (#280,008)",11.41,14.07,,889fd825-97d2-4564-9bd1-65f1f8fec403,47,,true,,,
+1916,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7973,B0CN7F4PY7,6,400,true,"$6/unit
+MOQ: 400
+BSR; 2%
+https://www.amazon.com/Bio-Womens-Health-30-Capsules/dp/B0CN7F4PY7",2025-11-24 18:00:18+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/716jtt6id6L._AC_SL1500_.jpg,"Bio K+ Women’s Health – Probiotic Supplement for Women Supports Vaginal & Urinary Tract Health with 2 Billion CFU 2 Strains, Vaginal Probiotics for Women – 30 Capsules",25.89,4.50,45,79548,"Health, Household & Baby Care",11.76,195.94,45.41,100,enriched,2025-11-29 00:09:56.755852+00,,true,true,18,54,,2.20,2.20,4.90,0.75,FBA Inbound,true,"Sold by Amazon - high competition; Low sales velocity (18 units/month); Poor sales rank (#79,548)",11.76,14.13,,889fd825-97d2-4564-9bd1-65f1f8fec403,263,,true,,,
+1917,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7972,B004T33D3A,2,1000,true,"$2
+QTY/MOQ: 1000/1000
+BSR: 1%
+
+https://www.amazon.com/DP/B004T33D3A?aod=1",2025-11-24 18:00:18+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/71YJ1jFSONL._AC_SL1500_.jpg,"Ecover Toilet Bowl Cleaner, Pine Fresh, 25 Ounce",9.99,4.60,2565,49826,"Health, Household & Baby Care",2.24,112.08,22.44,95,enriched,2025-11-29 00:10:02.033669+00,,false,true,19,57,,3.54,2.20,10.67,0.75,FBA Inbound,true,"Low sales velocity (19 units/month); Low sales rank (#49,826)",2.24,7.75,,889fd825-97d2-4564-9bd1-65f1f8fec403,129,,true,,,
+1918,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7971,B01FOW51KC,5,40,true,"$5
+Take all 40 
+BSR: 1%
+https://www.amazon.com/DP/B01FOW51KC?th=1",2025-11-21 17:02:10+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/61LGF33J+iL._AC_SL1500_.jpg,"Wireless Doorbell by SadoTech – Waterproof Door Bells & Chimes Wireless Kit, 1000-ft Range,52 Door Bell Chimes, 4 Volume Levels with LED, Wireless Doorbells w/ 2 Receiver & 2 Button, Crosspoint, White",15.19,4.50,2373,,Tools & Home Improvement,3.66,73.23,24.10,85,enriched,2025-11-29 00:10:16.211887+00,,false,true,1186,3558,,,,,0.75,FBA Inbound,false,,3.66,11.53,,889fd825-97d2-4564-9bd1-65f1f8fec403,258,,true,,,
+1919,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7970,B073ZGDY1R,2.5,180,true,"$2.5
+Take all 180 Units
+bsr: 302
+
+https://www.amazon.com/DP/B073ZGDY1R?th=1",2025-11-21 17:02:09+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/813XeYKZtXL._AC_SL1499_.jpg,"BergKoch Splatter Screen for Frying Pan - 9.5 Inch Stainless Steel Grease Splatter Guard - Cover Oil Splash when Sizzling Bacon, Cooking Fried Chicken or Popcorn",9.99,4.60,43482,,Home & Kitchen,1.74,69.66,17.43,70,enriched,2025-11-29 00:10:22.670907+00,,false,true,21741,65223,,,,,0.75,FBA Inbound,false,,1.74,8.25,,889fd825-97d2-4564-9bd1-65f1f8fec403,265,,true,,,
+1920,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7969,B016RAMIW4,18,125,true,"$18
+QTY: 125 Units
+BSR: 6K
+
+https://www.amazon.com/DP/B016RAMIW4?th=1",2025-11-21 17:02:09+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/A1neo1hQuyL._AC_SL1500_.jpg,"Dark Iron Fitness Weight Lifting Belt for Powerlifting Deadlift Training, Premium Leather for Core Support Gym Strength Workout Medium Black",49.97,4.70,24881,2746,Sports & Outdoors,19.72,109.58,39.47,100,enriched,2025-11-29 00:10:34.357472+00,,false,true,102,306,1.40,,,,0.75,FBA Inbound,false,,19.72,30.25,,889fd825-97d2-4564-9bd1-65f1f8fec403,238,,true,,,
+1921,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7968,B073Z9NF3Y,2.5,250,false,"$2.5
+QTY/MOQ: 500/250
+https://www.amazon.com/DP/B073Z9NF3Y?th=1",2025-11-21 17:02:08+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/616dMJNOK2S._AC_SL1500_.jpg,"Pro Microphone Shock Mount - Mic Holder Compatible w/Blue Yeti, Snowball & Pro Microphones Black-2",10.49,4.50,3862,,Electronics,2.17,86.66,20.65,85,enriched,2025-11-29 00:07:50.556518+00,,false,true,1931,5793,,1.46,6.14,8.70,0.75,FBA Inbound,false,,2.17,8.32,,889fd825-97d2-4564-9bd1-65f1f8fec403,169,,true,,,
+1922,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7967,B00X0P6MF4,3.5,300,true,"$3.5
+QTY/MOQ: 600/300
+BSR: 6K
+https://www.amazon.com/DP/B00X0P6MF4?th=1",2025-11-21 17:02:08+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/81iN5KdWnmL._AC_SL1500_.jpg,neon nights Glow in The Dark | Luminescent | Phosphorescent | Self-Luminous Paint - Set of 8 Glow-in-the-Dark Paint,14.39,4.00,36463,,"Arts, Crafts & Sewing",4.48,128.04,31.14,100,enriched,2025-11-29 00:10:42.407191+00,,false,true,18231,54693,,,,,0.75,FBA Inbound,false,,4.48,9.91,,889fd825-97d2-4564-9bd1-65f1f8fec403,195,,true,,,
+1923,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7966,B00CFXH4S6,4,200,false,"$4
+QTY/MOQ: 400/200
+BSR: 14K
+
+https://www.amazon.com/DP/B00CFXH4S6/ref",2025-11-21 17:02:07+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/61vz7ywb4YS._AC_SL1500_.jpg,"Pop Filter for Mic - 6-inch Diameter, Dual Layered Microphone Pop Screen for Studio Recording, Podcasts and Streaming - MPF-1 Desktop Microphone Compatible",18.99,4.50,5279,,Musical Instruments,7.89,197.29,41.56,100,enriched,2025-11-29 00:10:50.20545+00,,false,true,2639,7917,,11.81,5.91,0.51,0.75,FBA Inbound,false,,7.89,11.10,,889fd825-97d2-4564-9bd1-65f1f8fec403,202,,true,,,
+1924,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7965,B07JBGVPVK,6,600,true,"$6
+QTY: 600/600
+https://www.amazon.com/DP/B07JBGVPVK?",2025-11-21 17:02:07+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/71lS1sVtCUS._AC_SL1500_.jpg,"Method Laundry Detergent Packs, Free + Clear, 42 Count, 1 pack, Packaging May Vary Free + Clear 42 Count (Pack of 1)",16.99,4.50,1463,99257,"Health, Household & Baby Care",4.19,69.86,24.67,85,enriched,2025-11-29 05:27:45.984156+00,,false,true,17,51,,10.60,9.00,4.10,0.75,FBA Inbound,true,"Low sales velocity (17 units/month); Poor sales rank (#99,257)",4.19,12.80,,889fd825-97d2-4564-9bd1-65f1f8fec403,119,,true,,,
+1925,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7964,B08ZDH9BDR,28,100,true,"$28
+Take all 100
+BSR: 1%
+https://www.amazon.com/DP/B08ZDH9BDR",2025-11-21 17:02:06+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/51FgpsVLLKL._AC_SL1500_.jpg,"LiftMaster 878MAX Garage Door Keypad Wireless and Keyless Entry System for Easy Entry- Works only with LiftMaster Door Opener with Safety Sensor (Security+ 390 MHz, Security+ 315 MHz, Security+ 2.0)",,4.70,4091,,Tools & Home Improvement,,,,,failed,2025-11-29 05:27:52.060455+00,,false,true,2045,6135,,6.50,16.50,1.50,0.75,FBA Inbound,true,Low profit margin (0.0%),,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,889fd825-97d2-4564-9bd1-65f1f8fec403,44,,true,,,
+1926,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7963,B0D5D97V56,15,300,false,"$15
+MOQ: 300
+BSR: 7K
+https://www.amazon.com/DP/B0D5D97V56",2025-11-21 17:02:06+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/71khRqt69xL._AC_SL1500_.jpg,"Black Toaster 2 Slice, Extra Wide Slot Toaster for Bagels, Bread, Waffles, 7 Shade Settings, 4 Main Functions, Removable Crumb Tray, 900 Watts Toasters, Black Stainless Steel Black 2-Slice",36.99,4.20,1855,,Home & Kitchen,10.84,72.28,29.31,96,enriched,2025-11-29 00:11:07.82203+00,,false,true,927,2781,2.47,,,,1.10,FBA Inbound,false,,10.84,26.15,,889fd825-97d2-4564-9bd1-65f1f8fec403,128,,true,,,
+1927,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7961,B0BVLX15R2,12,160,false,"$12
+QTY/MOQ: 400/160
+BSR: 465
+Sales: 6k+
+https://www.amazon.com/DP/B0BVLX15R2?th",2025-11-21 12:04:15+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/71YdsncxTFL._SL1437_.jpg,"Baby Playpen 50x50 Inch, Play Pens for Babies and Toddlers Baby Fence Play Yards for Indoor & Outdoor with Breathable Mesh Anti-Fall Playpen Light Grey 50""x50""",37.98,4.50,4804,,Baby,13.48,112.36,35.50,100,enriched,2025-11-29 00:11:14.529653+00,,false,true,2402,7206,8.40,49.98,50.00,27.00,1.80,FBA Inbound,false,,13.48,24.50,,889fd825-97d2-4564-9bd1-65f1f8fec403,248,,true,,,
+1928,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7960,B0C9X83RZC,30,200,true,"Alvantor Offer
+$30/unit
+Take all 200 units
+BSR: 1%
+
+https://www.amazon.com/DP/B0C9X83RZC/ref",2025-11-19 18:00:07+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/816A3igEi2L._AC_SL1500_.jpg,"Alvantor Shower Tent Pop Up Changing Room Outdoor Shower Enclosure Pop Up Privacy Tent Toilet Tent Camping Dressing Portable Shelter Teflon Coating Fabric 4’x4’x7' Patent Pending, White Instant Pop Up",108.81,4.40,582,,Sports & Outdoors,58.24,194.13,53.52,100,enriched,2025-11-29 00:11:24.852969+00,,true,true,291,873,,,,,0.75,FBA Inbound,true,Sold by Amazon - high competition,58.24,50.57,,889fd825-97d2-4564-9bd1-65f1f8fec403,35,,true,,,
+1929,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7959,B0CN7F4PY7,8.5,1200,false,"$8.50
+QTY/MOQ: 1200/400
+
+https://www.amazon.com/Bio-Womens-Health-30-Capsules/DP/B0CN7F4PY7/ref",2025-11-19 18:00:06+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/716jtt6id6L._AC_SL1500_.jpg,"Bio K+ Women’s Health – Probiotic Supplement for Women Supports Vaginal & Urinary Tract Health with 2 Billion CFU 2 Strains, Vaginal Probiotics for Women – 30 Capsules",25.89,4.50,45,79548,"Health, Household & Baby Care",9.26,108.90,35.75,100,enriched,2025-11-29 00:09:56.755852+00,,true,true,18,54,,2.20,2.20,4.90,0.75,FBA Inbound,true,"Sold by Amazon - high competition; Low sales velocity (18 units/month); Poor sales rank (#79,548)",9.26,16.63,,889fd825-97d2-4564-9bd1-65f1f8fec403,160,,true,,,
+1930,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7958,B0CN7B2VWN,8.5,400,true,"$8.50
+QTY/MOQ: 800/400
+BSR: 1%
+
+https://www.amazon.com/Bio-Advanced-Bowel-Support-Capsules/DP/B0CN7B2VWN",2025-11-19 18:00:06+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/71epQQynaaL._AC_SL1500_.jpg,"Bio-K+ Advanced Bowel Support Probiotic – 50 Billion CFU – Vegan, Gluten-Free, Non-GMO – Supports Digestive Health & Regularity – for Men & Women – 20 Capsules",15.21,4.30,104,31702,"Health, Household & Baby Care",0.18,2.10,1.17,3,enriched,2025-11-28 23:41:27.515012+00,,true,true,21,63,,2.20,2.20,4.90,0.75,FBA Inbound,true,"Sold by Amazon - high competition; Low sales velocity (21 units/month); Low sales rank (#31,702)",0.18,15.03,,889fd825-97d2-4564-9bd1-65f1f8fec403,74,,true,,,
+1931,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7957,B00UO0X86E,4.5,350,true,"$4.5/unit
+QTY/MOQ: 700/350
+BSR: 2%
+https://www.amazon.com/Ensueno-Fabric-Softner-Baby/dp/B00UO0X86E",2025-11-19 18:00:05+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/61MrGjkt+YL._SL1200_.jpg,Ensueno Fabric Softner Baby,,4.70,581,318558,Grocery & Gourmet Food,,,,,failed,2025-11-29 05:28:06.195345+00,,false,true,14,42,,5.14,7.54,12.19,0.75,FBA Inbound,true,"Low profit margin (0.0%); Low sales velocity (14 units/month); Poor sales rank (#318,558)",,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,889fd825-97d2-4564-9bd1-65f1f8fec403,201,,true,,,
+1932,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7956,B0BMW87WPS,6,300,true,"$6/unit
+QTY/MOQ: 900/300
+BSR: 1%
+https://www.amazon.com/vH-essentials-Suppositories-Prebiotic-Freshness/DP/B0BMW87WPS",2025-11-19 18:00:05+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/71w+P6lTT+L._AC_SL1500_.jpg,"vH essentials Boric Acid Plus Vaginal Suppositories, Prebiotic Infused with Soothing Aloe Vera, pH Support Formula Fights Odor and Promotes Freshness, 600mg Boric Acid, 30 Count Nutritional Supplement",16.26,4.60,266,100260,"Health, Household & Baby Care",4.32,72.02,26.57,90,enriched,2025-11-29 00:11:37.359838+00,,true,true,17,51,0.11,2.40,2.40,4.40,0.50,FBA Inbound,true,"Sold by Amazon - high competition; Low sales velocity (17 units/month); Poor sales rank (#100,260)",4.32,11.94,,889fd825-97d2-4564-9bd1-65f1f8fec403,264,,true,,,
+1933,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7955,B00P2SHFX0,10,200,false,"$10
+QTY/MOQ: 400/200
+BSR: 1%
+https://www.amazon.com/DP/B00P2SHFX0?th=1",2025-11-19 18:00:04+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/71RqR0jKzEL._SL1500_.jpg,"Babyganics Foaming Hand Sanitizer Refill, Alcohol Free, Mandarin, Kills 99.9% of Common Bacteria, Moisturizing, 16 Fl Oz (Pack of 2) Mandarin 16 Fl Oz (Pack of 2)",32.99,4.80,4937,45357,"Health, Household & Baby Care",13.79,137.92,41.81,100,enriched,2025-11-28 23:41:20.920575+00,,false,true,20,60,,8.90,5.51,3.11,0.75,FBA Inbound,true,"Low sales velocity (20 units/month); Low sales rank (#45,357)",13.79,19.20,,889fd825-97d2-4564-9bd1-65f1f8fec403,125,,true,,,
+1934,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7954,B09C93BCDW,4.5,400,true,"$4.5/unit
+QTY/MOQ: 800/400
+BSR: 2%
+https://www.amazon.com/DP/B09C93BCDW",2025-11-19 18:00:04+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/81N4OEEEL0L._AC_SL1500_.jpg,"Mattel Games Say Anything Board Game for Teens, Adults & Parties with Question Cards, Dry Erase Scoreboard & More, 4 to 8 Players Ages 13 Years & Older",15.99,4.50,91,,Toys & Games,4.84,107.59,30.28,100,enriched,2025-11-29 00:11:46.001196+00,,false,true,45,135,,1.97,7.87,3.15,0.75,FBA Inbound,false,,4.84,11.15,,889fd825-97d2-4564-9bd1-65f1f8fec403,228,,true,,,
+1935,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7953,B07JBGVPVK,9.5,300,false,"$9.50
+QTY/MOQ: 600/300
+https://www.amazon.com/DP/B07JBGVPVK?th=1",2025-11-19 18:00:03+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/71lS1sVtCUS._AC_SL1500_.jpg,"Method Laundry Detergent Packs, Free + Clear, 42 Count, 1 pack, Packaging May Vary Free + Clear 42 Count (Pack of 1)",16.99,4.50,1463,99257,"Health, Household & Baby Care",0.69,7.28,4.07,11,enriched,2025-11-29 05:27:45.984156+00,,false,true,17,51,,10.60,9.00,4.10,0.75,FBA Inbound,true,"Low profit margin (4.1%); Low sales velocity (17 units/month); Poor sales rank (#99,257)",0.69,16.30,,889fd825-97d2-4564-9bd1-65f1f8fec403,116,,true,,,
+1936,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7952,B00J4036EE,5,200,true,"$5/unit
+QTY/MOQ: 400/200
+BSR: 1%
+https://www.amazon.com/DP/B00J4036EE?th=1",2025-11-19 18:00:03+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/51e6OJXTRmL._AC_SL1280_.jpg,BabyGanics Hand Sanitizer Mandarin Refill - 16 Ounces 16 Fl Oz (Pack of 1),20.17,4.60,442,87801,Beauty & Personal Care,7.89,157.89,39.14,100,enriched,2025-11-28 23:41:14.039963+00,,false,true,18,54,,8.50,3.50,2.10,0.75,FBA Inbound,true,"Low sales velocity (18 units/month); Poor sales rank (#87,801)",7.89,12.28,,889fd825-97d2-4564-9bd1-65f1f8fec403,151,,true,,,
+1937,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7951,B099X6H6BF,3.25,300,false,"$3.25
+QTY/MOQ: 600/300
+BSR: 1%
+
+https://www.amazon.com/DP/B099X6H6BF/ref",2025-11-19 17:00:28+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/61jHwejOULL._SL1500_.jpg,"Method Foaming Hand Wash, Hollyberry, 10 Fl Oz (Pack of 1)",10.00,4.40,33,81616,Beauty & Personal Care,1.00,30.77,10.00,35,enriched,2025-11-29 00:11:51.671311+00,,false,true,18,54,,,,,0.75,FBA Inbound,true,"Low sales velocity (18 units/month); Poor sales rank (#81,616)",1.00,9.00,,889fd825-97d2-4564-9bd1-65f1f8fec403,104,,true,,,
+1938,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7950,B01I6U4FNS,3,600,true,"$3
+QTY: 600
+BSR: 2%
+https://www.amazon.com/DP/B01I6U4FNS?aod=1",2025-11-19 17:00:28+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/81Y3--kCPUL._SL1500_.jpg,"McCormick Pure Lime Extract, 1 fl oz",3.99,4.70,712,37129,Grocery & Gourmet Food,-3.86,-128.62,-96.70,0,enriched,2025-11-29 00:12:10.335351+00,,false,true,20,60,,1.78,0.91,3.88,0.75,FBA Inbound,true,"Low profit margin (-96.7%); Low sales velocity (20 units/month); Low sales rank (#37,129)",-3.86,7.85,,889fd825-97d2-4564-9bd1-65f1f8fec403,137,,true,,,
+1939,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7949,B0076HIPCU,5.5,2000,true,"$5.5
+QTY: 2000
+EXP:  07/2025
+https://www.amazon.com/DP/B0076HIPCU",2025-11-19 17:00:27+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/71pIxacz7xL._SL1500_.jpg,"3M N95 Disposable Respirator, 9010, Pack of 50, Flat Fold, Individually Packaged, NIOSH Approved, Advanced Electrostatic Media, Stapled Headband, Soft Inner Layer",,4.30,2067,160697,Industrial & Scientific,,,,,failed,2025-11-29 05:28:45.654937+00,,false,true,16,48,,5.12,5.71,10.83,0.75,FBA Inbound,true,"Low profit margin (0.0%); Low sales velocity (16 units/month); Poor sales rank (#160,697)",,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,889fd825-97d2-4564-9bd1-65f1f8fec403,25,,true,,,
+1940,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7948,B08YD33YL6,5,400,true,"**Method Offer**
+**
+**$5/unit
+QTY/MOQ: 800/400
+BSR: 1%
+
+https://www.amazon.com/DP/B08YD33YL6?t",2025-11-19 17:00:27+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/71tt9B6VUJL._SL1500_.jpg,"Method Fragrance Booster, Ginger Mango, Keeps Clothes Fresh For Up to 12 weeks, 14.8 Ounces (Pack of 1) Ginger Mango 14.8 Ounce (Pack of 1)",,4.30,206,90933,Grocery & Gourmet Food,,,,,failed,2025-11-29 05:27:39.556706+00,,false,true,18,54,,2.31,8.75,3.44,0.75,FBA Inbound,true,"Low profit margin (0.0%); Low sales velocity (18 units/month); Poor sales rank (#90,933)",,,Unexpected error: cannot access local variable 'total_amazon_fees' where it is not associated with a value,889fd825-97d2-4564-9bd1-65f1f8fec403,253,,true,,,
+1941,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7947,B0B62785GP,2.9,350,true,"$2.9/unit
+QTY/MOQ: 700/350
+BSR: 1%
+https://www.amazon.com/DP/B0B62785GP/ref",2025-11-19 17:00:26+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/61nVeRL37xL._AC_SL1500_.jpg,Barbie Career Fashions Ballerina Outfit Set,9.83,4.50,47,,Toys & Games,1.21,41.57,12.26,45,enriched,2025-11-29 00:12:22.77262+00,,false,true,23,69,,0.39,4.25,5.12,0.75,FBA Inbound,true,Low sales velocity (23 units/month),1.21,8.62,,889fd825-97d2-4564-9bd1-65f1f8fec403,77,,true,,,
+1942,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7945,B0DMP73LG3,8,270,true,"**Bubo Offer**
+**
+**$8
+QTY: 270 Sets
+400kW
+BSR: 1%
+
+https://www.amazon.com/BUBO-Equivalent-Bathroom-Daylight-Non-Dimmable/dp/B0DMP73LG3/ref",2025-11-19 17:00:25+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/61fcpOBwwJL._AC_SL1500_.jpg,"BUBO Vanity Light Bulbs 60 Watt Equivalent, Bathroom Light Bulbs Cool White 4000K, G25 Globe Round Light Bulb 800 Lumens, E26 Medium Base, 7W, Non-Dimmable, 12 Pack Cool White 12 Pack",33.29,4.60,165,,Tools & Home Improvement,15.55,194.33,46.70,100,enriched,2025-11-29 00:12:30.669074+00,,true,true,82,246,1.21,12.60,9.93,3.25,0.75,FBA Inbound,true,Sold by Amazon - high competition,15.55,17.74,,889fd825-97d2-4564-9bd1-65f1f8fec403,239,,true,,,
+1943,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7944,B0DMP5C97P,7.5,358,true,"Bubo Offer
+
+$7.5/unit
+Take:  358 Sets
+300KW
+
+https://www.amazon.com/BUBO-Equivalent-Bathroom-Daylight-Non-Dimmable/DP/B0DMP5C97P",2025-11-19 17:00:24+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/61cLOcAq1jL._AC_SL1500_.jpg,"BUBO Vanity Light Bulbs 60 Watt Equivalent, Bathroom Light Bulbs Warm White 3000K, G25 Globe Round Bulb 800 Lumens, E26 Medium Base, 7W, Non-Dimmable, 12 Pack Warm White 12 Pack",33.29,4.60,165,,Tools & Home Improvement,16.05,213.95,48.20,100,enriched,2025-11-29 00:12:36.918441+00,,true,true,82,246,1.30,12.60,9.93,3.25,0.75,FBA Inbound,true,Sold by Amazon - high competition,16.05,17.24,,889fd825-97d2-4564-9bd1-65f1f8fec403,198,,true,,,
+1944,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001901235755,7943,B0DMP6GSTH,6.5,489,true,"**Bubo Offer**
+
+$6.5/unit
+Take all 489 sets
+BSR: 1%
+**
+**
+https://www.amazon.com/BUBO-Equivalent-Bathroom-Daylight-Non-Dimmable/DP/B0DMP6GSTH/",2025-11-19 17:00:24+00,2025-11-29 00:04:33.064288+00,Kay Wholesale Deals,https://m.media-amazon.com/images/I/61HULrKDL7L._AC_SL1500_.jpg,"BUBO Vanity Light Bulbs for Bathroom Over Mirror, 60 Watt Equivalent, Soft White 2700K, G25 Globe Light Bulb 800 Lumens, Round Bulb with E26 Medium Base, 7W, Non-Dimmable, 12 Pack Soft White 12 Pack",33.29,4.60,165,,Tools & Home Improvement,17.05,262.25,51.21,100,enriched,2025-11-28 23:41:49.291279+00,,true,true,82,246,1.20,12.60,9.93,3.25,0.75,FBA Inbound,true,Sold by Amazon - high competition,17.05,16.24,,889fd825-97d2-4564-9bd1-65f1f8fec403,65,,true,,,
+1945,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001550333872,3086,B0F6ZLZ3VJ,3.25,3024,true,"https://www.amazon.com/Dawn-Kitchen-Brush-Button-Wand/DP/B0F6ZLZ3VJ
+Price: $3.25
+Take all: 3024
+
+ROI: 50%
+Inquire: @YasAttrah @AurelienLairmore",2025-11-26 18:10:08+00,2025-11-29 03:37:56.812642+00,Elite Supply,https://m.media-amazon.com/images/I/41iWCZCEbuL._AC_SL1100_.jpg,Dawn Kitchen Brush Button Wand,12.73,3.60,10,,Home & Kitchen,3.32,102.17,26.08,100,enriched,2025-11-29 03:38:02.322707+00,,false,true,5,15,,,,,0.75,FBA Inbound,true,Very low sales velocity (5 units/month),3.32,9.41,,99478ca1-58b8-43b9-a523-cb53bf73782a,252,,true,,,
+1946,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001550333872,3085,B08VQCQMK6,15.5,756,false,"https://www.amazon.com/5-hour-ENERGY-Extra-Strength-Watermelon/dp/B08VQCQMK6
+Price: $15.50
+756 Units Take All
+
+ROI: 44%
+Inquire: @AurelienLairmore @YasAttrah",2025-11-24 21:14:45+00,2025-11-29 03:37:56.812642+00,Elite Supply,https://m.media-amazon.com/images/I/517JGwtoVuL.jpg,"5-hour ENERGY Shot, Extra Strength, Watermelon, 1.93 oz, 12 pack",29.99,4.80,5,149027,Grocery & Gourmet Food,5.74,37.04,19.14,57,enriched,2025-11-29 03:38:06.439957+00,,false,true,16,48,,,,,0.75,FBA Inbound,true,"Low sales velocity (16 units/month); Poor sales rank (#149,027)",5.74,24.25,,99478ca1-58b8-43b9-a523-cb53bf73782a,266,,true,,,
+1947,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001550333872,3084,B076VMC1HT,3,4900,false,"⭐️**Christmas Offer** ⭐️
+https://www.amazon.com/DP/B076VMC1HT
+Price: $3
+MOQ: 4900
+
+Sales: 1k+/mo
+ROI: 53%
+Inquire: @YasAttrah @AurelienLairmore",2025-11-24 18:31:01+00,2025-11-29 03:37:56.812642+00,Elite Supply,https://m.media-amazon.com/images/I/61u3EhicbtL._SL1226_.jpg,"Chapstick Holiday Collection 2017, Pack of 3, Holiday Cinnamon, Caramel Creme & Holiday Cocoa, 0.15 Oz Ea",7.70,4.60,1282,15203,Beauty & Personal Care,-0.71,-23.50,-9.16,0,enriched,2025-11-29 03:38:11.766081+00,,false,true,23,69,,4.92,2.95,0.71,0.75,FBA Inbound,true,Low profit margin (-9.2%); Low sales velocity (23 units/month),-0.71,8.41,,99478ca1-58b8-43b9-a523-cb53bf73782a,261,,true,,,
+1948,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001550333872,3083,B00112ILZM,6.5,,true,"**Amazing Grass Green Blend
+**https://www.amazon.com/DP/B00112ILZM
+Price: $6.50
+Available: 2500
+
+Sales: 10k+/mo
+ROI: 38%
+Inquire: @YasAttrah @AurelienLairmore",2025-11-24 18:25:42+00,2025-11-29 03:37:56.812642+00,Elite Supply,https://m.media-amazon.com/images/I/81VWclIZ+3L._AC_SL1500_.jpg,"Amazing Grass Greens Blend Superfood: Greens Powder Mix for Energy, with Organic Spirulina, Chlorella, Beet Root Powder, Digestive Enzymes & Probiotics, Original, 30 Servings (Packaging May Vary) Original 30 Servings",15.74,4.50,35352,1668,"Health, Household & Baby Care",2.63,40.45,16.70,54,enriched,2025-11-29 03:38:19.172316+00,,true,true,113,339,,3.50,3.50,4.50,0.75,FBA Inbound,true,Sold by Amazon - high competition,2.63,13.11,,99478ca1-58b8-43b9-a523-cb53bf73782a,165,,true,,,
+1949,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001550333872,3082,B009D028GC,23,500,true,"https://www.amazon.com/dp/B009D028GC
+Price: $23
+MOQ: 500
+Available: 1500
+
+Sales: 500+/mo
+ROI: 45%
+Inquire: @YasAttrah @AurelienLairmore",2025-11-24 18:11:13+00,2025-11-29 03:37:56.812642+00,Elite Supply,https://m.media-amazon.com/images/I/81j+RkvekAS._SL1500_.jpg,"Seventh Generation Baby Wipes, 768 count, Made for Sensitive Skin, Refill with Tape Seal, 64 Count (Pack of 12)",44.99,4.60,8680,4141,"Health, Household & Baby Care",10.99,47.79,24.43,74,enriched,2025-11-28 23:40:39.131211+00,,false,true,94,282,,15.80,9.40,8.00,0.75,FBA Inbound,false,,10.99,34.00,,99478ca1-58b8-43b9-a523-cb53bf73782a,73,,true,,,
+1950,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001550333872,3081,B0C34Z5PDS,30,1000,true,"https://www.amazon.com/dp/B0C34Z5PDS
+Price: $30
+MOQ: 1000 **Ready to ship**
+Available: 3000
+
+Sales: 800+/mo
+ROI: 162% ⭐️🔥
+All original seal cases brand new
+Inquire: @YasAttrah @AurelienLairmore",2025-11-24 17:43:47+00,2025-11-29 03:37:56.812642+00,Elite Supply,https://m.media-amazon.com/images/I/51Rp4eLYGuL._SL1500_.jpg,Beachwaver B1 Rotating Curling Iron - Automatic 1 Inch Ceramic Curling Iron - Easy-to-Use Spinning Wand for Long-Lasting Waves - Auto-Shut Off and Dual Voltage (BW160) Midnight Rose,99.00,4.60,412,17981,Beauty & Personal Care,49.90,166.33,50.40,100,enriched,2025-11-29 03:38:25.734802+00,,true,true,23,69,,16.54,3.54,2.36,0.75,FBA Inbound,true,Sold by Amazon - high competition; Low sales velocity (23 units/month),49.90,49.10,,99478ca1-58b8-43b9-a523-cb53bf73782a,53,,true,,,
+1951,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001550333872,3080,B004T33D3A,2.25,3000,true,"https://www.amazon.com/dp/B004T33D3A
+Price: $2.25
+MOQ: 3k units
+Available: 9700
+
+Sales: 600+/mo
+ROI: 40%
+Inquire: @YasAttrah @AurelienLairmore",2025-11-24 17:39:02+00,2025-11-29 03:37:56.812642+00,Elite Supply,https://m.media-amazon.com/images/I/71YJ1jFSONL._AC_SL1500_.jpg,"Ecover Toilet Bowl Cleaner, Pine Fresh, 25 Ounce",9.99,4.60,2565,49826,"Health, Household & Baby Care",1.99,88.51,19.93,84,enriched,2025-11-29 00:10:02.033669+00,,false,true,19,57,,3.54,2.20,10.67,0.75,FBA Inbound,true,"Low sales velocity (19 units/month); Low sales rank (#49,826)",1.99,8.00,,99478ca1-58b8-43b9-a523-cb53bf73782a,193,,true,,,
+1952,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001550333872,3079,B08H3TSP2X,3.5,40000,true,"https://www.amazon.com/Maybelline-Sensational-Ultimatte-Lightweight-Comfortable/dp/B08H3TSP2X
+Price: $3.50
+Available: 40k units
+
+ROI: 72%
+Inquire: @AurelienLairmore @YasAttrah",2025-11-24 17:35:19+00,2025-11-29 03:37:56.812642+00,Elite Supply,https://m.media-amazon.com/images/I/71k0CuF-hkL._SL1500_.jpg,"Maybelline Color Sensational Ultimatte Matte Lipstick, Non-Drying, Intense Color Pigment, More Truffle, Cocoa Brown, 1 Count 999 MORE TRUFFLE 0.06 Ounce (Pack of 1)",5.50,4.40,10197,3683,Beauty & Personal Care,-3.07,-87.86,-55.91,0,enriched,2025-11-28 23:36:44.378683+00,,true,true,96,288,,0.56,0.56,4.25,0.75,FBA Inbound,true,Sold by Amazon - high competition,-3.07,8.57,,99478ca1-58b8-43b9-a523-cb53bf73782a,108,,true,,,
+1953,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001550333872,3078,B0798LCJK9,260,165,false,"https://www.amazon.com/Dyson-Cyclone-Lightweight-Cordless-Cleaner/DP/B0798LCJK9
+Price: $260
+165 Units Take All
+
+ROI: 76%
+Inquire: @AurelienLairmore @YasAttrah",2025-11-24 02:20:44+00,2025-11-29 03:37:56.812642+00,Elite Supply,https://m.media-amazon.com/images/I/51cuDJmpF+L._AC_SL1000_.jpg,"Dyson V10 Cordless Stick Vacuum Cleaner: 14 Cyclones, Fade-Free Power, Whole Machine Filtration, Hygienic Bin Emptying, Wall Mounted, Up to 60 Min Runtime, Purple",586.88,4.40,6005,,Home & Kitchen,232.05,89.25,39.54,100,enriched,2025-11-29 03:38:32.342184+00,,false,true,3002,9006,5.86,,,,1.80,FBA Inbound,false,,232.05,354.83,,99478ca1-58b8-43b9-a523-cb53bf73782a,217,,true,,,
+1954,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001550333872,3077,B009P6632O,16,79,true,"https://www.amazon.com/OmegaXL-Joint-Relief-Supplement-Drug-Free/dp/B009P6632O
+Price: $16
+Available: 79k units
+
+Sales: 14k+/ month
+ROI: 78%
+Inquire: @AurelienLairmore @YasAttrah",2025-11-23 02:40:49+00,2025-11-29 03:37:56.812642+00,Elite Supply,https://m.media-amazon.com/images/I/61drgZPcNoL._AC_SL1500_.jpg,"OmegaXL Joint Support Supplement, for Relief - Natural Muscle Support, Green Lipped Mussel Oil, Soft Gel Pills, Drug-Free, 60 Count 60 Count (Pack of 1)",38.46,4.20,36383,658,"Health, Household & Baby Care",12.44,77.76,32.35,100,enriched,2025-11-29 03:38:39.411108+00,,false,true,142,426,,1.75,1.50,3.00,0.75,FBA Inbound,false,,12.44,26.02,,99478ca1-58b8-43b9-a523-cb53bf73782a,30,,true,,,
+1955,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001550333872,3076,B0DWJLBKQR,3.1,3000,true,"https://www.amazon.com/NESCAF%C3%89-Espresso-Concentrate-Instant-Coffee/DP/B0DWJLBKQR?th=1
+Price: $3.10
+MOQ: 3k units
+Available: 17k units
+
+Sales: 4k+/month
+ROI: 43%
+Inquire: @AurelienLairmore @YasAttrah",2025-11-21 15:49:03+00,2025-11-29 03:37:56.812642+00,Elite Supply,https://m.media-amazon.com/images/I/81Uf+gyDMQL._SL1500_.jpg,"NESCAFÉ Espresso Concentrate Black, Instant Espresso Coffee Concentrate, Cold Brew Style, Iced Coffee Style Drinks, 10 fl oz Unflavored 10 Fl Oz (Pack of 1)",7.97,4.40,807,1604,Grocery & Gourmet Food,-0.58,-18.56,-7.22,0,enriched,2025-11-29 03:38:45.534042+00,,true,true,114,342,,,,,0.75,FBA Inbound,true,Sold by Amazon - high competition,-0.58,8.55,,99478ca1-58b8-43b9-a523-cb53bf73782a,235,,true,,,
+1956,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001550333872,3075,B09XVP32FJ,9,,true,"https://www.amazon.com/LEGO-Decoration-Building-Creative-Activity/dp/B09XVP32FJ
+Price: $9
+Available: 4k
+
+ROI: 64%
+Inquire: @YasAttrah @AurelianLairmore",2025-11-20 20:50:31+00,2025-11-29 03:37:56.812642+00,Elite Supply,https://m.media-amazon.com/images/I/81M7YifjphL._AC_SL1500_.jpg,"LEGO DOTS Big Box 41960 Arts and Crafts Set for Kids Aged 6 Plus, DIY Desk Tidy Organizer or Toy Jewelry Storage Tray, Decoration Creative Activity",24.00,4.80,93,,Toys & Games,7.15,79.44,29.79,100,enriched,2025-11-29 03:38:51.740222+00,,false,true,46,138,,10.32,7.52,2.40,0.75,FBA Inbound,false,,7.15,16.85,,99478ca1-58b8-43b9-a523-cb53bf73782a,123,,true,,,
+1957,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001550333872,3074,B07F5YCD9Y,3,1000,true,"https://www.amazon.com/dp/B07F5YCD9Y
+Price: $3
+Take all: 1k units
+
+ROI: 79%
+Inquire: @YasAttrah @AurelianLairmore",2025-11-20 20:34:33+00,2025-11-29 03:37:56.812642+00,Elite Supply,https://m.media-amazon.com/images/I/51EmWyGj16L._SL1080_.jpg,"Shea Moisture, 100% Virgin Coconut Oil Daily Hydration Leave In Treatment, 3.3 Ounce",8.95,4.10,371,131051,Beauty & Personal Care,0.36,11.92,3.99,14,enriched,2025-11-29 03:38:56.953734+00,,false,true,17,51,,1.00,1.00,1.00,0.75,FBA Inbound,true,"Low profit margin (4.0%); Low sales velocity (17 units/month); Poor sales rank (#131,051)",0.36,8.59,,99478ca1-58b8-43b9-a523-cb53bf73782a,143,,true,,,
+1958,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001550333872,3073,B07GC86WMY,15.5,750,true,"**With supply chain!!** ⭐️⭐️
+https://www.amazon.com/MaryRuths-Vitamin-D3-K2-Calcium/dp/B07GC86WMY
+Price: $15.5
+Take all: 750 units
+
+Sales: 5k+/mo
+ROI: 38%
+Inquire: @YasAttrah @AurelienLairmore
+
+**With supply chain!!** ⭐️⭐️",2025-11-20 20:23:29+00,2025-11-29 03:37:56.812642+00,Elite Supply,https://m.media-amazon.com/images/I/81VkeHzkXoL._AC_SL1500_.jpg,"MaryRuth Organics Calcium with Vitamin D & Vitamin K2, 2 Month Supply, Calcium Supplement Supports Bone Health & Joint Support, with Vitamins D3 K2 Gummies, Vegan, Non-GMO, Gluten Free, 60 Count",29.95,3.90,4753,7580,"Health, Household & Baby Care",5.71,36.82,19.06,57,enriched,2025-11-29 03:39:03.379241+00,,false,true,83,249,,2.60,2.60,4.70,0.75,FBA Inbound,false,,5.71,24.24,,99478ca1-58b8-43b9-a523-cb53bf73782a,210,,true,,,
+1959,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001550333872,3072,B0DMWLS2YK,13,960,false,"https://www.amazon.com/dp/B0DMWLS2YK
+Price: $13
+Take all: 960 units
+
+ROI: 36%
+Sales: 1k+/mo
+Inquire: @YasAttrah @AurelienLairmore",2025-11-20 20:21:41+00,2025-11-29 03:37:56.812642+00,Elite Supply,https://m.media-amazon.com/images/I/719Ql6Hp4VL._AC_SL1500_.jpg,"Barbie Dream Besties Doll and Accessories, Zia Posable Fashion Doll with Removable Fashions & Wavy Brown Hair, 7 Hair & Moon Themed Pieces",24.99,4.70,117,,Toys & Games,3.99,30.70,15.97,48,enriched,2025-11-28 23:39:50.744413+00,,true,true,58,174,,2.76,11.73,1.34,0.75,FBA Inbound,true,Sold by Amazon - high competition,3.99,21.00,,99478ca1-58b8-43b9-a523-cb53bf73782a,184,,true,,,
+1960,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001550333872,3071,B009D028GC,22,4800,true,"https://www.amazon.com/dp/B009D028GC
+Price: $22
+Quantity: 4800
+
+ROI: 59%
+Sales: 500+/mo
+Inquire: @YasAttrah @AurelienLairmore",2025-11-20 20:20:18+00,2025-11-29 03:37:56.812642+00,Elite Supply,https://m.media-amazon.com/images/I/81j+RkvekAS._SL1500_.jpg,"Seventh Generation Baby Wipes, 768 count, Made for Sensitive Skin, Refill with Tape Seal, 64 Count (Pack of 12)",44.99,4.60,8680,4141,"Health, Household & Baby Care",11.99,54.51,26.65,82,enriched,2025-11-28 23:40:39.131211+00,,false,true,94,282,,15.80,9.40,8.00,0.75,FBA Inbound,false,,11.99,33.00,,99478ca1-58b8-43b9-a523-cb53bf73782a,98,,true,,,
+1961,20580d15-b4db-4a7b-8ff5-fbbff19f606e,-1001550333872,3070,B00NR1YIKM,6.75,10000,true,"https://www.amazon.com/dp/B00NR1YIKM?th=1
+
+Price: $6.75
+Available: 10k units
+
+ROI: 81%
+4k+ sales per month
+Inquire: @YasAttrah @aurelienlairmore",2025-11-19 20:50:45+00,2025-11-29 03:37:56.812642+00,Elite Supply,https://m.media-amazon.com/images/I/816AULFtz1L._SL1500_.jpg,"Neutrogena Hydro Boost Under Eye Cream, with Purified Hyaluronic Acid, Keeps Under Eye Area Looking Smooth & Hydrated, Fragrance Free and Non-Comedogenic, 0.5 oz 0.5 Fl Oz (Pack of 1)",13.29,4.50,20778,2777,Beauty & Personal Care,0.30,4.39,2.23,6,enriched,2025-11-29 03:39:11.144024+00,,true,true,102,306,,0.79,3.00,4.56,0.75,FBA Inbound,true,Sold by Amazon - high competition,0.30,12.99,,99478ca1-58b8-43b9-a523-cb53bf73782a,69,,true,,,

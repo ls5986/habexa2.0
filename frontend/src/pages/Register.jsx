@@ -1,0 +1,110 @@
+import { useState } from 'react';
+import { Box, Card, CardContent, TextField, Button, Typography, Link } from '@mui/material';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+
+const Register = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { signUp } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      await signUp(email, password, fullName);
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.message || 'Failed to create account');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#F9FAFB',
+      }}
+    >
+      <Card sx={{ width: '100%', maxWidth: 400 }}>
+        <CardContent sx={{ p: 4 }}>
+          <Typography variant="h4" fontWeight={700} mb={1} textAlign="center" color="#1A1A4E">
+            Habexa
+          </Typography>
+          <Typography variant="body2" color="text.secondary" mb={4} textAlign="center">
+            Create your account
+          </Typography>
+
+          {error && (
+            <Typography color="error" variant="body2" mb={2}>
+              {error}
+            </Typography>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            <TextField
+              fullWidth
+              label="Full Name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              required
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="Password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              sx={{ mb: 3 }}
+            />
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              disabled={loading}
+              sx={{
+                backgroundColor: '#7C6AFA',
+                '&:hover': { backgroundColor: '#5B4AD4' },
+                mb: 2,
+              }}
+            >
+              {loading ? 'Creating account...' : 'Sign Up'}
+            </Button>
+          </form>
+
+          <Typography variant="body2" textAlign="center">
+            Already have an account?{' '}
+            <Link href="/login" sx={{ color: '#7C6AFA', fontWeight: 600 }}>
+              Sign in
+            </Link>
+          </Typography>
+        </CardContent>
+      </Card>
+    </Box>
+  );
+};
+
+export default Register;
+

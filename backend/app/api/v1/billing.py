@@ -1,0 +1,234 @@
+from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel
+from typing import Optional
+import stripe
+
+from app.api.deps import get_current_user
+from app.services.stripe_service import StripeService, StripeWebhookHandler, TIER_LIMITS
+from app.core.config import settings
+
+router = APIRouter()
+
+stripe.api_key = settings.STRIPE_SECRET_KEY
+
+
+class CheckoutRequest(BaseModel):
+    price_key: str  # e.g., "starter_monthly", "pro_yearly"
+
+
+class ChangePlanRequest(BaseModel):
+    new_price_key: str
+
+
+@router.get("/subscription")
+async def get_subscription(current_user=Depends(get_current_user)):
+    """Get current subscription details."""
+    return await StripeService.get_subscription(current_user.id)
+
+
+@router.get("/plans")
+async def get_available_plans():
+    """Get available subscription plans."""
+    return {
+        "plans": [
+            {
+                "tier": "starter",
+                "name": "Starter",
+                "description": "Perfect for individual sellers getting started",
+                "monthly_price": 29,
+                "yearly_price": 290,
+                "price_keys": {
+                    "monthly": "starter_monthly",
+                    "yearly": "starter_yearly"
+                },
+                "features": TIER_LIMITS["starter"]
+            },
+            {
+                "tier": "pro",
+                "name": "Pro",
+                "description": "For serious sellers scaling their business",
+                "monthly_price": 79,
+                "yearly_price": 790,
+                "price_keys": {
+                    "monthly": "pro_monthly",
+                    "yearly": "pro_yearly"
+                },
+                "features": TIER_LIMITS["pro"],
+                "popular": True
+            },
+            {
+                "tier": "agency",
+                "name": "Agency",
+                "description": "For teams and agencies managing multiple accounts",
+                "monthly_price": 199,
+                "yearly_price": 1990,
+                "price_keys": {
+                    "monthly": "agency_monthly",
+                    "yearly": "agency_yearly"
+                },
+                "features": TIER_LIMITS["agency"]
+            }
+        ]
+    }
+
+
+@router.post("/checkout")
+async def create_checkout_session(
+    request: CheckoutRequest,
+    current_user=Depends(get_current_user)
+):
+    """Create a Stripe Checkout session with 14-day trial."""
+    
+    try:
+        session = await StripeService.create_checkout_session(
+            user_id=current_user.id,
+            email=current_user.email,
+            price_key=request.price_key
+        )
+        return session
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create checkout: {str(e)}")
+
+
+@router.post("/portal")
+async def create_portal_session(current_user=Depends(get_current_user)):
+    """Create a Stripe Customer Portal session."""
+    try:
+        url = await StripeService.create_portal_session(current_user.id)
+        return {"url": url}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/cancel")
+async def cancel_subscription(
+    at_period_end: bool = True,
+    current_user=Depends(get_current_user)
+):
+    """Cancel subscription."""
+    try:
+        result = await StripeService.cancel_subscription(
+            current_user.id,
+            at_period_end=at_period_end
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/reactivate")
+async def reactivate_subscription(current_user=Depends(get_current_user)):
+    """Reactivate a canceled subscription."""
+    try:
+        result = await StripeService.reactivate_subscription(current_user.id)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/change-plan")
+async def change_plan(
+    request: ChangePlanRequest,
+    current_user=Depends(get_current_user)
+):
+    """Change subscription plan."""
+    try:
+        result = await StripeService.change_plan(
+            current_user.id,
+            request.new_price_key
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/invoices")
+async def get_invoices(
+    limit: int = 10,
+    current_user=Depends(get_current_user)
+):
+    """Get invoice history."""
+    invoices = await StripeService.get_invoices(current_user.id, limit)
+    return {"invoices": invoices}
+
+
+@router.get("/usage")
+async def get_usage(current_user=Depends(get_current_user)):
+    """Get current usage stats."""
+    subscription = await StripeService.get_subscription(current_user.id)
+    
+    return {
+        "tier": subscription["tier"],
+        "analyses": {
+            "used": subscription.get("analyses_used", 0),
+            "limit": subscription["limits"]["analyses_per_month"],
+            "unlimited": subscription["limits"]["analyses_per_month"] == -1
+        },
+        "period_ends": subscription.get("current_period_end")
+    }
+
+
+@router.get("/limits")
+async def get_all_limits(current_user=Depends(get_current_user)):
+    """Get all feature limits and current usage."""
+    from app.services.feature_gate import feature_gate
+    return await feature_gate.get_all_usage(current_user.id)
+
+
+@router.get("/limits/{feature}")
+async def check_feature_limit(
+    feature: str,
+    current_user=Depends(get_current_user)
+):
+    """Check limit for a specific feature."""
+    from app.services.feature_gate import feature_gate
+    
+    valid_features = [
+        "analyses_per_month", "telegram_channels", "suppliers", 
+        "team_seats", "alerts", "bulk_analyze", "api_access", "export_data"
+    ]
+    
+    if feature not in valid_features:
+        raise HTTPException(400, f"Invalid feature. Valid: {valid_features}")
+    
+    return await feature_gate.check_limit(current_user.id, feature)
+
+
+@router.post("/webhook")
+async def stripe_webhook(request: Request):
+    """Handle Stripe webhook events."""
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature")
+    webhook_secret = settings.STRIPE_WEBHOOK_SECRET
+    
+    if not webhook_secret:
+        raise HTTPException(status_code=500, detail="Webhook secret not configured")
+    
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, webhook_secret
+        )
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid payload")
+    except stripe.error.SignatureVerificationError:
+        raise HTTPException(status_code=400, detail="Invalid signature")
+    
+    event_type = event["type"]
+    data = event["data"]["object"]
+    
+    handlers = {
+        "checkout.session.completed": StripeWebhookHandler.handle_checkout_completed,
+        "customer.subscription.updated": StripeWebhookHandler.handle_subscription_updated,
+        "customer.subscription.deleted": StripeWebhookHandler.handle_subscription_deleted,
+        "invoice.paid": StripeWebhookHandler.handle_invoice_paid,
+        "invoice.payment_failed": StripeWebhookHandler.handle_invoice_payment_failed,
+    }
+    
+    handler = handlers.get(event_type)
+    if handler:
+        await handler(data)
+    
+    return {"status": "success"}
+
