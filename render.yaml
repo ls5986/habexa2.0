@@ -127,7 +127,6 @@ services:
   - type: web
     name: habexa-frontend
     env: static
-    region: oregon
     plan: starter
     buildCommand: |
       cd frontend &&
