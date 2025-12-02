@@ -154,7 +154,7 @@ services:
       pip install -r requirements.txt
     startCommand: |
       cd backend &&
-      celery -A app.core.celery_app worker --loglevel=info --concurrency=4 --pool=prefork --queues=analysis,default
+      python -m celery -A app.core.celery_app worker --loglevel=info --concurrency=4 --pool=prefork --queues=analysis,default
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.0
@@ -233,7 +233,7 @@ services:
       pip install -r requirements.txt
     startCommand: |
       cd backend &&
-      celery -A app.core.celery_app worker --loglevel=info --concurrency=2 --pool=prefork --queues=telegram
+      python -m celery -A app.core.celery_app worker --loglevel=info --concurrency=2 --pool=prefork --queues=telegram
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.0
@@ -273,7 +273,7 @@ services:
       pip install -r requirements.txt
     startCommand: |
       cd backend &&
-      celery -A app.core.celery_app beat --loglevel=info
+      python -m celery -A app.core.celery_app beat --loglevel=info
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.0
