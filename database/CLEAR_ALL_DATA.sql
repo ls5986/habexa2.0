@@ -134,13 +134,8 @@ BEGIN
     END IF;
 END $$;
 
--- Brands (if exists)
-DO $$ 
-BEGIN
-    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'brands') THEN
-        DELETE FROM brands;
-    END IF;
-END $$;
+-- Brands (should exist - used for brand ungating tracking)
+DELETE FROM brands;
 
 -- ============================================
 -- VERIFY DELETION
