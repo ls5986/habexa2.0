@@ -41,6 +41,9 @@ DELETE FROM telegram_channels;
 -- Telegram sessions (user sessions)
 DELETE FROM telegram_sessions;
 
+-- Keepa analysis (detailed analysis for TOP PRODUCTS)
+DELETE FROM keepa_analysis;
+
 -- Keepa cache
 DELETE FROM keepa_cache;
 
@@ -113,6 +116,8 @@ UNION ALL
 SELECT 'telegram_channels', COUNT(*) FROM telegram_channels
 UNION ALL
 SELECT 'telegram_sessions', COUNT(*) FROM telegram_sessions
+UNION ALL
+SELECT 'keepa_analysis', COUNT(*) FROM keepa_analysis
 UNION ALL
 SELECT 'keepa_cache', COUNT(*) FROM keepa_cache
 UNION ALL
