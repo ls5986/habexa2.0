@@ -1,0 +1,309 @@
+services:
+  # Backend API (FastAPI)
+  - type: web
+    name: habexa-backend
+    env: python
+    region: oregon
+    plan: starter
+    buildCommand: |
+      cd backend &&
+      pip install -r requirements.txt
+    startCommand: |
+      cd backend &&
+      uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+        required: false
+      - key: SECRET_KEY
+        sync: false
+      - key: FRONTEND_URL
+        value: https://habexa-frontend.onrender.com
+      - key: BACKEND_URL
+        fromService:
+          type: web
+          name: habexa-backend
+          property: host
+      - key: API_V1_PREFIX
+        value: /api/v1
+      # Amazon SP-API
+      - key: SP_API_LWA_APP_ID
+        sync: false
+        required: false
+      - key: SP_API_LWA_CLIENT_SECRET
+        sync: false
+        required: false
+      - key: SPAPI_LWA_CLIENT_ID
+        sync: false
+        required: false
+      - key: SPAPI_LWA_CLIENT_SECRET
+        sync: false
+        required: false
+      - key: SPAPI_REFRESH_TOKEN
+        sync: false
+        required: false
+      - key: MARKETPLACE_ID
+        value: ATVPDKIKX0DER
+      - key: SELLER_ID
+        sync: false
+        required: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+        required: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+        required: false
+      - key: AWS_REGION
+        value: us-east-1
+      - key: SP_API_ROLE_ARN
+        sync: false
+        required: false
+      # ASIN Data API
+      - key: ASIN_DATA_API_KEY
+        sync: false
+      # Keepa
+      - key: KEEPA_API_KEY
+        sync: false
+        required: false
+      # OpenAI
+      - key: OPENAI_API_KEY
+        sync: false
+      # Telegram
+      - key: TELEGRAM_API_ID
+        sync: false
+        required: false
+      - key: TELEGRAM_API_HASH
+        sync: false
+        required: false
+      # Stripe
+      - key: STRIPE_SECRET_KEY
+        sync: false
+        required: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+        required: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+        required: false
+      - key: STRIPE_PRICE_STARTER_MONTHLY
+        sync: false
+        required: false
+      - key: STRIPE_PRICE_STARTER_YEARLY
+        sync: false
+        required: false
+      - key: STRIPE_PRICE_PRO_MONTHLY
+        sync: false
+        required: false
+      - key: STRIPE_PRICE_PRO_YEARLY
+        sync: false
+        required: false
+      - key: STRIPE_PRICE_AGENCY_MONTHLY
+        sync: false
+        required: false
+      - key: STRIPE_PRICE_AGENCY_YEARLY
+        sync: false
+        required: false
+      - key: STRIPE_SUCCESS_URL
+        value: https://habexa-frontend.onrender.com/billing/success
+      - key: STRIPE_CANCEL_URL
+        value: https://habexa-frontend.onrender.com/billing/cancel
+      # Redis
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: habexa-redis
+          property: connectionString
+
+  # Frontend (Static Site)
+  - type: web
+    name: habexa-frontend
+    env: static
+    region: oregon
+    plan: starter
+    buildCommand: |
+      cd frontend &&
+      pnpm install &&
+      pnpm build
+    staticPublishPath: ./frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: habexa-backend
+          property: host
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
+
+  # Celery Worker (Analysis Queue)
+  - type: worker
+    name: habexa-celery-worker
+    env: python
+    region: oregon
+    plan: starter
+    buildCommand: |
+      cd backend &&
+      pip install -r requirements.txt
+    startCommand: |
+      cd backend &&
+      celery -A app.core.celery_app worker --loglevel=info --concurrency=4 --pool=prefork --queues=analysis,default
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      # Amazon SP-API
+      - key: SP_API_LWA_APP_ID
+        sync: false
+        required: false
+      - key: SP_API_LWA_CLIENT_SECRET
+        sync: false
+        required: false
+      - key: SPAPI_LWA_CLIENT_ID
+        sync: false
+        required: false
+      - key: SPAPI_LWA_CLIENT_SECRET
+        sync: false
+        required: false
+      - key: SPAPI_REFRESH_TOKEN
+        sync: false
+        required: false
+      - key: MARKETPLACE_ID
+        value: ATVPDKIKX0DER
+      - key: SELLER_ID
+        sync: false
+        required: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+        required: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+        required: false
+      - key: AWS_REGION
+        value: us-east-1
+      - key: SP_API_ROLE_ARN
+        sync: false
+        required: false
+      # ASIN Data API
+      - key: ASIN_DATA_API_KEY
+        sync: false
+      # Keepa
+      - key: KEEPA_API_KEY
+        sync: false
+        required: false
+      # OpenAI
+      - key: OPENAI_API_KEY
+        sync: false
+      # Telegram
+      - key: TELEGRAM_API_ID
+        sync: false
+        required: false
+      - key: TELEGRAM_API_HASH
+        sync: false
+        required: false
+      # Redis
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: habexa-redis
+          property: connectionString
+
+  # Celery Worker (Telegram Queue)
+  - type: worker
+    name: habexa-celery-telegram
+    env: python
+    region: oregon
+    plan: starter
+    buildCommand: |
+      cd backend &&
+      pip install -r requirements.txt
+    startCommand: |
+      cd backend &&
+      celery -A app.core.celery_app worker --loglevel=info --concurrency=2 --pool=prefork --queues=telegram
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      # OpenAI
+      - key: OPENAI_API_KEY
+        sync: false
+      # Telegram
+      - key: TELEGRAM_API_ID
+        sync: false
+        required: false
+      - key: TELEGRAM_API_HASH
+        sync: false
+        required: false
+      # Redis
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: habexa-redis
+          property: connectionString
+
+  # Celery Beat (Periodic Tasks)
+  - type: worker
+    name: habexa-celery-beat
+    env: python
+    region: oregon
+    plan: starter
+    buildCommand: |
+      cd backend &&
+      pip install -r requirements.txt
+    startCommand: |
+      cd backend &&
+      celery -A app.core.celery_app beat --loglevel=info
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      # Telegram
+      - key: TELEGRAM_API_ID
+        sync: false
+        required: false
+      - key: TELEGRAM_API_HASH
+        sync: false
+        required: false
+      # Redis
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: habexa-redis
+          property: connectionString
+
+# Redis for Celery broker/backend
+databases:
+  - name: habexa-redis
+    plan: starter
+    region: oregon
+    ipAllowList: []  # Allow all IPs (Render services can access)
+
