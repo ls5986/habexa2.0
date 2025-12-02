@@ -303,4 +303,5 @@ services:
   - type: redis
     name: habexa-redis
     region: oregon
+    ipAllowList: []  # Allow all IPs (Render services can access)
 
