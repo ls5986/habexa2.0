@@ -299,10 +299,8 @@ services:
           name: habexa-redis
           property: connectionString
 
-# Redis for Celery broker/backend
-databases:
-  - name: habexa-redis
-    plan: basic-256mb
+  # Redis for Celery broker/backend
+  - type: redis
+    name: habexa-redis
     region: oregon
-    ipAllowList: []  # Allow all IPs (Render services can access)
 
