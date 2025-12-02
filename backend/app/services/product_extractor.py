@@ -202,11 +202,8 @@ Return ONLY the JSON array, no other text."""
                 except:
                     pass
         
-        # Try to find MOQ
-        moq = 1
-        moq_match = re.search(r'(?:moq|minimum|min)\s*:?\s*(\d+)', text, re.IGNORECASE)
-        if moq_match:
-            moq = int(moq_match.group(1))
+        # Try to find MOQ with comprehensive patterns
+        moq = self._extract_moq(text)
         
         for asin in asins:
             products.append({
@@ -218,6 +215,39 @@ Return ONLY the JSON array, no other text."""
             })
         
         return products
+    
+    def _extract_moq(self, text: str) -> int:
+        """Extract MOQ from message text using comprehensive patterns."""
+        text_lower = text.lower()
+        
+        # Common MOQ patterns in supplier messages
+        patterns = [
+            r'moq[:\s]*(\d+)',                    # "MOQ: 6" or "MOQ 6"
+            r'min(?:imum)?[:\s]*(\d+)',           # "Min: 6" or "Minimum 6"
+            r'(\d+)\s*(?:min|moq|minimum)',       # "6 min" or "6 MOQ"
+            r'pack\s*of\s*(\d+)',                 # "Pack of 6"
+            r'(\d+)\s*pack',                      # "6 pack"
+            r'(\d+)\s*(?:case|cs)',               # "6 case" or "6 cs"
+            r'case\s*of\s*(\d+)',                 # "Case of 6"
+            r'(\d+)\s*(?:ct|count)',              # "6 ct" or "6 count"
+            r'qty[:\s]*(\d+)',                    # "Qty: 6"
+            r'x\s*(\d+)\b',                       # "x6" or "x 6"
+            r'\b(\d+)\s*units?\b',                # "6 units"
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, text_lower)
+            if match:
+                try:
+                    moq = int(match.group(1))
+                    # Sanity check - MOQ usually between 1-1000
+                    if 1 <= moq <= 1000:
+                        return moq
+                except:
+                    pass
+        
+        # Default to 1 if no MOQ found
+        return 1
     
     def extract_amazon_links(self, text: str) -> List[str]:
         """Extract Amazon product URLs from text."""

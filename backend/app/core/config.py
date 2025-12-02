@@ -1,11 +1,26 @@
 from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
 from typing import Optional
 from pathlib import Path
 import os
+from dotenv import load_dotenv
 
 # Find project root (where .env file is)
 PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
 ENV_FILE = PROJECT_ROOT / ".env"
+
+# Explicitly load .env file
+if ENV_FILE.exists():
+    load_dotenv(ENV_FILE)
+    print(f"✅ Loaded .env from: {ENV_FILE}")
+else:
+    # Try backend/.env as fallback
+    BACKEND_ENV = Path(__file__).parent.parent.parent / ".env"
+    if BACKEND_ENV.exists():
+        load_dotenv(BACKEND_ENV)
+        print(f"✅ Loaded .env from: {BACKEND_ENV}")
+    else:
+        print(f"⚠️  No .env file found at {ENV_FILE} or {BACKEND_ENV}")
 
 
 class Settings(BaseSettings):
@@ -16,14 +31,18 @@ class Settings(BaseSettings):
     SUPABASE_JWT_SECRET: Optional[str] = None  # Not actually used - Supabase client handles JWT internally
     SUPABASE_DATABASE_PASSWORD: Optional[str] = None
 
-    # Amazon SP-API (Self-authorized - no OAuth needed)
-    SPAPI_APP_ID: Optional[str] = None
+    # Amazon SP-API (Hybrid: App credentials for public data, User credentials for seller data)
+    SP_API_LWA_APP_ID: Optional[str] = None  # App-level LWA App ID
+    SP_API_LWA_CLIENT_SECRET: Optional[str] = None  # App-level LWA Client Secret
+    SP_API_REFRESH_TOKEN: Optional[str] = None  # App-level refresh token (for public data)
+    # Legacy names (for backward compatibility)
+    SPAPI_APP_ID: Optional[str] = None  # SP-API Application ID (for OAuth)
     SPAPI_LWA_CLIENT_ID: Optional[str] = None
     SPAPI_LWA_CLIENT_SECRET: Optional[str] = None
     SPAPI_REFRESH_TOKEN: Optional[str] = None
     MARKETPLACE_ID: str = "ATVPDKIKX0DER"
     SELLER_ID: Optional[str] = None
-    # AWS IAM Credentials (for SP-API request signing)
+    # AWS IAM Credentials (for SP-API request signing - if needed)
     AWS_ACCESS_KEY_ID: Optional[str] = None
     AWS_SECRET_ACCESS_KEY: Optional[str] = None
     AWS_REGION: str = "us-east-1"
@@ -44,7 +63,7 @@ class Settings(BaseSettings):
 
     # App
     SECRET_KEY: str
-    FRONTEND_URL: str = "http://localhost:5173"
+    FRONTEND_URL: str = "http://localhost:3002"
     BACKEND_URL: str = "http://localhost:8000"
     API_V1_PREFIX: str = "/api/v1"
     
@@ -58,13 +77,28 @@ class Settings(BaseSettings):
     STRIPE_PRICE_PRO_YEARLY: Optional[str] = None
     STRIPE_PRICE_AGENCY_MONTHLY: Optional[str] = None
     STRIPE_PRICE_AGENCY_YEARLY: Optional[str] = None
-    STRIPE_SUCCESS_URL: str = "http://localhost:5173/billing/success"
-    STRIPE_CANCEL_URL: str = "http://localhost:5173/billing/cancel"
+    STRIPE_SUCCESS_URL: str = "http://localhost:3002/billing/success"
+    STRIPE_CANCEL_URL: str = "http://localhost:3002/billing/cancel"
+    
+    # Redis (Optional - for caching)
+    REDIS_URL: Optional[str] = None  # e.g., "redis://localhost:6379/0" or "rediss://..." for SSL
+    
+    # Celery Configuration
+    CELERY_WORKERS: int = 8  # Number of parallel workers for batch processing
+    CELERY_PROCESS_BATCH_SIZE: int = 100  # Batch size for processing (matches Keepa batch size)
+    
+    # Cache Configuration
+    KEEPA_CACHE_HOURS: int = 24  # Hours to cache Keepa data
+    
+    # API Rate Limits
+    SP_API_BATCH_SIZE: int = 20  # SP-API batch size limit
+    KEEPA_BATCH_SIZE: int = 100  # Keepa API batch size limit
 
-    class Config:
-        env_file = str(ENV_FILE) if ENV_FILE.exists() else ".env"
-        case_sensitive = True
-        extra = "ignore"  # Ignore extra fields in .env
+    model_config = ConfigDict(
+        env_file=str(ENV_FILE) if ENV_FILE.exists() else ".env",
+        case_sensitive=True,
+        extra="ignore"  # Ignore extra fields in .env
+    )
 
 
 settings = Settings()

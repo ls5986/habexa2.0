@@ -5,27 +5,19 @@ Uses batch_analyzer for ALL analysis - NO individual SP-API catalog/offers calls
 import asyncio
 import logging
 from typing import List, Dict
-from celery import group, chord
+from celery import chord
 from app.core.celery_app import celery_app
 from app.services.supabase_client import supabase
 from app.services.batch_analyzer import batch_analyzer
-from app.tasks.base import JobManager
+from app.tasks.base import JobManager, run_async
 from app.tasks.progress import AtomicJobProgress
+from app.core.config import settings
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
-WORKERS = 8  # Number of parallel chunks
-
-
-def run_async(coro):
-    """Run async code in sync Celery task."""
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        return loop.run_until_complete(coro)
-    finally:
-        loop.close()
+WORKERS = settings.CELERY_WORKERS  # Number of parallel chunks
+PROCESS_BATCH_SIZE = settings.CELERY_PROCESS_BATCH_SIZE  # Batch size for processing
 
 
 @celery_app.task(bind=True, max_retries=3, name="app.tasks.analysis.analyze_single_product", queue="analysis")
@@ -85,7 +77,7 @@ def analyze_single_product(self, job_id: str, user_id: str, product_id: str, asi
                 "analysis_id": analysis_id,
                 "title": result.get("title"),
                 "image_url": result.get("image_url"),
-                "brand": result.get("brand"),
+                "brand_name": result.get("brand"),  # Schema has brand_name, not brand
                 "sell_price": result.get("sell_price"),
                 "fees_total": result.get("fees_total"),
                 "bsr": result.get("bsr"),
@@ -122,12 +114,11 @@ def batch_analyze_products(self, job_id: str, user_id: str, product_ids: List[st
     NO individual SP-API catalog or offers calls!
     """
     job = JobManager(job_id)
-    PROCESS_BATCH_SIZE = 100  # Process 100 at a time (matches Keepa batch)
     
     try:
         # Get products from database - batch to avoid URL length limits
         products = []
-        BATCH_FETCH_SIZE = 100
+        BATCH_FETCH_SIZE = PROCESS_BATCH_SIZE
         
         if not product_ids:
             job.complete({"message": "No product IDs provided"}, 0, 0)
@@ -282,7 +273,7 @@ def batch_analyze_products(self, job_id: str, user_id: str, product_ids: List[st
                             "analysis_id": analysis_id,
                             "title": result.get("title"),
                             "image_url": result.get("image_url"),
-                            "brand": result.get("brand"),
+                            "brand_name": result.get("brand"),  # Schema has brand_name, not brand
                             "sell_price": result.get("sell_price"),
                             "fees_total": result.get("fees_total"),
                             "bsr": result.get("bsr"),
@@ -375,7 +366,7 @@ def analyze_all_pending_for_user(user_id: str):
     }).execute()
     
     # Queue analysis - use parallel version for large batches
-    if len(product_ids) > 100:
+    if len(product_ids) > settings.CELERY_PROCESS_BATCH_SIZE:
         batch_analyze_parallel.delay(job_id, user_id, product_ids)
     else:
         batch_analyze_products.delay(job_id, user_id, product_ids)
@@ -495,7 +486,7 @@ def analyze_chunk(self, job_id: str, user_id: str, product_chunk: List[Dict], ch
                         "analysis_id": analysis_id,
                         "title": result.get("title"),
                         "image_url": result.get("image_url"),
-                        "brand": result.get("brand"),
+                        "brand_name": result.get("brand"),  # Schema has brand_name, not brand
                         "sell_price": result.get("sell_price"),
                         "fees_total": result.get("fees_total"),
                         "bsr": result.get("bsr"),
@@ -567,7 +558,7 @@ def batch_analyze_parallel(self, job_id: str, user_id: str, product_ids: List[st
     try:
         # Get products - batch to avoid URL length limits
         products = []
-        BATCH_FETCH_SIZE = 100
+        BATCH_FETCH_SIZE = PROCESS_BATCH_SIZE
         
         for i in range(0, len(product_ids), BATCH_FETCH_SIZE):
             batch_ids = product_ids[i:i + BATCH_FETCH_SIZE]

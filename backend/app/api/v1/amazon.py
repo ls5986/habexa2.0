@@ -163,7 +163,22 @@ async def get_pricing(
     Uses YOUR connected Amazon Seller account.
     """
     user_id = str(current_user.id)
-    result = await sp_api_client.get_competitive_pricing(user_id, asin)
+    # Get user's marketplace preference
+    marketplace_id = "ATVPDKIKX0DER"  # Default to US
+    try:
+        from app.services.supabase_client import supabase
+        connection_result = supabase.table("amazon_connections")\
+            .select("marketplace_id")\
+            .eq("user_id", user_id)\
+            .eq("is_connected", True)\
+            .limit(1)\
+            .execute()
+        if connection_result.data and connection_result.data[0].get("marketplace_id"):
+            marketplace_id = connection_result.data[0]["marketplace_id"]
+    except:
+        pass
+    
+    result = await sp_api_client.get_competitive_pricing(asin, marketplace_id)
     
     if not result:
         raise HTTPException(status_code=404, detail="Could not get pricing data")

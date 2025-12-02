@@ -14,7 +14,8 @@ const SupplierFormModal = ({ open, onClose, supplier = null }) => {
   const [notes, setNotes] = useState('');
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState('');
-  const { createSupplier, updateSupplier, loading } = useSuppliers();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { createSupplier, updateSupplier, saving } = useSuppliers();
   const { showToast } = useToast();
 
   const isEditMode = !!supplier;
@@ -59,7 +60,12 @@ const SupplierFormModal = ({ open, onClose, supplier = null }) => {
       return;
     }
 
+    if (isSubmitting || saving) {
+      return; // Prevent double submission
+    }
+
     try {
+      setIsSubmitting(true);
       const supplierData = {
         name: name.trim(),
         telegram_username: telegramUsername.trim() || null,
@@ -67,7 +73,7 @@ const SupplierFormModal = ({ open, onClose, supplier = null }) => {
         email: email.trim() || null,
         website: website.trim() || null,
         notes: notes.trim() || null,
-        tags: tags,
+        tags: tags.length > 0 ? tags : null,
       };
 
       if (isEditMode) {
@@ -80,7 +86,10 @@ const SupplierFormModal = ({ open, onClose, supplier = null }) => {
       
       onClose();
     } catch (error) {
+      console.error('Supplier save error:', error);
       showToast(error.message || 'Failed to save supplier', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -114,7 +123,7 @@ const SupplierFormModal = ({ open, onClose, supplier = null }) => {
               onChange={(e) => setName(e.target.value)}
               required
               fullWidth
-              disabled={loading}
+              disabled={isSubmitting || saving}
             />
 
             <Box display="flex" gap={2}>
@@ -124,7 +133,7 @@ const SupplierFormModal = ({ open, onClose, supplier = null }) => {
                 value={telegramUsername}
                 onChange={(e) => setTelegramUsername(e.target.value)}
                 fullWidth
-                disabled={loading}
+                disabled={isSubmitting || saving}
               />
               <TextField
                 label="WhatsApp Number"
@@ -132,7 +141,7 @@ const SupplierFormModal = ({ open, onClose, supplier = null }) => {
                 value={whatsappNumber}
                 onChange={(e) => setWhatsappNumber(e.target.value)}
                 fullWidth
-                disabled={loading}
+                disabled={isSubmitting || saving}
               />
             </Box>
 
@@ -143,7 +152,7 @@ const SupplierFormModal = ({ open, onClose, supplier = null }) => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 fullWidth
-                disabled={loading}
+                disabled={isSubmitting || saving}
               />
               <TextField
                 label="Website"
@@ -151,7 +160,7 @@ const SupplierFormModal = ({ open, onClose, supplier = null }) => {
                 value={website}
                 onChange={(e) => setWebsite(e.target.value)}
                 fullWidth
-                disabled={loading}
+                disabled={isSubmitting || saving}
               />
             </Box>
 
@@ -168,7 +177,7 @@ const SupplierFormModal = ({ open, onClose, supplier = null }) => {
                   }
                 }}
                 fullWidth
-                disabled={loading}
+                disabled={isSubmitting || saving}
                 helperText="Press Enter to add a tag"
               />
               <Box display="flex" gap={1} flexWrap="wrap" mt={1}>
@@ -190,25 +199,25 @@ const SupplierFormModal = ({ open, onClose, supplier = null }) => {
               multiline
               rows={4}
               fullWidth
-              disabled={loading}
+              disabled={isSubmitting || saving}
             />
           </Box>
         </DialogContent>
 
         <DialogActions sx={{ px: 3, pb: 3 }}>
-          <Button onClick={onClose} disabled={loading}>
+          <Button onClick={onClose} disabled={isSubmitting || saving}>
             Cancel
           </Button>
           <Button
             type="submit"
             variant="contained"
-            disabled={loading || !name.trim()}
+            disabled={isSubmitting || saving || !name.trim()}
             sx={{
               backgroundColor: habexa.purple.main,
               '&:hover': { backgroundColor: habexa.purple.dark },
             }}
           >
-            {loading ? 'Saving...' : isEditMode ? 'Update Supplier' : 'Create Supplier'}
+            {(isSubmitting || saving) ? 'Saving...' : isEditMode ? 'Update Supplier' : 'Create Supplier'}
           </Button>
         </DialogActions>
       </form>

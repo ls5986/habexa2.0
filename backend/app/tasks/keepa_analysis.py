@@ -9,19 +9,10 @@ from typing import List, Dict, Any
 from app.core.celery_app import celery_app
 from app.services.supabase_client import supabase
 from app.services.keepa_analysis_service import keepa_analysis_service
+from app.tasks.base import run_async
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
-
-
-def run_async(coro):
-    """Run async code in sync Celery task."""
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        return loop.run_until_complete(coro)
-    finally:
-        loop.close()
 
 
 @celery_app.task(bind=True, max_retries=3, name="app.tasks.keepa_analysis.analyze_top_product", queue="analysis")

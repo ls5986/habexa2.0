@@ -7,9 +7,8 @@ import { useNotifications } from '../../context/NotificationContext';
 
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/dashboard' },
-  { id: 'deals', label: 'Deal Feed', icon: Inbox, path: '/deals', badge: true },
+  { id: 'products', label: 'Products', icon: Package, path: '/products', badge: true },
   { id: 'suppliers', label: 'Suppliers', icon: Users, path: '/suppliers' },
-  { id: 'products', label: 'Products', icon: Package, path: '/products' },
   { id: 'analyze', label: 'Analyze', icon: Search, path: '/analyze' },
 ];
 

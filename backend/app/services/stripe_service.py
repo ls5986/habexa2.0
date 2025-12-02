@@ -111,7 +111,11 @@ class StripeService:
         success_url: str = None,
         cancel_url: str = None
     ) -> Dict[str, Any]:
-        """Create a Stripe Checkout session for subscription."""
+        """Create a Stripe Checkout session for subscription.
+        
+        IMPORTANT: Checks for existing active subscriptions first.
+        If user already has an active subscription, returns existing subscription info.
+        """
         
         price_id = PRICE_IDS.get(price_key)
         if not price_id:
@@ -120,7 +124,56 @@ class StripeService:
         # Get or create customer
         customer_id = await StripeService.get_or_create_customer(user_id, email)
         
-        # Create checkout session
+        # CHECK FOR EXISTING ACTIVE SUBSCRIPTION
+        # First check database
+        db_sub = supabase.table("subscriptions")\
+            .select("stripe_subscription_id, status, tier")\
+            .eq("user_id", user_id)\
+            .execute()
+        
+        if db_sub.data and len(db_sub.data) > 0:
+            existing_sub_id = db_sub.data[0].get("stripe_subscription_id")
+            existing_status = db_sub.data[0].get("status", "")
+            
+            # If has active subscription in DB, verify with Stripe
+            if existing_sub_id and existing_status in ["active", "trialing"]:
+                try:
+                    stripe_sub = stripe.Subscription.retrieve(existing_sub_id)
+                    if stripe_sub.status in ["active", "trialing"]:
+                        # User already has active subscription
+                        return {
+                            "existing": True,
+                            "subscription": await StripeService.get_subscription(user_id),
+                            "message": "You already have an active subscription. Use the customer portal to change plans."
+                        }
+                except stripe.error.StripeError:
+                    # Subscription doesn't exist in Stripe, continue to create new one
+                    pass
+        
+        # Also check Stripe directly for any active subscriptions for this customer
+        try:
+            stripe_subs = stripe.Subscription.list(
+                customer=customer_id,
+                status="active",
+                limit=1
+            )
+            
+            if stripe_subs.data and len(stripe_subs.data) > 0:
+                # User has active subscription in Stripe but not in our DB
+                # Sync it first
+                active_sub = stripe_subs.data[0]
+                await StripeWebhookHandler.handle_subscription_updated(active_sub)
+                
+                return {
+                    "existing": True,
+                    "subscription": await StripeService.get_subscription(user_id),
+                    "message": "Found existing subscription. It has been synced."
+                }
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f"Error checking Stripe subscriptions: {e}")
+        
+        # No existing subscription, create new checkout session
         session = stripe.checkout.Session.create(
             customer=customer_id,
             payment_method_types=["card"],
@@ -142,7 +195,8 @@ class StripeService:
         
         return {
             "session_id": session.id,
-            "url": session.url
+            "url": session.url,
+            "existing": False
         }
     
     @staticmethod
@@ -163,6 +217,27 @@ class StripeService:
         )
         
         return session.url
+    
+    @staticmethod
+    async def sync_subscription_from_session(session_id: str, user_id: str) -> Dict[str, Any]:
+        """Sync subscription from Stripe checkout session (fallback if webhook hasn't fired)."""
+        try:
+            session = stripe.checkout.Session.retrieve(session_id)
+            subscription_id = session.get("subscription")
+            
+            if not subscription_id:
+                return {"success": False, "error": "No subscription in session"}
+            
+            # Use the same logic as webhook handler
+            await StripeWebhookHandler.handle_checkout_completed({
+                "metadata": {"user_id": user_id},
+                "customer": session.get("customer"),
+                "subscription": subscription_id
+            })
+            
+            return {"success": True}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
     
     @staticmethod
     async def get_subscription(user_id: str) -> Dict[str, Any]:

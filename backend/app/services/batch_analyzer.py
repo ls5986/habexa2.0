@@ -1,0 +1,122 @@
+"""
+Optimized batch analyzer using SP-API for pricing/fees and Keepa for catalog data.
+Implements optimal API strategy: Keepa first (100 ASINs), then SP-API (20 ASINs).
+"""
+import asyncio
+import logging
+from typing import List, Dict
+from app.services.sp_api_client import sp_api_client
+from app.services.keepa_client import keepa_client
+
+logger = logging.getLogger(__name__)
+
+SP_API_BATCH_SIZE = 20
+KEEPA_BATCH_SIZE = 100
+
+
+class BatchAnalyzer:
+    """
+    Optimized analyzer using batch API calls.
+    - Keepa: 100 ASINs per API call, batch cache lookups
+    - SP-API: 20 ASINs per batch call
+    """
+    
+    async def analyze_products(
+        self,
+        asins: List[str],
+        marketplace_id: str = "ATVPDKIKX0DER"
+    ) -> Dict[str, dict]:
+        """Analyze products using batch API calls."""
+        if not asins:
+            return {}
+        
+        # Deduplicate and clean
+        asins = list(set(a.strip().upper() for a in asins if a))
+        
+        results = {asin: {"asin": asin, "success": False} for asin in asins}
+        
+        logger.info(f"🚀 Analyzing {len(asins)} products...")
+        
+        # ==========================================
+        # STEP 1: KEEPA - Batch of 100
+        # ==========================================
+        logger.info("📚 Fetching catalog data from Keepa...")
+        
+        # Process all ASINs in one batch call (handles internal batching)
+        keepa_data = await keepa_client.get_products_batch(asins, domain=1, history=False, days=90)
+        
+        for asin, data in keepa_data.items():
+            if asin in results:
+                results[asin].update({
+                    "title": data.get("title"),
+                    "brand": data.get("brand"),
+                    "image_url": data.get("image_url"),
+                    "bsr": data.get("bsr"),
+                    "category": data.get("category"),
+                    "sales_drops_30": data.get("sales_drops_30"),
+                    "sales_drops_90": data.get("sales_drops_90"),
+                    "sales_drops_180": data.get("sales_drops_180"),
+                    "variation_count": data.get("variation_count"),
+                    "amazon_in_stock": data.get("amazon_in_stock"),
+                    "rating": data.get("rating"),
+                    "review_count": data.get("review_count"),
+                })
+        
+        # ==========================================
+        # STEP 2: SP-API PRICING - Batch of 20
+        # ==========================================
+        logger.info("💰 Fetching pricing from SP-API...")
+        
+        for i in range(0, len(asins), SP_API_BATCH_SIZE):
+            batch = asins[i:i + SP_API_BATCH_SIZE]
+            
+            try:
+                pricing_data = await sp_api_client.get_competitive_pricing_batch(batch, marketplace_id)
+                
+                for asin, data in pricing_data.items():
+                    if data.get("buy_box_price") and asin in results:
+                        results[asin]["sell_price"] = data["buy_box_price"]
+                        results[asin]["seller_count"] = data.get("offer_count", 0)
+                        results[asin]["price_source"] = "sp-api"
+            except Exception as e:
+                logger.warning(f"SP-API pricing batch failed for batch {i//SP_API_BATCH_SIZE + 1}: {e}")
+        
+        # ==========================================
+        # STEP 3: SP-API FEES - Batch of 20
+        # ==========================================
+        logger.info("📊 Fetching fees from SP-API...")
+        
+        items_with_prices = [
+            {"asin": asin, "price": results[asin]["sell_price"]}
+            for asin in asins
+            if results[asin].get("sell_price")
+        ]
+        
+        for i in range(0, len(items_with_prices), SP_API_BATCH_SIZE):
+            batch = items_with_prices[i:i + SP_API_BATCH_SIZE]
+            
+            try:
+                fees_data = await sp_api_client.get_fees_estimate_batch(batch, marketplace_id)
+                
+                for asin, data in fees_data.items():
+                    if asin in results:
+                        results[asin]["fees_total"] = data.get("total")
+                        results[asin]["fees_referral"] = data.get("referral_fee")
+                        results[asin]["fees_fba"] = data.get("fba_fulfillment_fee")
+            except Exception as e:
+                logger.warning(f"SP-API fees batch failed for batch {i//SP_API_BATCH_SIZE + 1}: {e}")
+        
+        # ==========================================
+        # STEP 4: Mark success
+        # ==========================================
+        for asin in asins:
+            if results[asin].get("sell_price"):
+                results[asin]["success"] = True
+        
+        success_count = sum(1 for r in results.values() if r["success"])
+        logger.info(f"✅ Analysis complete: {success_count}/{len(asins)} successful")
+        
+        return results
+
+
+batch_analyzer = BatchAnalyzer()

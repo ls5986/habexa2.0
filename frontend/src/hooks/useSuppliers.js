@@ -4,6 +4,7 @@ import api from '../services/api';
 export const useSuppliers = () => {
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
   const fetchSuppliers = async () => {
@@ -31,36 +32,74 @@ export const useSuppliers = () => {
 
   const createSupplier = async (supplierData) => {
     try {
+      setSaving(true);
+      setError(null);
       const response = await api.post('/suppliers', supplierData);
       await fetchSuppliers();
       return response.data;
     } catch (err) {
-      throw new Error(err.response?.data?.message || 'Failed to create supplier');
+      // Handle limit reached error
+      const errorDetail = err.response?.data?.detail;
+      let errorMessage = 'Failed to create supplier';
+      
+      if (errorDetail) {
+        if (typeof errorDetail === 'object' && errorDetail.error === 'limit_reached') {
+          errorMessage = errorDetail.message || `You've reached your supplier limit (${errorDetail.used}/${errorDetail.limit}). Please upgrade to add more suppliers.`;
+        } else if (typeof errorDetail === 'string') {
+          errorMessage = errorDetail;
+        } else if (errorDetail.message) {
+          errorMessage = errorDetail.message;
+        }
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
+      console.error('Failed to create supplier:', err);
+      throw new Error(errorMessage);
+    } finally {
+      setSaving(false);
     }
   };
 
   const updateSupplier = async (id, supplierData) => {
     try {
+      setSaving(true);
+      setError(null);
       const response = await api.put(`/suppliers/${id}`, supplierData);
       await fetchSuppliers();
       return response.data;
     } catch (err) {
-      throw new Error(err.response?.data?.message || 'Failed to update supplier');
+      const errorMessage = err.response?.data?.detail || err.response?.data?.message || err.message || 'Failed to update supplier';
+      setError(errorMessage);
+      console.error('Failed to update supplier:', err);
+      throw new Error(errorMessage);
+    } finally {
+      setSaving(false);
     }
   };
 
   const deleteSupplier = async (id) => {
     try {
+      setSaving(true);
       await api.delete(`/suppliers/${id}`);
       await fetchSuppliers();
     } catch (err) {
-      throw new Error(err.response?.data?.message || 'Failed to delete supplier');
+      const errorMessage = err.response?.data?.detail || err.response?.data?.message || err.message || 'Failed to delete supplier';
+      setError(errorMessage);
+      console.error('Failed to delete supplier:', err);
+      throw new Error(errorMessage);
+    } finally {
+      setSaving(false);
     }
   };
 
   return {
     suppliers,
     loading,
+    saving,
     error,
     refetch: fetchSuppliers,
     createSupplier,

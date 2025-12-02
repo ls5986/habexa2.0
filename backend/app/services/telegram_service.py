@@ -7,7 +7,7 @@ import os
 import asyncio
 import logging
 from typing import Dict, Any, List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from telethon import TelegramClient, events
 from telethon.sessions import StringSession
@@ -393,19 +393,30 @@ class TelegramService:
         user_id: str,
         channel_id: int,
         channel_name: str,
-        channel_type: str = "channel"
+        channel_username: Optional[str] = None,
+        channel_type: str = "channel",
+        supplier_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """Add a channel to monitoring list."""
         
-        result = supabase.table("telegram_channels").upsert({
+        channel_data = {
             "user_id": user_id,
             "channel_id": channel_id,
             "channel_name": channel_name,
+            "channel_username": channel_username,
             "channel_type": channel_type,
             "is_active": True
-        }, on_conflict="user_id,channel_id").execute()
+        }
         
-        logger.info(f"User {user_id} added channel: {channel_name} ({channel_id})")
+        if supplier_id:
+            channel_data["supplier_id"] = supplier_id
+        
+        result = supabase.table("telegram_channels").upsert(
+            channel_data,
+            on_conflict="user_id,channel_id"
+        ).execute()
+        
+        logger.info(f"User {user_id} added channel: {channel_name} ({channel_id}, @{channel_username or 'no-username'})" + (f" with supplier {supplier_id}" if supplier_id else ""))
         
         return result.data[0] if result.data else None
     
@@ -431,6 +442,195 @@ class TelegramService:
             .execute()
         
         return result.data or []
+    
+    # ==========================================
+    # BACKFILL (Historical Messages)
+    # ==========================================
+    
+    async def backfill_channel(
+        self,
+        user_id: str,
+        channel_id: int,
+        days: int = 14
+    ) -> Dict[str, Any]:
+        """
+        Fetch last N days of messages from a channel.
+        Call this when a channel is first added.
+        """
+        
+        client = await self._get_client(user_id)
+        
+        if not client:
+            logger.error("DEBUG: Client is None - not connected to Telegram")
+            raise TelegramServiceError("Not connected to Telegram")
+        
+        try:
+            # Get channel info from database (need username, not just ID)
+            channel_result = supabase.table("telegram_channels")\
+                .select("id, channel_username, channel_name")\
+                .eq("user_id", user_id)\
+                .eq("channel_id", channel_id)\
+                .single()\
+                .execute()
+            
+            if not channel_result.data:
+                logger.error(f"DEBUG: Channel not found in database - user_id: {user_id}, channel_id: {channel_id}")
+                raise TelegramServiceError("Channel not found in database")
+            
+            channel_db_id = channel_result.data["id"]
+            channel_username = channel_result.data.get("channel_username")
+            channel_name = channel_result.data.get("channel_name", "Unknown")
+            
+            logger.info(f"DEBUG: Looking for channel - username: {channel_username}, name: {channel_name}, id: {channel_id}")
+            
+            # Use username to get entity (more reliable than ID)
+            entity = None
+            
+            if channel_username:
+                try:
+                    # Remove @ if present, then add it back for consistency
+                    username = channel_username.lstrip('@')
+                    entity = await client.get_entity(username)
+                    logger.info(f"DEBUG: Found entity via username @{username}: {type(entity).__name__} - {getattr(entity, 'title', 'N/A')}")
+                except Exception as e:
+                    logger.warning(f"DEBUG: Username lookup failed for @{username}: {e}")
+            
+            if not entity:
+                try:
+                    entity = await client.get_entity(channel_id)
+                    logger.info(f"DEBUG: Found entity via ID {channel_id}: {type(entity).__name__} - {getattr(entity, 'title', 'N/A')}")
+                except Exception as id_error:
+                    logger.warning(f"DEBUG: ID lookup failed for {channel_id}: {id_error}")
+                    # Try as a channel peer
+                    try:
+                        from telethon.tl.types import PeerChannel
+                        entity = await client.get_entity(PeerChannel(channel_id))
+                        logger.info(f"DEBUG: Found entity via PeerChannel({channel_id}): {type(entity).__name__} - {getattr(entity, 'title', 'N/A')}")
+                    except Exception as peer_error:
+                        logger.error(f"DEBUG: PeerChannel lookup failed: {peer_error}")
+            
+            if not entity:
+                error_msg = f"Could not find channel with username={channel_username}, id={channel_id}"
+                logger.error(f"DEBUG: {error_msg}")
+                raise TelegramServiceError(error_msg)
+            
+            logger.info(f"DEBUG: Entity resolved - type: {type(entity).__name__}, title: {getattr(entity, 'title', 'N/A')}, id: {getattr(entity, 'id', 'N/A')}")
+            
+            # Calculate date cutoff
+            cutoff_date = datetime.utcnow() - timedelta(days=days)
+            logger.info(f"DEBUG: Fetching messages from {cutoff_date} to {datetime.utcnow()} (last {days} days)")
+            
+            messages_saved = 0
+            deals_extracted = 0
+            messages_checked = 0
+            
+            # Fetch messages (iter_messages handles pagination)
+            logger.info(f"DEBUG: Starting message iteration for entity {getattr(entity, 'id', 'N/A')}")
+            
+            async for message in client.iter_messages(
+                entity,
+                offset_date=datetime.utcnow(),
+                reverse=False,  # newest first
+                limit=1000  # increased limit
+            ):
+                messages_checked += 1
+                
+                # Log first few messages for debugging
+                if messages_checked <= 5:
+                    msg_preview = message.text[:50] if message.text else 'NO TEXT'
+                    logger.info(f"DEBUG: Message {message.id} - date: {message.date}, has_text: {bool(message.text)}, text_preview: {msg_preview}...")
+                
+                # Stop if message is older than cutoff
+                if message.date:
+                    # Handle timezone-aware dates
+                    msg_date = message.date.replace(tzinfo=None) if message.date.tzinfo else message.date
+                    if msg_date < cutoff_date:
+                        logger.info(f"DEBUG: Stopping - message {message.id} date {msg_date} is before cutoff {cutoff_date} (checked {messages_checked} messages so far)")
+                        break
+                
+                if not message.text:
+                    continue
+                
+                # Save raw message (use upsert to avoid duplicates)
+                msg_data = {
+                    "user_id": user_id,
+                    "channel_id": channel_db_id,
+                    "telegram_channel_id": channel_id,
+                    "telegram_message_id": message.id,
+                    "content": message.text,
+                    "sender_id": message.sender_id,
+                    "telegram_date": message.date.isoformat() if message.date else None,
+                    "is_processed": False,
+                    "has_media": message.media is not None,
+                    "media_type": type(message.media).__name__ if message.media else None,
+                }
+                
+                # Upsert to avoid duplicates
+                try:
+                    result = supabase.table("telegram_messages").upsert(
+                        msg_data,
+                        on_conflict="user_id,telegram_channel_id,telegram_message_id"
+                    ).execute()
+                    
+                    message_db_id = result.data[0]["id"] if result.data and len(result.data) > 0 else None
+                    messages_saved += 1
+                    
+                    if messages_saved <= 3:
+                        logger.info(f"DEBUG: Saved message {message.id} to database (ID: {message_db_id})")
+                    
+                    # Try to extract deals
+                    if message_db_id:
+                        try:
+                            products = await product_extractor.extract_products(message.text)
+                            
+                            if products:
+                                logger.info(f"DEBUG: Extracted {len(products)} products from message {message.id}")
+                                # Update message with extraction results
+                                supabase.table("telegram_messages").update({
+                                    "is_processed": True,
+                                    "extracted_products": products,
+                                    "processed_at": datetime.utcnow().isoformat()
+                                }).eq("id", message_db_id).execute()
+                                
+                                # Create deals for each product
+                                for product in products:
+                                    await self._create_deal(
+                                        user_id=user_id,
+                                        message_id=message_db_id,
+                                        channel_id=channel_db_id,
+                                        product=product
+                                    )
+                                
+                                deals_extracted += len(products)
+                        except Exception as e:
+                            logger.warning(f"DEBUG: Product extraction failed for message {message.id}: {e}")
+                except Exception as e:
+                    # Skip duplicates or other errors
+                    logger.warning(f"DEBUG: Failed to save message {message.id}: {e}")
+                    continue
+            
+            # Update channel stats
+            supabase.table("telegram_channels").update({
+                "messages_received": messages_saved,
+                "deals_extracted": deals_extracted,
+                "last_message_at": datetime.utcnow().isoformat(),
+            }).eq("user_id", user_id).eq("channel_id", channel_id).execute()
+            
+            logger.info(f"DEBUG: Checked {messages_checked} messages, saved {messages_saved}, extracted {deals_extracted} deals")
+            logger.info(f"Backfill complete for {channel_name} (@{channel_username or 'no-username'}): {messages_saved} messages, {deals_extracted} deals")
+            
+            return {
+                "messages": messages_saved,
+                "deals": deals_extracted,
+                "checked": messages_checked,
+                "channel": channel_username or str(channel_id)
+            }
+            
+        except Exception as e:
+            logger.error(f"DEBUG: Backfill exception for channel {channel_id}: {e}")
+            import traceback
+            logger.error(f"DEBUG: Traceback:\n{traceback.format_exc()}")
+            raise TelegramServiceError(f"Backfill failed: {str(e)}")
     
     # ==========================================
     # MONITORING
@@ -616,10 +816,15 @@ class TelegramService:
             "moq": product.get("moq", 1),
             "product_title": product.get("title"),
             "notes": product.get("notes"),
+            "stage": "new",
             "status": "pending"
         }
         
-        result = supabase.table("telegram_deals").insert(deal_data).execute()
+        # Use upsert to avoid duplicates (based on user_id, channel_id, asin)
+        result = supabase.table("telegram_deals").upsert(
+            deal_data,
+            on_conflict="user_id,channel_id,asin"
+        ).execute()
         deal_id = result.data[0]["id"] if result.data and len(result.data) > 0 else None
         
         # Queue for analysis if auto_analyze is enabled

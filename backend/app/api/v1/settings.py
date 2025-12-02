@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 from app.api.deps import get_current_user
@@ -33,36 +33,59 @@ class CostSettingsUpdate(BaseModel):
 
 @router.get("/profile")
 async def get_profile(current_user=Depends(get_current_user)):
-    """Get user profile."""
-    result = supabase.table("profiles").select("*").eq("id", current_user.id).single().execute()
-    
-    if not result.data:
-        # Create default profile
-        profile = {
-            "id": current_user.id,
-            "email": current_user.email,
-            "full_name": current_user.user_metadata.get("full_name") if hasattr(current_user, 'user_metadata') else None,
+    """Get user profile settings."""
+    try:
+        result = supabase.table("profiles").select("*").eq("id", str(current_user.id)).single().execute()
+        
+        if not result.data:
+            # Return empty profile if none exists
+            return {
+                "id": str(current_user.id),
+                "email": getattr(current_user, 'email', None),
+                "full_name": None,
+                "avatar_url": None,
+            }
+        
+        return result.data
+    except Exception as e:
+        # Return basic info on error
+        import logging
+        logging.getLogger(__name__).warning(f"Error fetching profile: {e}")
+        return {
+            "id": str(current_user.id),
+            "email": getattr(current_user, 'email', None),
+            "full_name": None,
+            "avatar_url": None,
         }
-        supabase.table("profiles").insert(profile).execute()
-        return profile
-    
-    return result.data
 
 
 @router.put("/profile")
 async def update_profile(data: ProfileUpdate, current_user=Depends(get_current_user)):
     """Update user profile."""
-    update_data = {k: v for k, v in data.dict().items() if v is not None}
+    allowed_fields = ["full_name", "avatar_url"]
+    update_data = {k: v for k, v in data.dict().items() if k in allowed_fields and v is not None}
     
     if not update_data:
         return await get_profile(current_user)
     
-    result = supabase.table("profiles").update(update_data).eq("id", current_user.id).execute()
-    
-    if not result.data:
-        raise NotFoundError("Profile")
-    
-    return result.data[0]
+    try:
+        result = supabase.table("profiles").update(update_data).eq("id", str(current_user.id)).execute()
+        
+        if result.data:
+            return result.data[0]
+        else:
+            # Profile doesn't exist, create it
+            profile = {
+                "id": str(current_user.id),
+                "email": getattr(current_user, 'email', None),
+                **update_data
+            }
+            result = supabase.table("profiles").insert(profile).execute()
+            return result.data[0] if result.data else profile
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Error updating profile: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to update profile: {str(e)}")
 
 
 @router.get("/alerts")

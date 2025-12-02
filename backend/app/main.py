@@ -4,7 +4,8 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.core.config import settings
-from app.api.v1 import deals, analysis, suppliers, notifications, settings as api_settings, watchlist, orders, billing, telegram, amazon, keepa
+from app.api.v1 import deals, analysis, suppliers, notifications, settings as api_settings, watchlist, orders, billing, telegram, amazon, keepa, debug, market, sp_api, products, brands, jobs, batch
+from app.middleware.performance import PerformanceMiddleware
 import logging
 
 logger = logging.getLogger(__name__)
@@ -15,15 +16,18 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Performance monitoring - add FIRST to track all requests
+app.add_middleware(PerformanceMiddleware)
+
 # CORS - MUST be added before other middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         settings.FRONTEND_URL,
-        "http://localhost:5173",
+        "http://localhost:3002",
+        "http://localhost:5173",  # Legacy port
         "http://localhost:5189",  # Vite may use different ports
         "http://localhost:3000",
-        "*",  # Allow all origins in development (remove in production)
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -36,11 +40,19 @@ app.add_middleware(
 async def global_exception_handler(request: Request, exc: Exception):
     """Ensure CORS headers are set even on errors."""
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    origin = request.headers.get("origin")
+    allowed_origin = origin if origin in [
+        settings.FRONTEND_URL,
+        "http://localhost:3002",
+        "http://localhost:5173",
+        "http://localhost:5189",
+        "http://localhost:3000",
+    ] else settings.FRONTEND_URL
     return JSONResponse(
         status_code=500,
         content={"detail": "Internal server error"},
         headers={
-            "Access-Control-Allow-Origin": request.headers.get("origin", "*"),
+            "Access-Control-Allow-Origin": allowed_origin,
             "Access-Control-Allow-Credentials": "true",
         }
     )
@@ -48,17 +60,29 @@ async def global_exception_handler(request: Request, exc: Exception):
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     """Ensure CORS headers are set on HTTP exceptions."""
+    origin = request.headers.get("origin")
+    allowed_origin = origin if origin in [
+        settings.FRONTEND_URL,
+        "http://localhost:3002",
+        "http://localhost:5173",
+        "http://localhost:5189",
+        "http://localhost:3000",
+    ] else settings.FRONTEND_URL
     return JSONResponse(
         status_code=exc.status_code,
         content={"detail": exc.detail},
         headers={
-            "Access-Control-Allow-Origin": request.headers.get("origin", "*"),
+            "Access-Control-Allow-Origin": allowed_origin,
             "Access-Control-Allow-Credentials": "true",
         }
     )
 
 # Include routers
 app.include_router(deals.router, prefix=f"{settings.API_V1_PREFIX}/deals", tags=["deals"])
+app.include_router(products.router, prefix=f"{settings.API_V1_PREFIX}", tags=["products"])
+app.include_router(brands.router, prefix=f"{settings.API_V1_PREFIX}", tags=["brands"])
+app.include_router(jobs.router, prefix=f"{settings.API_V1_PREFIX}", tags=["jobs"])
+app.include_router(batch.router, prefix=f"{settings.API_V1_PREFIX}", tags=["batch"])
 app.include_router(analysis.router, prefix=f"{settings.API_V1_PREFIX}/analyze", tags=["analysis"])
 app.include_router(suppliers.router, prefix=f"{settings.API_V1_PREFIX}/suppliers", tags=["suppliers"])
 app.include_router(notifications.router, prefix=f"{settings.API_V1_PREFIX}/notifications", tags=["notifications"])
@@ -69,6 +93,9 @@ app.include_router(billing.router, prefix=f"{settings.API_V1_PREFIX}/billing", t
 app.include_router(telegram.router, prefix=f"{settings.API_V1_PREFIX}/integrations/telegram", tags=["telegram"])
 app.include_router(amazon.router, prefix=f"{settings.API_V1_PREFIX}", tags=["amazon"])
 app.include_router(keepa.router, prefix=f"{settings.API_V1_PREFIX}", tags=["keepa"])
+app.include_router(market.router, prefix=f"{settings.API_V1_PREFIX}", tags=["market"])
+app.include_router(sp_api.router, prefix=f"{settings.API_V1_PREFIX}", tags=["sp-api"])
+app.include_router(debug.router, prefix=f"{settings.API_V1_PREFIX}/debug", tags=["debug"])
 
 
 @app.get("/")

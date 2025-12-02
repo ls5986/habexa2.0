@@ -1,10 +1,19 @@
+"""
+Analysis API - Now uses Celery for all analysis tasks.
+Single analysis is queued to Celery and returns job_id for polling.
+"""
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
 from app.api.deps import get_current_user
-from app.services.asin_analyzer import ASINAnalyzer
+from app.services.supabase_client import supabase
 from app.services.stripe_service import StripeService
 from app.services.feature_gate import feature_gate, require_feature, require_limit
+from app.tasks.analysis import analyze_single_product, batch_analyze_products
+import uuid
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -25,7 +34,11 @@ async def analyze_single(
     request: ASINInput,
     current_user=Depends(get_current_user)
 ):
-    """Analyze a single ASIN."""
+    """
+    Analyze a single ASIN - queues to Celery and returns job_id.
+    Frontend should poll /jobs/{job_id} for results.
+    """
+    user_id = str(current_user.id)
     
     # Check limit (but don't block if feature_gate fails)
     try:
@@ -42,37 +55,74 @@ async def analyze_single(
             )
     except Exception as e:
         # If feature gating fails, allow the analysis anyway (graceful degradation)
-        import logging
-        logging.getLogger(__name__).warning(f"Feature gate check failed: {e}, allowing analysis")
+        logger.warning(f"Feature gate check failed: {e}, allowing analysis")
     
-    analyzer = ASINAnalyzer(str(current_user.id))
-    result = await analyzer.analyze(
-        request.asin,
-        request.buy_cost,
-        request.moq,
-        request.supplier_id
-    )
+    # Get or create product
+    asin = request.asin.strip().upper()
+    existing = supabase.table("products")\
+        .select("id")\
+        .eq("user_id", user_id)\
+        .eq("asin", asin)\
+        .limit(1)\
+        .execute()
     
-    # Increment usage after successful analysis (non-blocking)
+    if existing.data:
+        product_id = existing.data[0]["id"]
+    else:
+        new_prod = supabase.table("products").insert({
+            "user_id": user_id,
+            "asin": asin,
+            "status": "pending"
+        }).execute()
+        product_id = new_prod.data[0]["id"] if new_prod.data else None
+    
+    if not product_id:
+        raise HTTPException(500, "Failed to create product")
+    
+    # Create job record
+    job_id = str(uuid.uuid4())
+    supabase.table("jobs").insert({
+        "id": job_id,
+        "user_id": user_id,
+        "type": "single_analyze",
+        "status": "pending",
+        "total_items": 1,
+        "metadata": {
+            "asin": asin,
+            "product_id": product_id,
+            "buy_cost": request.buy_cost,
+            "moq": request.moq,
+            "supplier_id": request.supplier_id
+        }
+    }).execute()
+    
+    # Queue to Celery
+    analyze_single_product.delay(job_id, user_id, product_id, asin)
+    
+    # Get usage info
     try:
-        await feature_gate.increment_usage(str(current_user.id), "analyses_per_month", 1)
-        check = await feature_gate.check_limit(str(current_user.id), "analyses_per_month")
-        result["usage"] = {
+        check = await feature_gate.check_limit(user_id, "analyses_per_month")
+        usage = {
             "analyses_remaining": check.get("remaining", 999),
             "analyses_limit": check.get("limit", 999),
             "unlimited": check.get("unlimited", False)
         }
     except Exception as e:
-        # If usage tracking fails, don't break the response
-        import logging
-        logging.getLogger(__name__).warning(f"Usage tracking failed: {e}")
-        result["usage"] = {
+        logger.warning(f"Usage tracking failed: {e}")
+        usage = {
             "analyses_remaining": 999,
             "analyses_limit": 999,
             "unlimited": True
         }
     
-    return result
+    return {
+        "job_id": job_id,
+        "product_id": product_id,
+        "asin": asin,
+        "status": "queued",
+        "message": "Analysis queued. Poll /jobs/{job_id} for results.",
+        "usage": usage
+    }
 
 
 @router.post("/batch")
@@ -80,7 +130,11 @@ async def analyze_batch(
     request: BatchAnalysisRequest,
     current_user=Depends(require_feature("bulk_analyze"))
 ):
-    """Analyze multiple ASINs at once. Requires Pro tier or higher."""
+    """
+    Analyze multiple ASINs - queues to Celery and returns job_id.
+    Frontend should poll /jobs/{job_id} for results.
+    """
+    user_id = str(current_user.id)
     
     # Check if user has enough analyses remaining
     check = await feature_gate.check_limit(current_user.id, "analyses_per_month")
@@ -102,63 +156,74 @@ async def analyze_batch(
                 }
             )
     
-    analyzer = ASINAnalyzer(current_user.id)
+    # Get or create products for each ASIN
+    product_ids = []
+    for item in request.items:
+        asin = item.asin.strip().upper()
+        existing = supabase.table("products")\
+            .select("id")\
+            .eq("user_id", user_id)\
+            .eq("asin", asin)\
+            .limit(1)\
+            .execute()
+        
+        if existing.data:
+            product_id = existing.data[0]["id"]
+        else:
+            new_prod = supabase.table("products").insert({
+                "user_id": user_id,
+                "asin": asin,
+                "status": "pending"
+            }).execute()
+            product_id = new_prod.data[0]["id"] if new_prod.data else None
+        
+        if product_id:
+            product_ids.append(product_id)
     
-    items = [
-        {
-            "asin": item.asin,
-            "buy_cost": item.buy_cost,
-            "moq": item.moq,
-            "supplier_id": item.supplier_id
+    if not product_ids:
+        raise HTTPException(400, "No valid products to analyze")
+    
+    # Create job record
+    job_id = str(uuid.uuid4())
+    supabase.table("jobs").insert({
+        "id": job_id,
+        "user_id": user_id,
+        "type": "batch_analyze",
+        "status": "pending",
+        "total_items": len(product_ids),
+        "metadata": {
+            "item_count": item_count,
+            "product_ids": product_ids
         }
-        for item in request.items
-    ]
+    }).execute()
     
-    results = await analyzer.analyze_batch(items)
-    
-    # Increment usage for each successful analysis
-    successful_count = len([r for r in results if not r.get("error")])
-    await feature_gate.increment_usage(current_user.id, "analyses_per_month", successful_count)
+    # Queue to Celery
+    batch_analyze_products.delay(job_id, user_id, product_ids)
     
     # Get updated usage
     final_check = await feature_gate.check_limit(current_user.id, "analyses_per_month")
     
     return {
-        "results": results,
-        "total": len(results),
-        "successful": successful_count,
+        "job_id": job_id,
+        "status": "queued",
+        "total": len(product_ids),
+        "message": f"Queued {len(product_ids)} products for analysis. Poll /jobs/{job_id} for results.",
         "usage": {
             "analyses_remaining": final_check.get("remaining", 0),
             "analyses_limit": final_check.get("limit", 0),
             "unlimited": final_check.get("unlimited", False)
         }
     }
-    """Analyze multiple ASINs."""
-    
-    analyzer = ASINAnalyzer(current_user.id)
-    
-    items = [
-        {
-            "asin": item.asin,
-            "buy_cost": item.buy_cost,
-            "moq": item.moq,
-            "supplier_id": item.supplier_id
-        }
-        for item in request.items
-    ]
-    
-    results = await analyzer.analyze_batch(items)
-    
-    return results
 
 
 @router.get("/history")
 async def get_history(current_user=Depends(get_current_user)):
     """Get analysis history."""
+    result = supabase.table("analyses")\
+        .select("*")\
+        .eq("user_id", str(current_user.id))\
+        .order("created_at", desc=True)\
+        .limit(20)\
+        .execute()
     
-    from app.services.supabase_client import supabase
-    
-    result = supabase.table("deals").select("*").eq("user_id", current_user.id).order("analyzed_at", desc=True).limit(20).execute()
-    
-    return result.data
-
+    return result.data or []

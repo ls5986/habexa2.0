@@ -35,12 +35,26 @@ async def get_keepa_product(
         )
         
         if not data:
-            raise HTTPException(404, f"Product not found: {asin}")
+            # Return a more helpful error - could be API key issue, invalid ASIN, or Keepa API error
+            raise HTTPException(
+                404, 
+                f"Keepa data not available for {asin}. This could mean: "
+                "1) ASIN doesn't exist, 2) Keepa API key issue, or 3) Keepa API error. "
+                "Check backend logs for details."
+            )
         
         return data
         
     except KeepaError as e:
         raise HTTPException(400, str(e))
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
+    except Exception as e:
+        # Log unexpected errors
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Unexpected error in Keepa endpoint for {asin}: {e}")
+        raise HTTPException(500, f"Internal error fetching Keepa data: {str(e)}")
 
 
 @router.get("/history/{asin}")

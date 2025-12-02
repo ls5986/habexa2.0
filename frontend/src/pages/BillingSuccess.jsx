@@ -4,6 +4,7 @@ import { CheckCircle, ArrowRight } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useStripe } from '../context/StripeContext';
 import { habexa } from '../theme';
+import api from '../services/api';
 
 const BillingSuccess = () => {
   const navigate = useNavigate();
@@ -13,7 +14,17 @@ const BillingSuccess = () => {
 
   useEffect(() => {
     if (sessionId) {
-      refreshSubscription();
+      // First try to sync from session, then refresh
+      const syncAndRefresh = async () => {
+        try {
+          await api.post(`/billing/sync?session_id=${sessionId}`);
+        } catch (error) {
+          console.warn('Failed to sync subscription from session:', error);
+        }
+        // Always refresh subscription after sync attempt
+        refreshSubscription();
+      };
+      syncAndRefresh();
     }
   }, [sessionId, refreshSubscription]);
 

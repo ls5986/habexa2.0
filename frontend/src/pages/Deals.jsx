@@ -1,318 +1,221 @@
-import { Box, Typography, Tabs, Tab, TextField, Select, MenuItem, FormControl, InputLabel, Button, Chip } from '@mui/material';
-import { useState } from 'react';
-import { Zap, Flame, Clock, Star, Search, MessageSquare } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDeals } from '../hooks/useDeals';
-import DealCard from '../components/common/DealCard';
-import DealDetailPanel from '../components/features/deals/DealDetailPanel';
-import { DealCardSkeleton } from '../components/common/LoadingSkeleton';
-import EmptyState from '../components/common/EmptyState';
-import { Inbox } from 'lucide-react';
+import {
+  Box, Typography, Card, Button, Chip, CircularProgress,
+  IconButton, Tabs, Tab, TextField, InputAdornment
+} from '@mui/material';
+import { Search, RefreshCw, ExternalLink, Package, TrendingUp, Clock, Zap } from 'lucide-react';
+import api from '../services/api';
 
-const Deals = () => {
-  const navigate = useNavigate();
+export default function Deals() {
+  const [deals, setDeals] = useState([]);
+  const [stats, setStats] = useState({ total: 0, pending: 0, analyzed: 0, profitable: 0 });
+  const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState(0);
-  const [filters, setFilters] = useState({
-    status: null,
-    minRoi: null,
-    category: null,
-    gating: null,
-  });
-  const [selectedDeals, setSelectedDeals] = useState(new Set());
+  const [search, setSearch] = useState('');
+  const navigate = useNavigate();
+  const fetchedRef = useRef(false);
 
-  const statusFilter = tab === 0 ? null : tab === 1 ? 'analyzed' : tab === 2 ? 'pending' : 'saved';
-  const { deals, loading, saveDeal, dismissDeal } = useDeals({
-    ...filters,
-    status: statusFilter,
-  });
+  // Single fetch on mount - NO dependencies that cause re-fetch
+  useEffect(() => {
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
+    fetchData();
+  }, []);
 
-  const [selectedDeal, setSelectedDeal] = useState(null);
-
-  const filteredDeals = deals.filter(deal => {
-    if (tab === 1) return deal.is_profitable && deal.roi >= 20;
-    if (tab === 2) return deal.status === 'pending';
-    if (tab === 3) return deal.status === 'saved';
-    return true;
-  });
-
-  const handleSave = async (deal) => {
+  const fetchData = async () => {
+    setLoading(true);
+    const start = Date.now();
+    
     try {
-      await saveDeal(deal.id);
-    } catch (error) {
-      console.error('Failed to save deal:', error);
+      // PARALLEL fetch - both at same time
+      const [dealsRes, statsRes] = await Promise.all([
+        api.get('/deals?limit=50'),
+        api.get('/deals/stats')
+      ]);
+      
+      console.log(`✅ API calls took ${Date.now() - start}ms`);
+      
+      setDeals(dealsRes.data.deals || dealsRes.data || []);
+      setStats(statsRes.data || { total: 0, pending: 0, analyzed: 0, profitable: 0 });
+    } catch (err) {
+      console.error('Fetch error:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDismiss = async (deal) => {
+  // Filter deals by tab - NO API call, just filter existing data
+  const filteredDeals = React.useMemo(() => {
+    let result = deals;
+    
+    if (tab === 1) {
+      result = deals.filter(d => d.analysis?.roi >= 30);
+    } else if (tab === 2) {
+      result = deals.filter(d => d.status === 'pending' || !d.status);
+    }
+    
+    if (search) {
+      result = result.filter(d => d.asin?.toLowerCase().includes(search.toLowerCase()));
+    }
+    
+    return result;
+  }, [deals, tab, search]);
+
+  const handleRefresh = () => {
+    fetchedRef.current = false;
+    fetchData();
+  };
+
+  const handleAnalyzeAll = async () => {
     try {
-      await dismissDeal(deal.id);
-    } catch (error) {
-      console.error('Failed to dismiss deal:', error);
+      await api.post('/deals/analyze-batch', { analyze_all_pending: true });
+      handleRefresh();
+    } catch (err) {
+      console.error('Batch analysis failed:', err);
     }
   };
 
-  const profitableCount = deals.filter(d => d.is_profitable && d.roi >= 20).length;
-  const pendingCount = deals.filter(d => d.status === 'pending').length;
-  const savedCount = deals.filter(d => d.status === 'saved').length;
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
-    <Box>
+    <Box sx={{ p: 3 }}>
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
-          <Typography variant="h4" fontWeight="700" color="white">
-            Deal Feed
-          </Typography>
+          <Typography variant="h4" fontWeight="700">Deal Feed</Typography>
           <Typography variant="body2" color="text.secondary">
-            Analyze and track profitable products
+            {stats.total} deals - {stats.pending} pending - {stats.profitable} profitable
           </Typography>
         </Box>
-        
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          {/* Live indicator */}
-          <Chip
-            icon={
-              <Box 
-                sx={{ 
-                  width: 8, 
-                  height: 8, 
-                  borderRadius: '50%', 
-                  bgcolor: '#10B981',
-                  '@keyframes pulse': {
-                    '0%, 100%': { opacity: 1 },
-                    '50%': { opacity: 0.5 },
-                  },
-                  animation: 'pulse 2s infinite',
-                }} 
-              />
-            }
-            label="Live"
-            size="small"
-            sx={{ 
-              bgcolor: 'rgba(16, 185, 129, 0.1)', 
-              color: '#10B981',
-              border: '1px solid rgba(16, 185, 129, 0.2)'
-            }}
-          />
-          
-          {/* Quick Analyze button moved to TopBar */}
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          {stats.pending > 0 && (
+            <Button variant="contained" startIcon={<Zap size={16} />} onClick={handleAnalyzeAll}>
+              Analyze All ({stats.pending})
+            </Button>
+          )}
+          <IconButton onClick={handleRefresh}><RefreshCw size={20} /></IconButton>
         </Box>
       </Box>
 
-      {/* Filters - Better Styled */}
-      <Box 
-        sx={{ 
-          display: 'flex', 
-          gap: 2, 
-          mb: 3,
-          p: 2,
-          borderRadius: 2,
-          bgcolor: '#1A1A2E',
-          border: '1px solid #2D2D3D'
-        }}
-      >
-        <FormControl size="small" sx={{ minWidth: 140 }}>
-          <InputLabel sx={{ color: '#A0A0B0' }}>Channel</InputLabel>
-          <Select
-            value={filters.supplierId || ''}
-            label="Channel"
-            onChange={(e) => setFilters({ ...filters, supplierId: e.target.value })}
-            sx={{
-              bgcolor: '#252540',
-              '& .MuiOutlinedInput-notchedOutline': { borderColor: '#2D2D3D' },
-              '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#7C3AED' },
-            }}
-          >
-            <MenuItem value="">All Channels</MenuItem>
-          </Select>
-        </FormControl>
-        
-        <FormControl size="small" sx={{ minWidth: 140 }}>
-          <InputLabel sx={{ color: '#A0A0B0' }}>Min ROI</InputLabel>
-          <Select
-            value={filters.minRoi || ''}
-            label="Min ROI"
-            onChange={(e) => setFilters({ ...filters, minRoi: e.target.value })}
-            sx={{
-              bgcolor: '#252540',
-              '& .MuiOutlinedInput-notchedOutline': { borderColor: '#2D2D3D' },
-              '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#7C3AED' },
-            }}
-          >
-            <MenuItem value="">Any</MenuItem>
-            <MenuItem value={20}>≥ 20%</MenuItem>
-            <MenuItem value={30}>≥ 30%</MenuItem>
-            <MenuItem value={40}>≥ 40%</MenuItem>
-          </Select>
-        </FormControl>
-        
-        <FormControl size="small" sx={{ minWidth: 140 }}>
-          <InputLabel sx={{ color: '#A0A0B0' }}>Category</InputLabel>
-          <Select
-            value={filters.category || ''}
-            label="Category"
-            onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-            sx={{
-              bgcolor: '#252540',
-              '& .MuiOutlinedInput-notchedOutline': { borderColor: '#2D2D3D' },
-              '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#7C3AED' },
-            }}
-          >
-            <MenuItem value="">All Categories</MenuItem>
-          </Select>
-        </FormControl>
-        
-        <FormControl size="small" sx={{ minWidth: 140 }}>
-          <InputLabel sx={{ color: '#A0A0B0' }}>Gating</InputLabel>
-          <Select
-            value={filters.gating || ''}
-            label="Gating"
-            onChange={(e) => setFilters({ ...filters, gating: e.target.value })}
-            sx={{
-              bgcolor: '#252540',
-              '& .MuiOutlinedInput-notchedOutline': { borderColor: '#2D2D3D' },
-              '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#7C3AED' },
-            }}
-          >
-            <MenuItem value="">Any</MenuItem>
-            <MenuItem value="ungated">Ungated</MenuItem>
-            <MenuItem value="gated">Gated</MenuItem>
-          </Select>
-        </FormControl>
-        
-        <TextField
-          size="small"
-          placeholder="Search ASIN..."
-          InputProps={{
-            startAdornment: <Search size={18} style={{ color: '#6B6B7B', marginRight: 8 }} />,
-          }}
-          sx={{
-            ml: 'auto',
-            minWidth: 200,
-            '& .MuiOutlinedInput-root': {
-              bgcolor: '#252540',
-              '& fieldset': { borderColor: '#2D2D3D' },
-              '&:hover fieldset': { borderColor: '#7C3AED' },
-            }
-          }}
-        />
-      </Box>
-
-      {/* Tabs - Better Styled */}
-      <Tabs
-        value={tab}
-        onChange={(e, v) => setTab(v)}
-        sx={{
-          mb: 3,
-          '& .MuiTab-root': {
-            color: '#A0A0B0',
-            textTransform: 'none',
-            fontWeight: 500,
-            '&.Mui-selected': { color: '#FFFFFF' },
-          },
-          '& .MuiTabs-indicator': {
-            bgcolor: '#7C3AED',
-            height: 3,
-            borderRadius: '3px 3px 0 0',
-          },
-        }}
-      >
-        <Tab label={`All (${deals.length})`} />
-        <Tab icon={<Flame size={16} />} iconPosition="start" label={`Profitable (${profitableCount})`} />
-        <Tab icon={<Clock size={16} />} iconPosition="start" label={`Pending (${pendingCount})`} />
-        <Tab icon={<Star size={16} />} iconPosition="start" label={`Saved (${savedCount})`} />
+      {/* Tabs - client-side filtering only */}
+      <Tabs value={tab} onChange={(e, v) => setTab(v)} sx={{ mb: 3 }}>
+        <Tab label={`All (${stats.total})`} />
+        <Tab icon={<TrendingUp size={14} />} iconPosition="start" label={`Profitable (${stats.profitable})`} />
+        <Tab icon={<Clock size={14} />} iconPosition="start" label={`Pending (${stats.pending})`} />
       </Tabs>
 
-      {/* Deal List */}
-      {loading ? (
-        <Box display="flex" flexDirection="column" gap={2}>
-          {[1, 2, 3].map(i => (
-            <DealCardSkeleton key={i} />
-          ))}
-        </Box>
-      ) : filteredDeals.length === 0 ? (
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            py: 10,
-            px: 4,
-            borderRadius: 3,
-            bgcolor: '#1A1A2E',
-            border: '1px dashed #2D2D3D',
-          }}
-        >
-          <Box
-            sx={{
-              width: 80,
-              height: 80,
-              borderRadius: '50%',
-              bgcolor: 'rgba(124, 58, 237, 0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              mb: 3,
-            }}
-          >
-            <Inbox size={40} style={{ color: '#7C3AED' }} />
-          </Box>
-          
-          <Typography variant="h6" fontWeight="600" color="white" gutterBottom>
-            No deals yet
-          </Typography>
-          
-          <Typography variant="body2" color="text.secondary" textAlign="center" maxWidth={400} mb={3}>
-            Start by analyzing products or connect your Telegram channels to automatically extract deals from supplier messages.
-          </Typography>
-          
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Button
-              variant="contained"
-              startIcon={<Zap size={18} />}
-              onClick={() => navigate('/analyze')}
-              sx={{ background: 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)' }}
-            >
-              Analyze Product
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<MessageSquare size={18} />}
-              onClick={() => navigate('/settings?tab=integrations')}
-              sx={{ borderColor: '#2D2D3D', color: '#A0A0B0' }}
-            >
-              Connect Telegram
-            </Button>
-          </Box>
-        </Box>
+      {/* Search */}
+      <TextField
+        size="small"
+        placeholder="Search ASIN..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        sx={{ mb: 3, width: 250 }}
+        InputProps={{
+          startAdornment: <InputAdornment position="start"><Search size={16} /></InputAdornment>
+        }}
+      />
+
+      {/* Deals List - Simple cards */}
+      {filteredDeals.length === 0 ? (
+        <Card sx={{ p: 4, textAlign: 'center' }}>
+          <Package size={48} color="#666" />
+          <Typography variant="h6" sx={{ mt: 2 }}>No deals found</Typography>
+        </Card>
       ) : (
-        <Box display="flex" flexDirection="column" gap={2}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           {filteredDeals.map((deal) => (
-            <DealCard
-              key={deal.id}
-              deal={deal}
-              onView={(deal) => setSelectedDeal(deal)}
-              onSave={handleSave}
-              onDismiss={handleDismiss}
-            />
+            <DealCard key={deal.id} deal={deal} onClick={() => navigate(`/deals/${deal.id}`)} />
           ))}
         </Box>
       )}
-
-      <DealDetailPanel
-        deal={selectedDeal}
-        open={!!selectedDeal}
-        onClose={() => setSelectedDeal(null)}
-        onSave={() => selectedDeal && handleSave(selectedDeal)}
-        onOrder={() => {
-          // TODO: Implement order functionality
-          console.log('Order:', selectedDeal);
-        }}
-      />
     </Box>
   );
-};
+}
 
-export default Deals;
+// Separate component to prevent re-renders
+const DealCard = React.memo(({ deal, onClick }) => {
+  const analysis = deal.analysis;
+  const roi = analysis?.roi || 0;
+  
+  return (
+    <Card 
+      onClick={onClick}
+      sx={{ 
+        p: 2, 
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 2,
+        '&:hover': { bgcolor: 'action.hover' }
+      }}
+    >
+      {/* Image */}
+      <Box sx={{ width: 50, height: 50, bgcolor: '#252540', borderRadius: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        {analysis?.image_url ? (
+          <img src={analysis.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 4 }} />
+        ) : (
+          <Package size={24} color="#666" />
+        )}
+      </Box>
 
+      {/* Info */}
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography variant="body2" fontFamily="monospace">{deal.asin}</Typography>
+          <Chip 
+            label={deal.status || 'pending'} 
+            size="small" 
+            color={deal.status === 'analyzed' ? 'success' : 'warning'}
+            sx={{ height: 20, fontSize: 11 }}
+          />
+        </Box>
+        <Typography variant="body2" noWrap color="text.secondary">
+          {analysis?.product_title || deal.product_title || 'Pending analysis...'}
+        </Typography>
+      </Box>
+
+      {/* Stats */}
+      <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+        <Box sx={{ textAlign: 'right' }}>
+          <Typography variant="caption" color="text.secondary">Buy</Typography>
+          <Typography variant="body2">${deal.buy_cost?.toFixed(2) || '—'}</Typography>
+        </Box>
+        {analysis && (
+          <>
+            <Box sx={{ textAlign: 'right' }}>
+              <Typography variant="caption" color="text.secondary">Profit</Typography>
+              <Typography variant="body2" color={analysis.profit > 0 ? 'success.main' : 'error.main'}>
+                ${analysis.profit?.toFixed(2) || '—'}
+              </Typography>
+            </Box>
+            <Box sx={{ textAlign: 'right' }}>
+              <Typography variant="caption" color="text.secondary">ROI</Typography>
+              <Typography variant="body2" fontWeight="700" color={roi >= 30 ? 'success.main' : 'warning.main'}>
+                {roi.toFixed(0)}%
+              </Typography>
+            </Box>
+          </>
+        )}
+      </Box>
+
+      {/* Amazon Link */}
+      <IconButton 
+        size="small" 
+        component="a" 
+        href={`https://amazon.com/dp/${deal.asin}`}
+        target="_blank"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <ExternalLink size={16} />
+      </IconButton>
+    </Card>
+  );
+});

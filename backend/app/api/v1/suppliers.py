@@ -59,22 +59,37 @@ async def create_supplier(
 ):
     """Create a new supplier. Enforces supplier limit based on tier."""
     
-    data = supplier.dict()
-    data["user_id"] = current_user.id
-    
-    result = supabase.table("suppliers").insert(data).execute()
-    
-    # Get updated limit info
-    check = await feature_gate.check_limit(current_user.id, "suppliers")
-    
-    return {
-        "supplier": result.data[0] if result.data else None,
-        "limit_info": {
-            "remaining": check.get("remaining"),
-            "limit": check.get("limit"),
-            "unlimited": check.get("unlimited", False)
+    try:
+        data = supplier.dict(exclude_none=True)  # Remove None values
+        data["user_id"] = str(current_user.id)
+        
+        # Ensure is_active is set
+        if "is_active" not in data:
+            data["is_active"] = True
+        
+        result = supabase.table("suppliers").insert(data).execute()
+        
+        if not result.data:
+            raise HTTPException(status_code=500, detail="Failed to create supplier")
+        
+        # Get updated limit info
+        check = await feature_gate.check_limit(current_user.id, "suppliers")
+        
+        return {
+            "supplier": result.data[0],
+            "limit_info": {
+                "remaining": check.get("remaining"),
+                "limit": check.get("limit"),
+                "unlimited": check.get("unlimited", False)
+            }
         }
-    }
+    except HTTPException:
+        raise
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error creating supplier: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to create supplier: {str(e)}")
 
 
 @router.get("/{supplier_id}")

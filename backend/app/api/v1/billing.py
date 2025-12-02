@@ -26,6 +26,66 @@ async def get_subscription(current_user=Depends(get_current_user)):
     return await StripeService.get_subscription(current_user.id)
 
 
+@router.post("/sync")
+async def sync_subscription(
+    session_id: Optional[str] = None,
+    current_user=Depends(get_current_user)
+):
+    """Sync subscription from Stripe checkout session OR check for existing subscriptions.
+    
+    If session_id provided: syncs from that checkout session.
+    If no session_id: checks Stripe for any existing active subscriptions and syncs them.
+    """
+    try:
+        if session_id:
+            # Sync from specific checkout session
+            result = await StripeService.sync_subscription_from_session(
+                session_id,
+                current_user.id
+            )
+            if not result.get("success"):
+                raise HTTPException(status_code=400, detail=result.get("error", "Failed to sync"))
+        else:
+            # Check for existing subscriptions in Stripe
+            customer_id = await StripeService.get_or_create_customer(
+                current_user.id,
+                current_user.email
+            )
+            
+            # List active subscriptions
+            stripe_subs = stripe.Subscription.list(
+                customer=customer_id,
+                status="all",  # Check all statuses
+                limit=10
+            )
+            
+            if stripe_subs.data:
+                # Sync the most recent active/trialing subscription
+                active_subs = [s for s in stripe_subs.data if s.status in ["active", "trialing"]]
+                if active_subs:
+                    from app.services.stripe_service import StripeWebhookHandler
+                    await StripeWebhookHandler.handle_subscription_updated(active_subs[0])
+                elif stripe_subs.data:
+                    # Sync the most recent one even if not active
+                    from app.services.stripe_service import StripeWebhookHandler
+                    await StripeWebhookHandler.handle_subscription_updated(stripe_subs.data[0])
+        
+        # Invalidate cache
+        try:
+            from app.services.redis_client import cache_service
+            if cache_service:
+                cache_service.invalidate_subscription_cache(current_user.id)
+        except:
+            pass
+        
+        # Return updated subscription
+        return await StripeService.get_subscription(current_user.id)
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Sync subscription error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/plans")
 async def get_available_plans():
     """Get available subscription plans."""
@@ -77,15 +137,29 @@ async def create_checkout_session(
     request: CheckoutRequest,
     current_user=Depends(get_current_user)
 ):
-    """Create a Stripe Checkout session with 14-day trial."""
+    """Create a Stripe Checkout session with 14-day trial.
+    
+    IMPORTANT: Checks for existing subscriptions first.
+    If user already has an active subscription, returns existing subscription info.
+    """
     
     try:
-        session = await StripeService.create_checkout_session(
+        result = await StripeService.create_checkout_session(
             user_id=current_user.id,
             email=current_user.email,
             price_key=request.price_key
         )
-        return session
+        
+        # If existing subscription found, return it with a message
+        if result.get("existing"):
+            return {
+                "existing": True,
+                "subscription": result.get("subscription"),
+                "message": result.get("message", "You already have an active subscription."),
+                "portal_url": await StripeService.create_portal_session(current_user.id)
+            }
+        
+        return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:

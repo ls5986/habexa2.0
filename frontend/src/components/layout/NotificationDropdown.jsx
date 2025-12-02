@@ -7,14 +7,30 @@ const NotificationDropdown = ({ anchorEl, open, onClose }) => {
   const { notifications, markAsRead, markAllAsRead } = useNotifications();
   const navigate = useNavigate();
 
-  const handleNotificationClick = (notification) => {
+  const handleNotificationClick = async (notification) => {
+    // Mark as read
     if (!notification.is_read) {
-      markAsRead(notification.id);
+      try {
+        await markAsRead(notification.id);
+      } catch (err) {
+        console.error('Failed to mark notification as read:', err);
+      }
     }
+    
+    // Close dropdown
+    onClose();
+    
+    // Navigate to the deal
     if (notification.deal_id) {
       navigate(`/deals/${notification.deal_id}`);
+    } else if (notification.data?.deal_id) {
+      // Check nested data object
+      navigate(`/deals/${notification.data.deal_id}`);
+    } else if (notification.data?.asin) {
+      // If we have ASIN, try to find the deal
+      // For now, just navigate to deals page
+      navigate('/deals');
     }
-    onClose();
   };
 
   return (

@@ -31,7 +31,14 @@ class AddChannelsRequest(BaseModel):
 class AddTelegramChannelRequest(BaseModel):
     channel_id: int
     channel_name: str
+    channel_username: Optional[str] = None
     channel_type: str = "channel"
+    # Supplier creation fields
+    create_supplier: bool = True
+    supplier_name: Optional[str] = None
+    supplier_website: Optional[str] = None
+    supplier_contact_email: Optional[str] = None
+    supplier_notes: Optional[str] = None
 
 
 # ==========================================
@@ -160,25 +167,107 @@ async def get_monitored_channels(current_user=Depends(get_current_user)):
 @router.post("/channels")
 async def add_monitored_channel(
     request: AddTelegramChannelRequest,
+    auto_backfill: bool = False,
     current_user=Depends(require_limit("telegram_channels"))
 ):
     """
     Add a channel to monitoring list.
     Enforces channel limit based on subscription tier.
+    Optionally creates a linked supplier.
+    Optionally backfills last 14 days of messages.
     """
+    user_id = str(current_user.id)
     
     try:
+        supplier_id = None
+        
+        # Create supplier if requested
+        if request.create_supplier:
+            supplier_name = request.supplier_name or request.channel_name
+            
+            # Check if supplier with this name already exists
+            existing = supabase.table("suppliers")\
+                .select("id")\
+                .eq("user_id", user_id)\
+                .ilike("name", supplier_name)\
+                .limit(1)\
+                .execute()
+            
+            if existing.data:
+                supplier_id = existing.data[0]["id"]
+            else:
+                # Create new supplier
+                supplier_data = {
+                    "user_id": user_id,
+                    "name": supplier_name,
+                    "website": request.supplier_website,
+                    "contact_email": request.supplier_contact_email,
+                    "notes": request.supplier_notes or f"Auto-created from Telegram channel: {request.channel_username or request.channel_name}",
+                    "source": "telegram",
+                    "is_active": True,
+                }
+                
+                supplier_result = supabase.table("suppliers")\
+                    .insert(supplier_data)\
+                    .execute()
+                
+                if supplier_result.data:
+                    supplier_id = supplier_result.data[0]["id"]
+        
+        # Check if channel already exists
+        existing_channel = supabase.table("telegram_channels")\
+            .select("id")\
+            .eq("user_id", user_id)\
+            .eq("channel_id", request.channel_id)\
+            .limit(1)\
+            .execute()
+        
+        if existing_channel.data:
+            # Update existing channel with supplier link
+            if supplier_id:
+                supabase.table("telegram_channels")\
+                    .update({"supplier_id": supplier_id})\
+                    .eq("id", existing_channel.data[0]["id"])\
+                    .execute()
+            
+            return {
+                "channel": existing_channel.data[0],
+                "supplier_id": supplier_id,
+                "message": "Channel already exists, updated supplier link"
+            }
+        
+        # Add channel via service (will create in DB)
         channel = await telegram_service.add_channel(
-            user_id=current_user.id,
+            user_id=user_id,
             channel_id=request.channel_id,
             channel_name=request.channel_name,
-            channel_type=request.channel_type
+            channel_username=request.channel_username,
+            channel_type=request.channel_type,
+            supplier_id=supplier_id
         )
         
         # Increment usage
         await feature_gate.increment_usage(current_user.id, "telegram_channels")
         
-        return channel
+        # Auto backfill if requested
+        backfill_result = None
+        if auto_backfill:
+            try:
+                backfill_result = await telegram_service.backfill_channel(
+                    user_id=user_id,
+                    channel_id=request.channel_id,
+                    days=14
+                )
+            except Exception as e:
+                logger = __import__("logging").getLogger(__name__)
+                logger.warning(f"Auto-backfill failed for channel {request.channel_id}: {e}")
+                # Don't fail the request if backfill fails
+        
+        return {
+            "channel": channel,
+            "supplier_id": supplier_id,
+            "backfill": backfill_result
+        }
     except TelegramServiceError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -243,6 +332,158 @@ async def remove_monitored_channel(
     await feature_gate.decrement_usage(current_user.id, "telegram_channels")
     
     return {"message": "Channel removed"}
+
+
+@router.post("/channels/{channel_id}/backfill")
+async def backfill_channel(
+    channel_id: int,
+    days: int = 14,
+    current_user=Depends(get_current_user)
+):
+    """
+    Fetch last N days of messages from a channel.
+    Useful for syncing historical messages when adding a channel.
+    """
+    
+    if days > 30:
+        raise HTTPException(status_code=400, detail="Cannot backfill more than 30 days")
+    
+    try:
+        result = await telegram_service.backfill_channel(
+            user_id=current_user.id,
+            channel_id=channel_id,
+            days=days
+        )
+        return result
+    except TelegramServiceError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+class LinkChannelToSupplierRequest(BaseModel):
+    supplier_id: Optional[str] = None  # Link to existing supplier
+    create_supplier: bool = False  # Or create new supplier
+    supplier_name: Optional[str] = None
+    supplier_website: Optional[str] = None
+    supplier_contact_email: Optional[str] = None
+    supplier_notes: Optional[str] = None
+
+
+@router.post("/channels/{channel_id}/link-supplier")
+async def link_channel_to_supplier(
+    channel_id: int,
+    request: LinkChannelToSupplierRequest,
+    current_user=Depends(get_current_user)
+):
+    """
+    Link an existing Telegram channel to a supplier.
+    Can either link to an existing supplier or create a new one.
+    """
+    user_id = str(current_user.id)
+    
+    try:
+        # Get the channel
+        channel_result = supabase.table("telegram_channels")\
+            .select("*")\
+            .eq("user_id", user_id)\
+            .eq("channel_id", channel_id)\
+            .limit(1)\
+            .execute()
+        
+        if not channel_result.data:
+            raise HTTPException(status_code=404, detail="Channel not found")
+        
+        channel = channel_result.data[0]
+        supplier_id = None
+        
+        # Link to existing supplier
+        if request.supplier_id:
+            # Verify supplier exists and belongs to user
+            supplier_result = supabase.table("suppliers")\
+                .select("id")\
+                .eq("id", request.supplier_id)\
+                .eq("user_id", user_id)\
+                .limit(1)\
+                .execute()
+            
+            if not supplier_result.data:
+                raise HTTPException(status_code=404, detail="Supplier not found")
+            
+            supplier_id = request.supplier_id
+        
+        # Create new supplier
+        elif request.create_supplier:
+            supplier_name = request.supplier_name or channel.get("channel_name", "Unknown Supplier")
+            
+            # Check if supplier with this name already exists
+            existing = supabase.table("suppliers")\
+                .select("id")\
+                .eq("user_id", user_id)\
+                .ilike("name", supplier_name)\
+                .limit(1)\
+                .execute()
+            
+            if existing.data:
+                supplier_id = existing.data[0]["id"]
+            else:
+                # Create new supplier
+                supplier_data = {
+                    "user_id": user_id,
+                    "name": supplier_name,
+                    "website": request.supplier_website,
+                    "contact_email": request.supplier_contact_email,
+                    "notes": request.supplier_notes or f"Linked from Telegram channel: {channel.get('channel_name')} (@{channel.get('channel_username') or 'no-username'})",
+                    "source": "telegram",
+                    "telegram_channel_id": channel_id,
+                    "telegram_username": channel.get("channel_username"),
+                    "is_active": True,
+                }
+                
+                supplier_result = supabase.table("suppliers")\
+                    .insert(supplier_data)\
+                    .execute()
+                
+                if supplier_result.data:
+                    supplier_id = supplier_result.data[0]["id"]
+        
+        if not supplier_id:
+            raise HTTPException(status_code=400, detail="Must provide supplier_id or set create_supplier=true")
+        
+        # Update channel with supplier_id
+        update_result = supabase.table("telegram_channels")\
+            .update({"supplier_id": supplier_id})\
+            .eq("user_id", user_id)\
+            .eq("channel_id", channel_id)\
+            .execute()
+        
+        # Get updated channel
+        updated_channel = supabase.table("telegram_channels")\
+            .select("*")\
+            .eq("user_id", user_id)\
+            .eq("channel_id", channel_id)\
+            .limit(1)\
+            .execute()
+        
+        # Get supplier info
+        supplier_info = supabase.table("suppliers")\
+            .select("*")\
+            .eq("id", supplier_id)\
+            .limit(1)\
+            .execute()
+        
+        return {
+            "channel": updated_channel.data[0] if updated_channel.data else channel,
+            "supplier": supplier_info.data[0] if supplier_info.data else None,
+            "message": "Channel linked to supplier successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger = __import__("logging").getLogger(__name__)
+        logger.error(f"Link channel to supplier error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to link channel to supplier: {str(e)}")
 
 
 # ==========================================

@@ -1,6 +1,7 @@
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
-import { CssBaseline } from '@mui/material';
+import { CssBaseline, CircularProgress, Box } from '@mui/material';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { ToastProvider } from './context/ToastContext';
@@ -8,17 +9,27 @@ import { StripeProvider } from './context/StripeContext';
 import theme from './theme';
 import './index.css';
 import AppLayout from './components/layout/AppLayout';
-import Dashboard from './pages/Dashboard';
-import Deals from './pages/Deals';
-import Suppliers from './pages/Suppliers';
-import Products from './pages/Products';
-import Analyze from './pages/Analyze';
-import Settings from './pages/Settings';
-import Pricing from './pages/Pricing';
-import BillingSuccess from './pages/BillingSuccess';
-import BillingCancel from './pages/BillingCancel';
-import Login from './pages/Login';
-import Register from './pages/Register';
+
+// Lazy load pages for better performance
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Deals = lazy(() => import('./pages/Deals'));
+const DealDetail = lazy(() => import('./pages/DealDetail'));
+const Suppliers = lazy(() => import('./pages/Suppliers'));
+const Products = lazy(() => import('./pages/Products'));
+const Analyze = lazy(() => import('./pages/Analyze'));
+const Settings = lazy(() => import('./pages/Settings'));
+const Pricing = lazy(() => import('./pages/Pricing'));
+const BillingSuccess = lazy(() => import('./pages/BillingSuccess'));
+const BillingCancel = lazy(() => import('./pages/BillingCancel'));
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const Debug = lazy(() => import('./pages/Debug'));
+
+const Loading = () => (
+  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+    <CircularProgress />
+  </Box>
+);
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -44,10 +55,10 @@ function App() {
             <StripeProvider>
               <BrowserRouter>
             <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/billing/success" element={<BillingSuccess />} />
-              <Route path="/billing/cancel" element={<BillingCancel />} />
+              <Route path="/login" element={<Suspense fallback={<Loading />}><Login /></Suspense>} />
+              <Route path="/register" element={<Suspense fallback={<Loading />}><Register /></Suspense>} />
+              <Route path="/billing/success" element={<Suspense fallback={<Loading />}><BillingSuccess /></Suspense>} />
+              <Route path="/billing/cancel" element={<Suspense fallback={<Loading />}><BillingCancel /></Suspense>} />
               <Route
                 path="/*"
                 element={
@@ -55,13 +66,15 @@ function App() {
                     <AppLayout>
                       <Routes>
                         <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                        <Route path="/dashboard" element={<Dashboard />} />
-                        <Route path="/deals" element={<Deals />} />
-                        <Route path="/suppliers" element={<Suppliers />} />
-                        <Route path="/products" element={<Products />} />
-                        <Route path="/analyze" element={<Analyze />} />
-                        <Route path="/settings" element={<Settings />} />
-                        <Route path="/pricing" element={<Pricing />} />
+                        <Route path="/dashboard" element={<Suspense fallback={<Loading />}><Dashboard /></Suspense>} />
+                        <Route path="/deals" element={<Navigate to="/products" replace />} />
+                        <Route path="/deals/:dealId" element={<Suspense fallback={<Loading />}><DealDetail /></Suspense>} />
+                        <Route path="/suppliers" element={<Suspense fallback={<Loading />}><Suppliers /></Suspense>} />
+                        <Route path="/products" element={<Suspense fallback={<Loading />}><Products /></Suspense>} />
+                        <Route path="/analyze" element={<Suspense fallback={<Loading />}><Analyze /></Suspense>} />
+                        <Route path="/settings" element={<Suspense fallback={<Loading />}><Settings /></Suspense>} />
+                        <Route path="/pricing" element={<Suspense fallback={<Loading />}><Pricing /></Suspense>} />
+                        <Route path="/debug" element={<Suspense fallback={<Loading />}><Debug /></Suspense>} />
                       </Routes>
                     </AppLayout>
                   </ProtectedRoute>

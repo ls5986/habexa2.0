@@ -22,9 +22,10 @@ class AmazonOAuthService:
     """Handle Amazon SP-API OAuth for per-user connections."""
     
     def __init__(self):
-        self.client_id = settings.SPAPI_LWA_CLIENT_ID
-        self.client_secret = settings.SPAPI_LWA_CLIENT_SECRET
-        self.app_id = settings.SPAPI_APP_ID
+        # Use new names with fallback to legacy
+        self.client_id = settings.SP_API_LWA_APP_ID or settings.SPAPI_LWA_CLIENT_ID
+        self.client_secret = settings.SP_API_LWA_CLIENT_SECRET or settings.SPAPI_LWA_CLIENT_SECRET
+        self.app_id = settings.SPAPI_APP_ID  # SP-API Application ID (different from LWA client ID)
         # Use backend URL for callback
         self.redirect_uri = f"{settings.BACKEND_URL}/api/v1/integrations/amazon/oauth/callback"
     
@@ -128,7 +129,7 @@ class AmazonOAuthService:
                 .maybe_single()\
                 .execute()
             
-            if not result.data:
+            if not result or not result.data:
                 return None
             
             return {
@@ -140,7 +141,9 @@ class AmazonOAuthService:
                 "last_used_at": result.data.get("last_used_at"),
             }
         except Exception as e:
-            logger.error(f"Error getting connection: {e}")
+            # 406 errors are expected if table doesn't exist or RLS blocks access
+            # Just return None instead of logging error
+            logger.debug(f"Amazon connection check failed (user may not be connected): {e}")
             return None
     
     async def get_user_refresh_token(self, user_id: str) -> Optional[str]:
@@ -148,13 +151,16 @@ class AmazonOAuthService:
         
         try:
             result = supabase.table("amazon_connections")\
-                .select("refresh_token_encrypted, is_connected")\
+                .select("*")\
                 .eq("user_id", user_id)\
                 .eq("marketplace_id", settings.MARKETPLACE_ID or "ATVPDKIKX0DER")\
                 .maybe_single()\
                 .execute()
             
-            if not result.data or not result.data.get("is_connected"):
+            if not result or not result.data:
+                return None
+            
+            if not result.data.get("is_connected"):
                 return None
             
             encrypted = result.data.get("refresh_token_encrypted")

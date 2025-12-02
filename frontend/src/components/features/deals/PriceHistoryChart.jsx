@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Card,
@@ -62,13 +62,18 @@ const PriceHistoryChart = ({
   
   const { getProduct, loading, error } = useKeepa();
 
+  const loadingRef = useRef(false);
+
   useEffect(() => {
-    if (asin) {
+    if (asin && !loadingRef.current) {
       loadData();
     }
   }, [asin, period]);
 
   const loadData = async () => {
+    if (loadingRef.current) return; // Prevent duplicate calls
+    loadingRef.current = true;
+    
     try {
       const result = await getProduct(asin, period);
       setData(result);
@@ -77,7 +82,14 @@ const PriceHistoryChart = ({
         onDataLoaded(result);
       }
     } catch (err) {
-      console.error('Failed to load Keepa data:', err);
+      // Silently handle 404s - Keepa data just isn't available for this ASIN
+      if (err.response?.status === 404) {
+        console.log(`Keepa data not available for ${asin} (this is normal)`);
+      } else {
+        console.error('Failed to load Keepa data:', err);
+      }
+    } finally {
+      loadingRef.current = false;
     }
   };
 

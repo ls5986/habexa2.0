@@ -8,6 +8,11 @@ from app.api.deps import get_current_user
 
 logger = logging.getLogger(__name__)
 
+# Super admin emails - get unlimited access to everything
+SUPER_ADMIN_EMAILS = [
+    "lindsey@letsclink.com"
+]
+
 # Tier limits configuration
 TIER_LIMITS = {
     "free": {
@@ -61,8 +66,19 @@ class FeatureGate:
     """Feature gating service to enforce subscription limits."""
     
     @staticmethod
-    async def get_user_tier(user_id: str) -> str:
-        """Get user's current subscription tier."""
+    async def get_user_tier(user_id: str, user_email: Optional[str] = None) -> str:
+        """Get user's current subscription tier. Uses Redis cache if available."""
+        from app.services.redis_client import cache_service
+        
+        # Check if user is super admin
+        if user_email and user_email.lower() in [email.lower() for email in SUPER_ADMIN_EMAILS]:
+            return "agency"  # Super admins get agency tier (unlimited)
+        
+        # Try cache first
+        cache_key = f"tier:{user_id}"
+        cached_tier = cache_service.get(cache_key)
+        if cached_tier:
+            return cached_tier
         
         try:
             result = supabase.table("subscriptions")\
@@ -72,15 +88,18 @@ class FeatureGate:
                 .execute()
             
             if not result.data:
-                return "free"
+                tier = "free"
+            else:
+                sub = result.data
+                # Check if subscription is active
+                if sub.get("status") not in ["active", "trialing"]:
+                    tier = "free"
+                else:
+                    tier = sub.get("tier", "free")
             
-            sub = result.data
-            
-            # Check if subscription is active
-            if sub.get("status") not in ["active", "trialing"]:
-                return "free"
-            
-            return sub.get("tier", "free")
+            # Cache for 5 minutes
+            cache_service.set(cache_key, tier, ttl=300)
+            return tier
         except Exception as e:
             # If subscriptions table doesn't exist or has issues, default to free
             logger.warning(f"Error getting user tier: {e}, defaulting to free")
@@ -97,7 +116,7 @@ class FeatureGate:
         }
     
     @staticmethod
-    async def check_limit(user_id: str, feature: str) -> Dict[str, Any]:
+    async def check_limit(user_id: str, feature: str, user_email: Optional[str] = None) -> Dict[str, Any]:
         """
         Check if user can use a feature.
         
@@ -114,6 +133,19 @@ class FeatureGate:
             }
         """
         
+        # Check if user is super admin - grant unlimited access
+        if user_email and user_email.lower() in [email.lower() for email in SUPER_ADMIN_EMAILS]:
+            return {
+                "allowed": True,
+                "tier": "agency",
+                "feature": feature,
+                "limit": -1,
+                "used": 0,
+                "remaining": -1,
+                "unlimited": True,
+                "upgrade_required": False
+            }
+        
         # Use database function for accurate count
         try:
             result = supabase.rpc("check_user_limit", {
@@ -127,7 +159,7 @@ class FeatureGate:
             logger.debug(f"Error calling check_user_limit function: {e}, using fallback")
         
         # Fallback to Python calculation
-        tier = await FeatureGate.get_user_tier(user_id)
+        tier = await FeatureGate.get_user_tier(user_id, user_email)
         limits = TIER_LIMITS.get(tier, TIER_LIMITS["free"])
         
         # Boolean features
@@ -317,7 +349,8 @@ def require_feature(feature: str):
     """
     
     async def check_feature(current_user = Depends(get_current_user)):
-        check = await FeatureGate.check_limit(current_user.id, feature)
+        user_email = getattr(current_user, 'email', None)
+        check = await FeatureGate.check_limit(current_user.id, feature, user_email)
         
         if not check.get("allowed"):
             raise HTTPException(
@@ -345,7 +378,8 @@ def require_limit(feature: str):
     """
     
     async def check_limit(current_user = Depends(get_current_user)):
-        check = await FeatureGate.check_limit(current_user.id, feature)
+        user_email = getattr(current_user, 'email', None)
+        check = await FeatureGate.check_limit(current_user.id, feature, user_email)
         
         if not check.get("allowed"):
             limit = check.get("limit", 0)

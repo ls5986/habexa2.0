@@ -63,6 +63,21 @@ export function StripeProvider({ children }) {
     await fetchSubscription();
   };
 
+  const syncSubscription = async () => {
+    try {
+      const response = await api.post('/billing/sync');
+      await fetchSubscription(); // Refresh subscription data
+      return response.data;
+    } catch (error) {
+      console.error('Failed to sync subscription:', error);
+      throw error;
+    }
+  };
+
+  const refreshSubscription = async () => {
+    await fetchSubscription();
+  };
+
   const checkFeatureAccess = (feature) => {
     if (!subscription) return false;
     const limits = subscription.limits || {};
@@ -89,6 +104,7 @@ export function StripeProvider({ children }) {
       cancelSubscription,
       reactivateSubscription,
       changePlan,
+      syncSubscription,
       checkFeatureAccess,
       refreshSubscription: fetchSubscription,
     }}>
