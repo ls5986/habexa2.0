@@ -54,7 +54,12 @@ DELETE FROM keepa_usage;
 DELETE FROM messages;
 
 -- Deals (legacy table, if exists)
-DELETE FROM deals;
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'deals') THEN
+        DELETE FROM deals;
+    END IF;
+END $$;
 
 -- Suppliers (linked to users)
 DELETE FROM suppliers;
@@ -66,31 +71,76 @@ DELETE FROM amazon_connections;
 DELETE FROM amazon_credentials;
 
 -- Orders (if exists)
-DELETE FROM orders;
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'orders') THEN
+        DELETE FROM orders;
+    END IF;
+END $$;
 
 -- Watchlist (if exists)
-DELETE FROM watchlist;
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'watchlist') THEN
+        DELETE FROM watchlist;
+    END IF;
+END $$;
 
 -- Notifications (if exists)
-DELETE FROM notifications;
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'notifications') THEN
+        DELETE FROM notifications;
+    END IF;
+END $$;
 
 -- User settings (if exists)
-DELETE FROM user_settings;
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'user_settings') THEN
+        DELETE FROM user_settings;
+    END IF;
+END $$;
 
 -- Subscriptions (if exists)
-DELETE FROM subscriptions;
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'subscriptions') THEN
+        DELETE FROM subscriptions;
+    END IF;
+END $$;
 
 -- Payments (if exists)
-DELETE FROM payments;
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'payments') THEN
+        DELETE FROM payments;
+    END IF;
+END $$;
 
 -- Invoices (if exists)
-DELETE FROM invoices;
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'invoices') THEN
+        DELETE FROM invoices;
+    END IF;
+END $$;
 
 -- Usage records (if exists)
-DELETE FROM usage_records;
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'usage_records') THEN
+        DELETE FROM usage_records;
+    END IF;
+END $$;
 
 -- Brands (if exists)
-DELETE FROM brands;
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'brands') THEN
+        DELETE FROM brands;
+    END IF;
+END $$;
 
 -- ============================================
 -- VERIFY DELETION
@@ -99,40 +149,55 @@ DELETE FROM brands;
 -- Re-enable triggers
 SET session_replication_role = 'origin';
 
--- Show counts (should all be 0)
-SELECT 
-    'products' as table_name, COUNT(*) as count FROM products
-UNION ALL
-SELECT 'product_sources', COUNT(*) FROM product_sources
-UNION ALL
-SELECT 'analyses', COUNT(*) FROM analyses
-UNION ALL
-SELECT 'jobs', COUNT(*) FROM jobs
-UNION ALL
-SELECT 'telegram_deals', COUNT(*) FROM telegram_deals
-UNION ALL
-SELECT 'telegram_messages', COUNT(*) FROM telegram_messages
-UNION ALL
-SELECT 'telegram_channels', COUNT(*) FROM telegram_channels
-UNION ALL
-SELECT 'telegram_sessions', COUNT(*) FROM telegram_sessions
-UNION ALL
-SELECT 'keepa_analysis', COUNT(*) FROM keepa_analysis
-UNION ALL
-SELECT 'keepa_cache', COUNT(*) FROM keepa_cache
-UNION ALL
-SELECT 'keepa_usage', COUNT(*) FROM keepa_usage
-UNION ALL
-SELECT 'messages', COUNT(*) FROM messages
-UNION ALL
-SELECT 'deals', COUNT(*) FROM deals
-UNION ALL
-SELECT 'suppliers', COUNT(*) FROM suppliers
-UNION ALL
-SELECT 'amazon_connections', COUNT(*) FROM amazon_connections
-UNION ALL
-SELECT 'amazon_credentials', COUNT(*) FROM amazon_credentials
-ORDER BY table_name;
+-- Show counts (should all be 0) - only for tables that exist
+DO $$
+DECLARE
+    table_count INTEGER;
+    result_text TEXT := '';
+BEGIN
+    -- Check each table and add to result if it exists
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'products') THEN
+        SELECT COUNT(*) INTO table_count FROM products;
+        result_text := result_text || 'products: ' || table_count || E'\n';
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'product_sources') THEN
+        SELECT COUNT(*) INTO table_count FROM product_sources;
+        result_text := result_text || 'product_sources: ' || table_count || E'\n';
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'analyses') THEN
+        SELECT COUNT(*) INTO table_count FROM analyses;
+        result_text := result_text || 'analyses: ' || table_count || E'\n';
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'jobs') THEN
+        SELECT COUNT(*) INTO table_count FROM jobs;
+        result_text := result_text || 'jobs: ' || table_count || E'\n';
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'keepa_analysis') THEN
+        SELECT COUNT(*) INTO table_count FROM keepa_analysis;
+        result_text := result_text || 'keepa_analysis: ' || table_count || E'\n';
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'keepa_cache') THEN
+        SELECT COUNT(*) INTO table_count FROM keepa_cache;
+        result_text := result_text || 'keepa_cache: ' || table_count || E'\n';
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'suppliers') THEN
+        SELECT COUNT(*) INTO table_count FROM suppliers;
+        result_text := result_text || 'suppliers: ' || table_count || E'\n';
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'brands') THEN
+        SELECT COUNT(*) INTO table_count FROM brands;
+        result_text := result_text || 'brands: ' || table_count || E'\n';
+    END IF;
+    
+    RAISE NOTICE 'Table counts after deletion:%', E'\n' || result_text;
+END $$;
 
 -- ============================================
 -- SUCCESS MESSAGE
