@@ -107,7 +107,7 @@ export function StripeProvider({ children }) {
 
   const checkFeatureAccess = (feature) => {
     if (!subscription) return false;
-    const limits = subscription.limits || {};
+    const limits = subscription?.limits || {};
     
     if (typeof limits[feature] === 'boolean') {
       return limits[feature];
@@ -116,7 +116,7 @@ export function StripeProvider({ children }) {
     if (limits[feature] === -1) return true;
     
     if (feature === 'analyses_per_month') {
-      return (subscription.analyses_used || 0) < limits[feature];
+      return (subscription?.analyses_used || 0) < (limits[feature] || 0);
     }
     
     return true;

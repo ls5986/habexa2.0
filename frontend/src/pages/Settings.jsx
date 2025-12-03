@@ -340,6 +340,7 @@ const Settings = () => {
               <TextField
                 label="Current Password"
                 type="password"
+                autoComplete="current-password"
                 value={passwordForm.current_password}
                 onChange={(e) => setPasswordForm({ ...passwordForm, current_password: e.target.value })}
                 fullWidth
@@ -348,6 +349,7 @@ const Settings = () => {
               <TextField
                 label="New Password"
                 type="password"
+                autoComplete="new-password"
                 value={passwordForm.new_password}
                 onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
                 fullWidth
@@ -358,6 +360,7 @@ const Settings = () => {
               <TextField
                 label="Confirm New Password"
                 type="password"
+                autoComplete="new-password"
                 value={passwordForm.confirm_password}
                 onChange={(e) => setPasswordForm({ ...passwordForm, confirm_password: e.target.value })}
                 fullWidth

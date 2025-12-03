@@ -65,6 +65,7 @@ const Login = () => {
               fullWidth
               label="Password"
               type="password"
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required

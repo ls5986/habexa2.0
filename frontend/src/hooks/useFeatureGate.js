@@ -58,7 +58,7 @@ export function useFeatureGate() {
       return { allowed: false, loading: true };
     }
 
-    const featureLimit = limitsData.limits[feature];
+    const featureLimit = limitsData?.limits?.[feature];
     if (!featureLimit) {
       // Unknown feature, allow by default
       return { allowed: true, unlimited: true };
@@ -157,9 +157,15 @@ export function useFeatureGate() {
    * Gate a feature - returns true if allowed, shows prompt if not
    */
   const gateFeature = useCallback((feature, currentUsage = 0) => {
+    if (isLoading || !limitsData) {
+      return false; // Don't allow while loading
+    }
+
+    const check = checkLimit(feature);
+    
     // Boolean feature
-    if (typeof limits[feature] === 'boolean') {
-      if (!limits[feature]) {
+    if (typeof check.allowed === 'boolean') {
+      if (!check.allowed) {
         promptUpgrade(feature);
         return false;
       }
@@ -167,13 +173,13 @@ export function useFeatureGate() {
     }
 
     // Numeric limit
-    if (isLimitReached(feature, currentUsage)) {
+    if (isLimitReached(feature)) {
       promptUpgrade(feature);
       return false;
     }
 
     return true;
-  }, [limits, isLimitReached, promptUpgrade]);
+  }, [isLoading, limitsData, checkLimit, isLimitReached, promptUpgrade]);
 
   /**
    * Get upgrade suggestion based on current tier
@@ -203,12 +209,20 @@ export function useFeatureGate() {
     }
   }, []);
 
+  // Safe default limits structure
+  const defaultLimits = {
+    analyses_per_month: { limit: 5, used: 0, remaining: 5, unlimited: false },
+    telegram_channels: { limit: 1, used: 0, remaining: 1, unlimited: false },
+    suppliers: { limit: 3, used: 0, remaining: 3, unlimited: false },
+    products_tracked: { limit: 250, used: 0, remaining: 250, unlimited: false },
+  };
+
   return {
     tier,
     tierDisplay: limitsData?.tier_display || tier,
     isSuperAdmin,
     isUnlimited: isUnlimited, // Boolean: overall unlimited status
-    limits: limitsData?.limits || {},
+    limits: limitsData?.limits || defaultLimits, // Always return safe defaults
     isLoading,
     error,
     hasFeature,

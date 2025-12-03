@@ -415,6 +415,7 @@ const TelegramConnect = () => {
                   <TextField
                     label="2FA Password"
                     type="password"
+                    autoComplete="current-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     fullWidth
