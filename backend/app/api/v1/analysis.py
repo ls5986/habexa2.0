@@ -279,3 +279,46 @@ async def get_history(current_user=Depends(get_current_user)):
         .execute()
     
     return result.data or []
+
+
+@router.get("/test-upc/{upc}")
+async def test_upc_conversion(upc: str, current_user=Depends(get_current_user)):
+    """
+    Test UPC to ASIN conversion endpoint.
+    Calls SP-API /catalog/2022-04-01/items with UPC identifier.
+    """
+    from app.services.upc_converter import upc_converter
+    
+    logger.info(f"🧪 Testing UPC conversion for: {upc}")
+    
+    # Normalize UPC
+    upc_clean = upc_converter.normalize_upc(upc)
+    if not upc_clean:
+        raise HTTPException(400, f"Invalid UPC format: {upc}. Must be 12-14 digits.")
+    
+    try:
+        # Test the conversion
+        asin = await upc_converter.upc_to_asin(upc_clean)
+        
+        if asin:
+            # Also get full catalog item details
+            from app.services.sp_api_client import sp_api_client
+            catalog_item = await sp_api_client.get_catalog_item(asin)
+            
+            return {
+                "success": True,
+                "upc": upc_clean,
+                "asin": asin,
+                "catalog_item": catalog_item,
+                "message": f"✅ Successfully converted UPC {upc_clean} to ASIN {asin}"
+            }
+        else:
+            return {
+                "success": False,
+                "upc": upc_clean,
+                "asin": None,
+                "message": f"❌ Could not find ASIN for UPC {upc_clean}. Product may not be available on Amazon."
+            }
+    except Exception as e:
+        logger.error(f"Error testing UPC conversion: {e}", exc_info=True)
+        raise HTTPException(500, f"Error converting UPC: {str(e)}")
