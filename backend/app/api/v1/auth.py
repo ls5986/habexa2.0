@@ -12,6 +12,16 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+@router.get("/me")
+async def get_current_user_info(current_user=Depends(get_current_user)):
+    """Get current authenticated user information."""
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "user_metadata": current_user.user_metadata or {}
+    }
+
+
 class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str

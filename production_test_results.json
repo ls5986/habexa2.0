@@ -1,0 +1,32 @@
+{
+  "working": [
+    "Health check",
+    "Root",
+    "API Docs",
+    "Change password",
+    "\u2b50 User limits (CRITICAL)",
+    "Get subscription",
+    "Cancel subscription",
+    "Resume subscription",
+    "List products",
+    "List suppliers",
+    "Get buy list",
+    "List orders",
+    "List notifications",
+    "Telegram status",
+    "Amazon status",
+    "Amazon connection",
+    "List jobs"
+  ],
+  "broken": [
+    "Login \u2192 404 NOT FOUND",
+    "Register (validation) \u2192 404 NOT FOUND",
+    "Get current user \u2192 404 NOT FOUND",
+    "Create checkout \u2192 404 NOT FOUND",
+    "Billing portal \u2192 404 NOT FOUND",
+    "Initialize subscription \u2192 500: {'detail': \"'NoneType' object has no attribute 'data'\"}",
+    "Get deals \u2192 404 NOT FOUND",
+    "Analyze product \u2192 404 NOT FOUND"
+  ],
+  "errors": []
+}

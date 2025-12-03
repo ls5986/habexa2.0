@@ -141,6 +141,7 @@ async def get_available_plans():
 
 
 @router.post("/checkout")
+@router.post("/create-checkout-session")  # Alias for frontend compatibility
 async def create_checkout_session(
     request: CheckoutRequest,
     current_user=Depends(get_current_user)
@@ -180,6 +181,7 @@ async def create_checkout_session(
 
 
 @router.post("/portal")
+@router.post("/portal-session")  # Alias for frontend compatibility
 async def create_portal_session(current_user=Depends(get_current_user)):
     """Create a Stripe Customer Portal session."""
     try:
@@ -503,7 +505,7 @@ async def initialize_subscription(current_user=Depends(get_current_user)):
             .maybe_single()\
             .execute()
         
-        if result.data:
+        if result and result.data:
             # Subscription already exists, return it
             return {
                 "status": "exists",
