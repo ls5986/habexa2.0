@@ -5,6 +5,8 @@ import stripe
 
 from app.api.deps import get_current_user
 from app.services.stripe_service import StripeService, StripeWebhookHandler, TIER_LIMITS
+from app.services.feature_gate import SUPER_ADMIN_EMAILS
+from app.services.supabase_client import supabase
 from app.core.config import settings
 
 router = APIRouter()
@@ -18,6 +20,10 @@ class CheckoutRequest(BaseModel):
 
 class ChangePlanRequest(BaseModel):
     new_price_key: str
+
+
+class SetTierRequest(BaseModel):
+    tier: str  # 'free', 'starter', 'pro', 'agency'
 
 
 @router.get("/subscription")
@@ -216,6 +222,86 @@ async def change_plan(
         return result
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+class SetTierRequest(BaseModel):
+    tier: str  # 'free', 'starter', 'pro', 'agency'
+
+
+@router.post("/set-tier")
+async def set_tier(
+    request: SetTierRequest,
+    current_user=Depends(get_current_user)
+):
+    """
+    Super user endpoint to directly set tier without payment.
+    Only available for super admin users.
+    """
+    user_email = getattr(current_user, 'email', None)
+    
+    # Check if user is super admin
+    if not user_email or user_email.lower() not in [email.lower() for email in SUPER_ADMIN_EMAILS]:
+        raise HTTPException(
+            status_code=403,
+            detail="This endpoint is only available for super admin users"
+        )
+    
+    # Validate tier
+    valid_tiers = ['free', 'starter', 'pro', 'agency']
+    if request.tier not in valid_tiers:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid tier. Must be one of: {', '.join(valid_tiers)}"
+        )
+    
+    try:
+        # Get or create subscription record
+        result = supabase.table("subscriptions")\
+            .select("id")\
+            .eq("user_id", str(current_user.id))\
+            .maybe_single()\
+            .execute()
+        
+        subscription_data = {
+            "user_id": str(current_user.id),
+            "tier": request.tier,
+            "status": "active" if request.tier != "free" else "free",
+            "billing_interval": None if request.tier == "free" else "month",
+            "cancel_at_period_end": False,
+            "trial_end": None,
+        }
+        
+        if result.data:
+            # Update existing subscription
+            supabase.table("subscriptions")\
+                .update(subscription_data)\
+                .eq("id", result.data["id"])\
+                .execute()
+        else:
+            # Create new subscription
+            supabase.table("subscriptions").insert(subscription_data).execute()
+        
+        # Invalidate cache
+        try:
+            from app.services.redis_client import cache_service
+            if cache_service:
+                cache_service.invalidate_subscription_cache(current_user.id)
+        except:
+            pass
+        
+        # Return updated subscription
+        subscription = await StripeService.get_subscription(current_user.id)
+        
+        return {
+            "success": True,
+            "message": f"Tier updated to {request.tier}",
+            "subscription": subscription
+        }
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error setting tier: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to set tier: {str(e)}")
 
 
 @router.get("/invoices")

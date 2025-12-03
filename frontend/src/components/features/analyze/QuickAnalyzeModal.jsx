@@ -1,4 +1,4 @@
-import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Box, Typography, CircularProgress, Card, CardContent, Chip, FormControl, InputLabel, Select, MenuItem, Alert } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Box, Typography, CircularProgress, Card, CardContent, Chip, FormControl, InputLabel, Select, MenuItem, Alert, ToggleButtonGroup, ToggleButton } from '@mui/material';
 import { X, Zap, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
 import { useAnalysis } from '../../../hooks/useAnalysis';
@@ -11,7 +11,10 @@ import UsageDisplay from '../../common/UsageDisplay';
 import { habexa } from '../../../theme';
 
 const QuickAnalyzeModal = ({ open, onClose, onViewDeal }) => {
+  const [identifierType, setIdentifierType] = useState('asin'); // 'asin' or 'upc'
   const [asin, setAsin] = useState('');
+  const [upc, setUpc] = useState('');
+  const [quantity, setQuantity] = useState(1); // Pack quantity for UPC
   const [buyCost, setBuyCost] = useState('');
   const [moq, setMoq] = useState(1);
   const [supplierId, setSupplierId] = useState('');
@@ -28,8 +31,9 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!asin || !buyCost) {
-      showToast('Please enter ASIN and buy cost', 'error');
+    const identifier = identifierType === 'asin' ? asin : upc;
+    if (!identifier || !buyCost) {
+      showToast(`Please enter ${identifierType.toUpperCase()} and buy cost`, 'error');
       return;
     }
 
@@ -39,16 +43,26 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal }) => {
     }
 
     try {
-      const analysisResult = await analyzeSingle(asin, parseFloat(buyCost), moq, supplierId || null);
+      // For UPC, we need to convert to ASIN first, but the backend can handle it
+      const analysisResult = await analyzeSingle(
+        identifier, 
+        parseFloat(buyCost), 
+        moq, 
+        supplierId || null,
+        identifierType,
+        identifierType === 'upc' ? quantity : 1
+      );
       setResult(analysisResult);
       showToast('Analysis complete!', 'success');
     } catch (error) {
-      showToast(error.message || 'Failed to analyze ASIN', 'error');
+      showToast(error.message || `Failed to analyze ${identifierType.toUpperCase()}`, 'error');
     }
   };
 
   const handleAnalyzeAnother = () => {
     setAsin('');
+    setUpc('');
+    setQuantity(1);
     setBuyCost('');
     setMoq(1);
     setSupplierId('');
@@ -63,7 +77,10 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal }) => {
   };
 
   const handleClose = () => {
+    setIdentifierType('asin');
     setAsin('');
+    setUpc('');
+    setQuantity(1);
     setBuyCost('');
     setMoq(1);
     setSupplierId('');
@@ -113,16 +130,82 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal }) => {
                   You've reached your analysis limit. Upgrade for more!
                 </Alert>
               )}
-              <TextField
-                label="ASIN"
-                placeholder="B08XYZ1234"
-                value={asin}
-                onChange={(e) => setAsin(e.target.value.toUpperCase())}
-                required
-                fullWidth
-                sx={{ fontFamily: 'monospace' }}
-                disabled={loading}
-              />
+
+              {/* Identifier Type Toggle */}
+              <Box>
+                <Typography variant="body2" color="text.secondary" mb={1}>
+                  Product Identifier
+                </Typography>
+                <ToggleButtonGroup
+                  value={identifierType}
+                  exclusive
+                  onChange={(e, newValue) => {
+                    if (newValue) {
+                      setIdentifierType(newValue);
+                      setAsin('');
+                      setUpc('');
+                    }
+                  }}
+                  fullWidth
+                  size="small"
+                  sx={{
+                    '& .MuiToggleButton-root': {
+                      color: 'text.secondary',
+                      borderColor: 'divider',
+                      '&.Mui-selected': {
+                        backgroundColor: habexa.purple.main,
+                        color: 'white',
+                        '&:hover': {
+                          backgroundColor: habexa.purple.dark,
+                        },
+                      },
+                    },
+                  }}
+                >
+                  <ToggleButton value="asin">ASIN</ToggleButton>
+                  <ToggleButton value="upc">UPC</ToggleButton>
+                </ToggleButtonGroup>
+              </Box>
+
+              {/* ASIN or UPC Input */}
+              {identifierType === 'asin' ? (
+                <TextField
+                  label="ASIN"
+                  placeholder="B08XYZ1234"
+                  value={asin}
+                  onChange={(e) => setAsin(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10))}
+                  required
+                  fullWidth
+                  sx={{ fontFamily: 'monospace' }}
+                  disabled={loading}
+                  helperText="10-character Amazon product identifier"
+                />
+              ) : (
+                <Box display="flex" gap={2}>
+                  <TextField
+                    label="UPC"
+                    placeholder="123456789012"
+                    value={upc}
+                    onChange={(e) => setUpc(e.target.value.replace(/[^0-9]/g, '').slice(0, 14))}
+                    required
+                    fullWidth
+                    sx={{ fontFamily: 'monospace' }}
+                    disabled={loading}
+                    helperText="12-14 digit product code"
+                  />
+                  <TextField
+                    label="Pack Qty"
+                    placeholder="1"
+                    type="number"
+                    value={quantity}
+                    onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                    disabled={loading}
+                    sx={{ width: 120 }}
+                    helperText="Items per pack"
+                    inputProps={{ min: 1 }}
+                  />
+                </Box>
+              )}
 
               <Box display="flex" gap={2}>
                 <TextField
@@ -134,6 +217,7 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal }) => {
                   InputProps={{ startAdornment: '$' }}
                   fullWidth
                   disabled={loading}
+                  helperText={identifierType === 'upc' ? `Cost per pack of ${quantity}` : 'Cost per unit'}
                 />
                 <TextField
                   label="MOQ"
@@ -142,6 +226,7 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal }) => {
                   onChange={(e) => setMoq(parseInt(e.target.value) || 1)}
                   fullWidth
                   disabled={loading}
+                  helperText="Minimum order quantity"
                 />
               </Box>
 
@@ -166,7 +251,7 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal }) => {
                 type="submit"
                 variant="contained"
                 fullWidth
-                disabled={loading || !asin || !buyCost || limitReached}
+                disabled={loading || !(identifierType === 'asin' ? asin : upc) || !buyCost || limitReached}
                 startIcon={loading ? <CircularProgress size={16} /> : <Zap size={16} />}
                 sx={{
                   backgroundColor: habexa.purple.main,
@@ -174,7 +259,7 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal }) => {
                   py: 1.5,
                 }}
               >
-                {loading ? 'Analyzing...' : limitReached ? 'Limit Reached' : 'Analyze ASIN'}
+                {loading ? 'Analyzing...' : limitReached ? 'Limit Reached' : `Analyze ${identifierType.toUpperCase()}`}
               </Button>
             </Box>
           </form>

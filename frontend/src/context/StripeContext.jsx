@@ -63,6 +63,11 @@ export function StripeProvider({ children }) {
     await fetchSubscription();
   };
 
+  const setTier = async (tier) => {
+    await api.post('/billing/set-tier', { tier });
+    await fetchSubscription();
+  };
+
   const syncSubscription = async () => {
     try {
       const response = await api.post('/billing/sync');
@@ -104,6 +109,7 @@ export function StripeProvider({ children }) {
       cancelSubscription,
       reactivateSubscription,
       changePlan,
+      setTier,
       syncSubscription,
       checkFeatureAccess,
       refreshSubscription: fetchSubscription,

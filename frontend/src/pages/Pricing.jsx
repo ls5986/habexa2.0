@@ -1,17 +1,26 @@
 import { useState, useEffect } from 'react';
-import { Box, Container, Typography, Card, CardContent, Button, Grid, Chip, Switch, FormControlLabel, List, ListItem, ListItemIcon, ListItemText, CircularProgress } from '@mui/material';
+import { Box, Container, Typography, Card, CardContent, Button, Grid, Chip, Switch, FormControlLabel, List, ListItem, ListItemIcon, ListItemText, CircularProgress, Alert } from '@mui/material';
 import { Check, Star } from 'lucide-react';
 import { useStripe } from '../context/StripeContext';
+import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import api from '../services/api';
 import { habexa } from '../theme';
 import { formatCurrency } from '../utils/formatters';
+
+const SUPER_ADMIN_EMAILS = ['lindsey@letsclink.com'];
 
 const Pricing = () => {
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [yearly, setYearly] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(null);
-  const { subscription, createCheckout } = useStripe();
+  const [tierLoading, setTierLoading] = useState(null);
+  const { subscription, createCheckout, setTier } = useStripe();
+  const { user } = useAuth();
+  const { showToast } = useToast();
+  
+  const isSuperAdmin = user?.email && SUPER_ADMIN_EMAILS.includes(user.email.toLowerCase());
 
   useEffect(() => {
     fetchPlans();
@@ -29,14 +38,28 @@ const Pricing = () => {
   };
 
   const handleSubscribe = async (plan) => {
-    setCheckoutLoading(plan.tier);
-    try {
-      const priceKey = yearly ? plan.price_keys.yearly : plan.price_keys.monthly;
-      await createCheckout(priceKey);
-    } catch (error) {
-      console.error('Checkout failed:', error);
-    } finally {
-      setCheckoutLoading(null);
+    if (isSuperAdmin) {
+      // Super admin: direct tier switch without payment
+      setTierLoading(plan.tier);
+      try {
+        await setTier(plan.tier);
+        showToast(`Tier switched to ${plan.name}`, 'success');
+      } catch (error) {
+        showToast(error.response?.data?.detail || 'Failed to switch tier', 'error');
+      } finally {
+        setTierLoading(null);
+      }
+    } else {
+      // Regular user: normal checkout
+      setCheckoutLoading(plan.tier);
+      try {
+        const priceKey = yearly ? plan.price_keys.yearly : plan.price_keys.monthly;
+        await createCheckout(priceKey);
+      } catch (error) {
+        showToast(error.response?.data?.detail || 'Checkout failed', 'error');
+      } finally {
+        setCheckoutLoading(null);
+      }
     }
   };
 
@@ -68,8 +91,13 @@ const Pricing = () => {
         <Typography variant="h3" fontWeight={700} gutterBottom>
           Choose Your Plan
         </Typography>
+        {isSuperAdmin && (
+          <Alert severity="info" sx={{ mb: 2, maxWidth: 600, mx: 'auto' }}>
+            Super Admin Mode: You can switch tiers instantly without payment.
+          </Alert>
+        )}
         <Typography variant="h6" color="text.secondary" mb={3}>
-          Start with a 14-day free trial. No credit card required.
+          {isSuperAdmin ? 'Switch between tiers instantly' : 'Start with a 14-day free trial. No credit card required.'}
         </Typography>
         <FormControlLabel
           control={
@@ -165,7 +193,7 @@ const Pricing = () => {
                     fullWidth
                     variant={plan.popular ? 'contained' : 'outlined'}
                     onClick={() => handleSubscribe(plan)}
-                    disabled={isCurrentPlan || checkoutLoading === plan.tier}
+                    disabled={isCurrentPlan || checkoutLoading === plan.tier || tierLoading === plan.tier}
                     sx={{
                       backgroundColor: plan.popular ? habexa.purple.main : 'transparent',
                       borderColor: habexa.purple.main,
@@ -176,10 +204,12 @@ const Pricing = () => {
                       py: 1.5,
                     }}
                   >
-                    {checkoutLoading === plan.tier ? (
+                    {(checkoutLoading === plan.tier || tierLoading === plan.tier) ? (
                       <CircularProgress size={20} />
                     ) : isCurrentPlan ? (
                       'Current Plan'
+                    ) : isSuperAdmin ? (
+                      'Switch to This Plan'
                     ) : (
                       'Get Started'
                     )}

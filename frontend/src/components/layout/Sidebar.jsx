@@ -1,5 +1,5 @@
 import { Box, Typography, Button } from '@mui/material';
-import { Home, Inbox, Users, Package, Search, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Home, Inbox, Users, Package, Search, Settings, ChevronLeft, ChevronRight, CreditCard } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { habexa } from '../../theme';
 import { useNotifications } from '../../context/NotificationContext';
@@ -10,6 +10,7 @@ const menuItems = [
   { id: 'products', label: 'Products', icon: Package, path: '/products', badge: true },
   { id: 'suppliers', label: 'Suppliers', icon: Users, path: '/suppliers' },
   { id: 'analyze', label: 'Analyze', icon: Search, path: '/analyze' },
+  { id: 'pricing', label: 'Pricing', icon: CreditCard, path: '/pricing' },
 ];
 
 const NavItem = ({ icon: Icon, label, path, active, badge, collapsed }) => {
