@@ -59,6 +59,7 @@ const Login = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              inputProps={{ autoComplete: "email" }}
               sx={{ mb: 2 }}
             />
             <TextField

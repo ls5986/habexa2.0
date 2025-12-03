@@ -9,6 +9,7 @@ import { Users } from 'lucide-react';
 import SupplierFormModal from '../components/features/suppliers/SupplierFormModal';
 import UsageDisplay from '../components/common/UsageDisplay';
 import UpgradePrompt from '../components/common/UpgradePrompt';
+import { habexa } from '../theme';
 
 const Suppliers = () => {
   const { suppliers, loading } = useSuppliers();
