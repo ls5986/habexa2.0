@@ -5,6 +5,7 @@ import { useSettings } from '../hooks/useSettings';
 import { useToast } from '../context/ToastContext';
 import { useStripe } from '../context/StripeContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { supabase } from '../services/supabase';
 import api from '../services/api';
 import AmazonConnect from '../components/features/settings/AmazonConnect';
 import TelegramConnect from '../components/features/settings/TelegramConnect';
@@ -49,6 +50,16 @@ const Settings = () => {
     full_name: '',
     avatar_url: '',
   });
+
+  // Password change form state
+  const [passwordForm, setPasswordForm] = useState({
+    current_password: '',
+    new_password: '',
+    confirm_password: '',
+  });
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
 
   // Alert settings form state
   const [alertForm, setAlertForm] = useState({
@@ -194,6 +205,66 @@ const Settings = () => {
     }
   };
 
+  const handleChangePassword = async () => {
+    setPasswordError('');
+    setPasswordSuccess(false);
+
+    // Validation
+    if (passwordForm.new_password !== passwordForm.confirm_password) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+
+    if (passwordForm.new_password.length < 8) {
+      setPasswordError('Password must be at least 8 characters');
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      // Verify current password by attempting to sign in
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('Not authenticated');
+      }
+
+      // Verify current password by attempting to sign in with it
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: passwordForm.current_password,
+      });
+
+      if (signInError) {
+        setPasswordError('Current password is incorrect');
+        showToast('Current password is incorrect', 'error');
+        return;
+      }
+
+      // Update password using Supabase
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: passwordForm.new_password,
+      });
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      setPasswordSuccess(true);
+      setPasswordForm({
+        current_password: '',
+        new_password: '',
+        confirm_password: '',
+      });
+      showToast('Password changed successfully', 'success');
+    } catch (error) {
+      setPasswordError(error.message || 'Failed to change password');
+      showToast(error.message || 'Failed to change password', 'error');
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
@@ -247,6 +318,61 @@ const Settings = () => {
                 }}
               >
                 Save Profile
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+
+        {/* Change Password Card */}
+        <Card sx={{ mt: 3 }}>
+          <CardContent>
+            <Typography variant="h6" fontWeight={600} mb={3}>
+              Change Password
+            </Typography>
+            <Box display="flex" flexDirection="column" gap={3}>
+              {passwordError && (
+                <Alert severity="error">{passwordError}</Alert>
+              )}
+              {passwordSuccess && (
+                <Alert severity="success">Password changed successfully!</Alert>
+              )}
+              <TextField
+                label="Current Password"
+                type="password"
+                value={passwordForm.current_password}
+                onChange={(e) => setPasswordForm({ ...passwordForm, current_password: e.target.value })}
+                fullWidth
+                required
+              />
+              <TextField
+                label="New Password"
+                type="password"
+                value={passwordForm.new_password}
+                onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
+                fullWidth
+                required
+                inputProps={{ minLength: 8 }}
+                helperText="Must be at least 8 characters"
+              />
+              <TextField
+                label="Confirm New Password"
+                type="password"
+                value={passwordForm.confirm_password}
+                onChange={(e) => setPasswordForm({ ...passwordForm, confirm_password: e.target.value })}
+                fullWidth
+                required
+              />
+              <Button
+                variant="contained"
+                onClick={handleChangePassword}
+                disabled={changingPassword}
+                sx={{
+                  backgroundColor: habexa.purple.main,
+                  '&:hover': { backgroundColor: habexa.purple.dark },
+                  alignSelf: 'flex-start',
+                }}
+              >
+                {changingPassword ? 'Changing...' : 'Change Password'}
               </Button>
             </Box>
           </CardContent>

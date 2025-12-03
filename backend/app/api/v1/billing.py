@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from typing import Optional
 import stripe
+from datetime import datetime
 
 from app.api.deps import get_current_user
 from app.services.stripe_service import StripeService, StripeWebhookHandler, TIER_LIMITS
@@ -484,4 +485,57 @@ async def stripe_webhook(request: Request):
         await handler(data)
     
     return {"status": "success"}
+
+
+@router.post("/initialize-subscription")
+async def initialize_subscription(current_user=Depends(get_current_user)):
+    """
+    Initialize subscription record for new users.
+    Called after signup to create free tier subscription and send welcome email.
+    """
+    try:
+        user_id = str(current_user.id)
+        
+        # Check if subscription already exists
+        result = supabase.table("subscriptions")\
+            .select("id")\
+            .eq("user_id", user_id)\
+            .maybe_single()\
+            .execute()
+        
+        if result.data:
+            # Subscription already exists, return it
+            return {
+                "status": "exists",
+                "message": "Subscription already initialized"
+            }
+        
+        # Create free tier subscription
+        supabase.table("subscriptions").insert({
+            "user_id": user_id,
+            "tier": "free",
+            "status": "active",
+            "analyses_used_this_period": 0,
+            "created_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.utcnow().isoformat()
+        }).execute()
+        
+        # Send welcome email
+        try:
+            from app.services.email_service import EmailService
+            if hasattr(EmailService, 'send_welcome_email'):
+                await EmailService.send_welcome_email(user_id)
+        except Exception as email_error:
+            import logging
+            logging.getLogger(__name__).warning(f"Failed to send welcome email: {email_error}")
+        
+        return {
+            "status": "initialized",
+            "tier": "free",
+            "message": "Subscription initialized successfully"
+        }
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Failed to initialize subscription: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
 

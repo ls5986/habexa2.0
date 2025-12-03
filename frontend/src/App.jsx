@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { ToastProvider } from './context/ToastContext';
 import { StripeProvider } from './context/StripeContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import theme from './theme';
 import './index.css';
 import AppLayout from './components/layout/AppLayout';
@@ -25,6 +26,10 @@ const BillingCancel = lazy(() => import('./pages/BillingCancel'));
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
 const Debug = lazy(() => import('./pages/Debug'));
+const BuyList = lazy(() => import('./pages/BuyList'));
+const Orders = lazy(() => import('./pages/Orders'));
+const OrderDetails = lazy(() => import('./pages/OrderDetails'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 
 const Loading = () => (
   <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
@@ -48,13 +53,14 @@ const ProtectedRoute = ({ children }) => {
 
 function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <AuthProvider>
-        <NotificationProvider>
-          <ToastProvider>
-            <StripeProvider>
-              <BrowserRouter>
+    <ErrorBoundary>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <AuthProvider>
+          <NotificationProvider>
+            <ToastProvider>
+              <StripeProvider>
+                <BrowserRouter>
             <Routes>
               {/* Public routes */}
               <Route path="/" element={<Suspense fallback={<Loading />}><LandingPage /></Suspense>} />
@@ -75,6 +81,9 @@ function App() {
                         <Route path="/deals/:dealId" element={<Suspense fallback={<Loading />}><DealDetail /></Suspense>} />
                         <Route path="/suppliers" element={<Suspense fallback={<Loading />}><Suppliers /></Suspense>} />
                         <Route path="/products" element={<Suspense fallback={<Loading />}><Products /></Suspense>} />
+                        <Route path="/buy-list" element={<Suspense fallback={<Loading />}><BuyList /></Suspense>} />
+                        <Route path="/orders" element={<Suspense fallback={<Loading />}><Orders /></Suspense>} />
+                        <Route path="/orders/:id" element={<Suspense fallback={<Loading />}><OrderDetails /></Suspense>} />
                         <Route path="/analyze" element={<Suspense fallback={<Loading />}><Analyze /></Suspense>} />
                         <Route path="/settings" element={<Suspense fallback={<Loading />}><Settings /></Suspense>} />
                         <Route path="/pricing" element={<Suspense fallback={<Loading />}><Pricing /></Suspense>} />
@@ -84,13 +93,16 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              {/* 404 - Must be last */}
+              <Route path="*" element={<Suspense fallback={<Loading />}><NotFound /></Suspense>} />
             </Routes>
-          </BrowserRouter>
-            </StripeProvider>
-          </ToastProvider>
-        </NotificationProvider>
-      </AuthProvider>
-    </ThemeProvider>
+                </BrowserRouter>
+              </StripeProvider>
+            </ToastProvider>
+          </NotificationProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 

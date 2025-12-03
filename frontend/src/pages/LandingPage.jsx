@@ -96,7 +96,7 @@ const LandingPage = () => {
       >
         <Container maxWidth="lg">
           <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h5" fontWeight={700} sx={{ color: habexa.purple.main }}>
+            <Typography variant="h5" fontWeight={700} sx={{ color: habexa.purple.light }}>
               Habexa
             </Typography>
             <Box display="flex" gap={2}>
@@ -139,7 +139,7 @@ const LandingPage = () => {
               }}
             >
               Amazon Product Research,{' '}
-              <Box component="span" sx={{ color: habexa.purple.main }}>
+              <Box component="span" sx={{ color: habexa.purple.light }}>
                 Simplified
               </Box>
             </Typography>
@@ -181,7 +181,7 @@ const LandingPage = () => {
                   py: 1.5,
                   fontSize: '1.1rem',
                   borderColor: habexa.purple.main,
-                  color: habexa.purple.main,
+                  color: habexa.purple.light, // Changed for better contrast on dark bg
                   '&:hover': {
                     borderColor: habexa.purple.dark,
                     bgcolor: `${habexa.purple.main}10`,
@@ -225,7 +225,7 @@ const LandingPage = () => {
                   <CardContent>
                     <Box
                       sx={{
-                        color: habexa.purple.main,
+                        color: habexa.purple.light, // Changed from purple.main for better contrast on dark bg
                         mb: 2,
                         display: 'flex',
                         justifyContent: 'center',
@@ -288,7 +288,7 @@ const LandingPage = () => {
                     {tier.tier}
                   </Typography>
                   <Box display="flex" alignItems="baseline" mb={3}>
-                    <Typography variant="h3" fontWeight={800} sx={{ color: habexa.purple.main }}>
+                    <Typography variant="h3" fontWeight={800} sx={{ color: habexa.purple.light }}>
                       ${tier.price}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
@@ -317,7 +317,7 @@ const LandingPage = () => {
                     sx={{
                       bgcolor: tier.highlighted ? habexa.purple.main : 'transparent',
                       borderColor: habexa.purple.main,
-                      color: tier.highlighted ? 'white' : habexa.purple.main,
+                      color: tier.highlighted ? 'white' : habexa.purple.light, // Changed for better contrast on dark bg
                       '&:hover': {
                         bgcolor: tier.highlighted ? habexa.purple.dark : `${habexa.purple.main}10`,
                         borderColor: habexa.purple.dark,

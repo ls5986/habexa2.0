@@ -126,7 +126,7 @@ export default function Deals() {
       {/* Deals List - Simple cards */}
       {filteredDeals.length === 0 ? (
         <Card sx={{ p: 4, textAlign: 'center' }}>
-          <Package size={48} color="#666" />
+          <Package size={48} color="#8B8B9B" />
           <Typography variant="h6" sx={{ mt: 2 }}>No deals found</Typography>
         </Card>
       ) : (
@@ -162,7 +162,7 @@ const DealCard = React.memo(({ deal, onClick }) => {
         {analysis?.image_url ? (
           <img src={analysis.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 4 }} />
         ) : (
-          <Package size={24} color="#666" />
+          <Package size={24} color="#8B8B9B" />
         )}
       </Box>
 

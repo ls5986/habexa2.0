@@ -56,8 +56,8 @@ const Analyze = () => {
                 onClick={handleAnalyze}
                 disabled={loading || !asin || !buyCost}
                 sx={{
-                  backgroundColor: '#7C6AFA',
-                  '&:hover': { backgroundColor: '#5B4AD4' },
+                  backgroundColor: habexa.purple.main, // Changed from #7C6AFA for consistency
+                  '&:hover': { backgroundColor: habexa.purple.dark },
                   minWidth: 150,
                 }}
               >

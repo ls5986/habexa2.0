@@ -213,7 +213,7 @@ export default function DealDetail() {
                     style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                   />
                 ) : (
-                  <Package size={64} color="#666" />
+                  <Package size={64} color="#8B8B9B" />
                 )}
               </Box>
 

@@ -26,7 +26,7 @@ export default function CompetitorAnalysis({ asin, spOffers }) {
       <Card>
         <CardContent>
           <Box sx={{ textAlign: 'center', py: 6 }}>
-            <Users size={48} color="#666" style={{ marginBottom: 16 }} />
+            <Users size={48} color="#8B8B9B" style={{ marginBottom: 16 }} />
             <Typography variant="h6" gutterBottom>No Competitor Data</Typography>
             <Typography color="text.secondary">
               Competitor analysis requires SP-API access. Connect your Amazon Seller account to see live seller data.

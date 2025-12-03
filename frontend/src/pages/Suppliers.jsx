@@ -49,8 +49,8 @@ const Suppliers = () => {
           startIcon={<Plus size={16} />}
           onClick={handleAddSupplier}
           sx={{
-            backgroundColor: '#7C6AFA',
-            '&:hover': { backgroundColor: '#5B4AD4' },
+            backgroundColor: habexa.purple.main, // Changed from #7C6AFA for consistency
+            '&:hover': { backgroundColor: habexa.purple.dark },
           }}
         >
           Add Supplier
@@ -76,7 +76,7 @@ const Suppliers = () => {
                     sx={{
                       width: 56,
                       height: 56,
-                      backgroundColor: '#7C6AFA',
+                      backgroundColor: habexa.purple.main, // Changed from #7C6AFA for consistency
                       fontSize: '1.25rem',
                       fontWeight: 700,
                     }}

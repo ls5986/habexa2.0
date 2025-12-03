@@ -14,6 +14,8 @@ import {
 import api from '../services/api';
 import FileUploadModal from '../components/features/products/FileUploadModal';
 import BatchAnalyzeButton from '../components/features/products/BatchAnalyzeButton';
+import { useFeatureGate } from '../hooks/useFeatureGate';
+import { habexa } from '../theme';
 
 const STAGES = [
   { id: 'new', label: 'New', icon: Package, color: '#7C3AED' },
@@ -202,6 +204,7 @@ export default function Products() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
+  const { hasFeature, promptUpgrade } = useFeatureGate();
 
   // Debounce search to reduce API calls
   const debouncedSearch = useDebounce(filters.search, 500);
@@ -316,6 +319,12 @@ export default function Products() {
   };
 
   const handleExport = async () => {
+    // Check if user has export feature
+    if (!hasFeature('export_data')) {
+      promptUpgrade('export_data');
+      return;
+    }
+    
     try {
       const params = activeStage ? `?stage=${activeStage}` : '';
       const res = await api.get(`/products/export${params}`);
@@ -497,7 +506,13 @@ export default function Products() {
         )}
         
         <IconButton onClick={fetchData}><RefreshCw size={18} /></IconButton>
-        <IconButton onClick={handleExport}><Download size={18} /></IconButton>
+        <IconButton 
+          onClick={handleExport} 
+          disabled={!hasFeature('export_data')}
+          title={!hasFeature('export_data') ? 'Export requires Starter or higher' : 'Export data'}
+        >
+          <Download size={18} />
+        </IconButton>
       </Box>
 
       {/* Deals Table */}
@@ -507,7 +522,7 @@ export default function Products() {
         </Box>
       ) : filteredDeals.length === 0 ? (
         <Card sx={{ p: 4, textAlign: 'center' }}>
-          <Package size={48} color="#666" />
+          <Package size={48} color="#8B8B9B" />
           <Typography variant="h6" sx={{ mt: 2 }}>No deals found</Typography>
           <Typography color="text.secondary" sx={{ mb: 2 }}>
             Upload a CSV or Excel file or add ASINs manually to get started
@@ -520,7 +535,7 @@ export default function Products() {
         <Card>
           {/* Table Header */}
           <Box sx={{ 
-            display: 'grid', 
+            display: { xs: 'none', md: 'grid' },
             gridTemplateColumns: '40px 110px 1fr 120px 80px 80px 80px 90px 80px 80px 60px',
             p: 1.5, 
             borderBottom: '1px solid',
@@ -545,17 +560,84 @@ export default function Products() {
             <Typography variant="caption" color="text.secondary">Actions</Typography>
           </Box>
 
-          {/* Table Rows */}
-          {filteredDeals.map(deal => (
-            <DealRow
-              key={deal.deal_id}
-              deal={deal}
-              selected={selected.includes(deal.deal_id)}
-              onSelect={() => handleSelect(deal.deal_id)}
-              onClick={() => navigate(`/deals/${deal.deal_id}`)}
-              onUpdateMoq={handleUpdateMoq}
-            />
-          ))}
+          {/* Table Rows - Desktop */}
+          <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+            {filteredDeals.map(deal => (
+              <DealRow
+                key={deal.deal_id}
+                deal={deal}
+                selected={selected.includes(deal.deal_id)}
+                onSelect={() => handleSelect(deal.deal_id)}
+                onClick={() => navigate(`/deals/${deal.deal_id}`)}
+                onUpdateMoq={handleUpdateMoq}
+              />
+            ))}
+          </Box>
+
+          {/* Mobile Cards */}
+          <Box sx={{ display: { xs: 'flex', md: 'none' }, flexDirection: 'column', gap: 2, p: 2 }}>
+            {filteredDeals.map(deal => (
+              <Card
+                key={deal.deal_id}
+                sx={{
+                  p: 2,
+                  border: selected.includes(deal.deal_id) ? `2px solid ${habexa.purple.main}` : '1px solid',
+                  borderColor: selected.includes(deal.deal_id) ? habexa.purple.main : 'divider',
+                  cursor: 'pointer',
+                }}
+                onClick={() => navigate(`/deals/${deal.deal_id}`)}
+              >
+                <Box display="flex" justifyContent="space-between" alignItems="start" mb={2}>
+                  <Box display="flex" gap={2} flex={1}>
+                    {deal.image_url && (
+                      <Box
+                        component="img"
+                        src={deal.image_url}
+                        sx={{ width: 64, height: 64, borderRadius: 1, objectFit: 'cover' }}
+                      />
+                    )}
+                    <Box flex={1}>
+                      <Typography variant="body2" fontWeight={600} mb={0.5}>
+                        {deal.title || 'Pending analysis...'}
+                      </Typography>
+                      <Typography variant="caption" fontFamily="monospace" color="text.secondary">
+                        {deal.asin}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Checkbox
+                    size="small"
+                    checked={selected.includes(deal.deal_id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSelect(deal.deal_id);
+                    }}
+                  />
+                </Box>
+                <Box display="flex" justifyContent="space-between" gap={2} flexWrap="wrap">
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">ROI</Typography>
+                    <Typography variant="body2" fontWeight={600} color={deal.roi >= 30 ? 'success.main' : 'text.primary'}>
+                      {deal.roi ? `${deal.roi.toFixed(0)}%` : '-'}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Profit</Typography>
+                    <Typography variant="body2" fontWeight={600} color={deal.profit > 0 ? 'success.main' : 'error.main'}>
+                      ${deal.profit ? deal.profit.toFixed(2) : '-'}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Cost</Typography>
+                    <Typography variant="body2">
+                      ${(deal.buy_cost || 0).toFixed(2)}
+                    </Typography>
+                  </Box>
+                  <Chip label={deal.stage || 'new'} size="small" sx={{ height: 22, fontSize: 11 }} />
+                </Box>
+              </Card>
+            ))}
+          </Box>
         </Card>
       )}
 

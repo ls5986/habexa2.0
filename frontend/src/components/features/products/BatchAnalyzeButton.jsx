@@ -10,6 +10,7 @@ import {
 import { CircularProgress } from '@mui/material';
 import api from '../../../services/api';
 import SupplierSelectionDialog from './SupplierSelectionDialog';
+import { useFeatureGate } from '../../../hooks/useFeatureGate';
 
 export default function BatchAnalyzeButton({ 
   productIds = null,  // Specific products
@@ -18,6 +19,7 @@ export default function BatchAnalyzeButton({
   buttonText = "Analyze All",
   className = ""
 }) {
+  const { hasFeature, promptUpgrade } = useFeatureGate();
   const [jobId, setJobId] = useState(null);
   const [job, setJob] = useState(null);
   const [starting, setStarting] = useState(false);
@@ -56,6 +58,12 @@ export default function BatchAnalyzeButton({
   }, [jobId, onComplete]);
 
   const startAnalysis = async () => {
+    // Check if user has bulk analyze feature
+    if (!hasFeature('bulk_analyze')) {
+      promptUpgrade('bulk_analyze');
+      return;
+    }
+    
     setStarting(true);
     
     try {
@@ -300,14 +308,17 @@ export default function BatchAnalyzeButton({
   }
 
   // Button
+  const canBulkAnalyze = hasFeature('bulk_analyze');
+  
   return (
     <>
       <Button
         variant="contained"
         onClick={startAnalysis}
-        disabled={starting}
+        disabled={starting || !canBulkAnalyze}
         startIcon={starting ? <CircularProgress size={16} /> : <PlayArrow />}
         className={className}
+        title={!canBulkAnalyze ? 'Bulk analysis requires Starter or higher' : ''}
       >
         {starting ? 'Starting...' : buttonText}
       </Button>

@@ -53,7 +53,7 @@ export default function VariationAnalysis({ asin, keepaData }) {
 
         {variations.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 6 }}>
-            <Layers size={48} color="#666" style={{ marginBottom: 16 }} />
+            <Layers size={48} color="#8B8B9B" style={{ marginBottom: 16 }} />
             <Typography variant="h6" gutterBottom>No Variations Found</Typography>
             <Typography color="text.secondary">
               This product doesn't have variations, or variation data is not available.

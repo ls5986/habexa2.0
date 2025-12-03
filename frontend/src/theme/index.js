@@ -37,7 +37,7 @@ const habexa = {
     100: '#1A1A2E',       // Surface
     200: '#252540',       // Surface Elevated
     300: '#2D2D3D',       // Border
-    400: '#6B6B7B',       // Text Muted
+    400: '#8B8B9B',       // Text Muted (increased from #6B6B7B for better contrast - 4.8:1 on dark bg)
     500: '#A0A0B0',       // Text Secondary
     600: '#FFFFFF',       // Text Primary
   },

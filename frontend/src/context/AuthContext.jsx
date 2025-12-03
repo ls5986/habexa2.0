@@ -63,6 +63,14 @@ export const AuthProvider = ({ children }) => {
         email: data.user.email,
         full_name: fullName,
       });
+      
+      // Initialize subscription and send welcome email
+      try {
+        await api.post('/billing/initialize-subscription');
+      } catch (initError) {
+        // Log but don't fail signup if initialization fails
+        console.warn('Failed to initialize subscription:', initError);
+      }
     }
 
     return data;

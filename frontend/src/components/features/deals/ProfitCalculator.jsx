@@ -77,7 +77,7 @@ export default function ProfitCalculator({
         <Typography variant="caption" color="text.secondary">{label}</Typography>
         {tooltip && (
           <Tooltip title={tooltip}>
-            <Info size={12} color="#666" />
+            <Info size={12} color="#8B8B9B" />
           </Tooltip>
         )}
       </Box>

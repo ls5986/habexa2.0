@@ -41,7 +41,7 @@ const DealCard = ({ deal, onView, onMessage, onSave, onDismiss }) => {
               style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
             />
           ) : (
-            <Package size={40} style={{ color: '#6B6B7B' }} />
+            <Package size={40} style={{ color: '#8B8B9B' }} />
           )}
         </Box>
 

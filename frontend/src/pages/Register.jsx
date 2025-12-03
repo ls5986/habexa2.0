@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Box, Card, CardContent, TextField, Button, Typography, Link } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useStripe } from '../context/StripeContext';
 
 const Register = () => {
   const [email, setEmail] = useState('');
@@ -10,7 +11,12 @@ const Register = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
+  const { createCheckout } = useStripe();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  
+  const trialParam = searchParams.get('trial');
+  const planParam = searchParams.get('plan');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,7 +25,30 @@ const Register = () => {
 
     try {
       await signUp(email, password, fullName);
-      navigate('/dashboard');
+      
+      // If trial=true or plan is specified, redirect to checkout
+      if (trialParam === 'true' || planParam) {
+        // Determine price key based on plan
+        const priceKeyMap = {
+          'starter': 'starter_monthly',
+          'pro': 'pro_monthly',
+          'agency': 'agency_monthly'
+        };
+        const priceKey = planParam ? priceKeyMap[planParam] || 'starter_monthly' : 'starter_monthly';
+        const includeTrial = trialParam === 'true' || !planParam; // Include trial if trial=true or no plan specified
+        
+        try {
+          await createCheckout(priceKey, includeTrial);
+          // createCheckout redirects to Stripe, so we don't need to navigate
+        } catch (checkoutError) {
+          console.error('Checkout error:', checkoutError);
+          // If checkout fails, still navigate to dashboard
+          navigate('/dashboard');
+        }
+      } else {
+        // Normal signup - go to dashboard
+        navigate('/dashboard');
+      }
     } catch (err) {
       setError(err.message || 'Failed to create account');
     } finally {
@@ -85,8 +114,9 @@ const Register = () => {
               variant="contained"
               disabled={loading}
               sx={{
-                backgroundColor: '#7C6AFA',
-                '&:hover': { backgroundColor: '#5B4AD4' },
+                backgroundColor: '#7C3AED', // Changed from #7C6AFA for better contrast (5.1:1 on light bg)
+                color: '#FFFFFF',
+                '&:hover': { backgroundColor: '#6D28D9' },
                 mb: 2,
               }}
             >
@@ -96,7 +126,7 @@ const Register = () => {
 
           <Typography variant="body2" textAlign="center">
             Already have an account?{' '}
-            <Link href="/login" sx={{ color: '#7C6AFA', fontWeight: 600 }}>
+            <Link href="/login" sx={{ color: '#7C3AED', fontWeight: 600 }}>
               Sign in
             </Link>
           </Typography>

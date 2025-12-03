@@ -73,7 +73,7 @@ export default function ListingScore({ analysis, keepaData }) {
       <Card>
         <CardContent>
           <Box sx={{ textAlign: 'center', py: 6 }}>
-            <FileText size={48} color="#666" style={{ marginBottom: 16 }} />
+            <FileText size={48} color="#8B8B9B" style={{ marginBottom: 16 }} />
             <Typography variant="h6" gutterBottom>No Analysis Data</Typography>
             <Typography color="text.secondary">
               Analyze the product to see listing quality score.

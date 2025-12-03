@@ -1,6 +1,6 @@
 import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Box, Typography, CircularProgress, Card, CardContent, Chip, FormControl, InputLabel, Select, MenuItem, Alert, ToggleButtonGroup, ToggleButton } from '@mui/material';
 import { X, Zap, TrendingUp } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAnalysis } from '../../../hooks/useAnalysis';
 import { useSuppliers } from '../../../hooks/useSuppliers';
 import { useToast } from '../../../context/ToastContext';
@@ -156,12 +156,32 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal }) => {
     onClose();
   };
 
+  // ESC key handler
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape' && open) {
+        handleClose();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [open]);
+
   return (
     <Dialog
       open={open}
       onClose={handleClose}
       maxWidth="sm"
       fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: 3,
+          '@media (max-width: 640px)': {
+            margin: 1,
+            maxWidth: 'calc(100% - 16px)',
+          },
+        },
+      }}
       PaperProps={{
         sx: {
           borderRadius: 3,

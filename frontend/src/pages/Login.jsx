@@ -76,8 +76,9 @@ const Login = () => {
               variant="contained"
               disabled={loading}
               sx={{
-                backgroundColor: '#7C6AFA',
-                '&:hover': { backgroundColor: '#5B4AD4' },
+                backgroundColor: '#7C3AED', // Changed from #7C6AFA for better contrast (5.1:1 on light bg)
+                color: '#FFFFFF',
+                '&:hover': { backgroundColor: '#6D28D9' },
                 mb: 2,
               }}
             >
@@ -87,7 +88,7 @@ const Login = () => {
 
           <Typography variant="body2" textAlign="center">
             Don't have an account?{' '}
-            <Link href="/register" sx={{ color: '#7C6AFA', fontWeight: 600 }}>
+            <Link href="/register" sx={{ color: '#7C3AED', fontWeight: 600 }}>
               Sign up
             </Link>
           </Typography>
