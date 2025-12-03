@@ -16,6 +16,7 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 
 class CheckoutRequest(BaseModel):
     price_key: str  # e.g., "starter_monthly", "pro_yearly"
+    include_trial: bool = True  # Include 7-day trial if user hasn't had one
 
 
 class ChangePlanRequest(BaseModel):
@@ -143,17 +144,22 @@ async def create_checkout_session(
     request: CheckoutRequest,
     current_user=Depends(get_current_user)
 ):
-    """Create a Stripe Checkout session with 14-day trial.
+    """Create a Stripe Checkout session with optional 7-day trial.
     
     IMPORTANT: Checks for existing subscriptions first.
     If user already has an active subscription, returns existing subscription info.
+    
+    Trial is only included if:
+    - include_trial=True (default)
+    - User hasn't had a free trial before (had_free_trial=False)
     """
     
     try:
         result = await StripeService.create_checkout_session(
             user_id=current_user.id,
             email=current_user.email,
-            price_key=request.price_key
+            price_key=request.price_key,
+            include_trial=request.include_trial
         )
         
         # If existing subscription found, return it with a message
@@ -187,7 +193,7 @@ async def cancel_subscription(
     at_period_end: bool = True,
     current_user=Depends(get_current_user)
 ):
-    """Cancel subscription."""
+    """Cancel subscription at period end (keeps access until billing period ends)."""
     try:
         result = await StripeService.cancel_subscription(
             current_user.id,
@@ -198,11 +204,54 @@ async def cancel_subscription(
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@router.post("/cancel-immediately")
+async def cancel_subscription_immediately(
+    current_user=Depends(get_current_user)
+):
+    """Cancel subscription immediately (for trials or special cases). Downgrades to free."""
+    try:
+        result = await StripeService.cancel_subscription(
+            current_user.id,
+            at_period_end=False  # Cancel immediately
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @router.post("/reactivate")
 async def reactivate_subscription(current_user=Depends(get_current_user)):
-    """Reactivate a canceled subscription."""
+    """Resume a subscription that was set to cancel at period end."""
     try:
         result = await StripeService.reactivate_subscription(current_user.id)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/resubscribe")
+async def resubscribe(
+    request: CheckoutRequest,
+    current_user=Depends(get_current_user)
+):
+    """Resubscribe after full cancellation (creates new subscription, no trial if already had one)."""
+    # Check current status
+    subscription = await StripeService.get_subscription(current_user.id)
+    
+    if subscription.get("status") in ["active", "trialing"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Already have active subscription. Use change-plan endpoint instead."
+        )
+    
+    # Create new checkout (no trial if they already had one)
+    try:
+        result = await StripeService.create_checkout_session(
+            user_id=current_user.id,
+            email=current_user.email,
+            price_key=request.price_key,
+            include_trial=False  # No trial on resubscribe
+        )
         return result
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -422,8 +471,10 @@ async def stripe_webhook(request: Request):
     
     handlers = {
         "checkout.session.completed": StripeWebhookHandler.handle_checkout_completed,
+        "customer.subscription.created": StripeWebhookHandler.handle_subscription_updated,  # Same handler as updated
         "customer.subscription.updated": StripeWebhookHandler.handle_subscription_updated,
         "customer.subscription.deleted": StripeWebhookHandler.handle_subscription_deleted,
+        "customer.subscription.trial_will_end": StripeWebhookHandler.handle_trial_will_end,
         "invoice.paid": StripeWebhookHandler.handle_invoice_paid,
         "invoice.payment_failed": StripeWebhookHandler.handle_invoice_payment_failed,
     }

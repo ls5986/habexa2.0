@@ -123,14 +123,23 @@ const Settings = () => {
     }
   };
 
-  const handleCancel = async () => {
+  const handleCancel = async (immediately = false) => {
     setActionLoading(true);
     try {
-      await cancelSubscription(true);
+      if (immediately) {
+        // Cancel immediately (for trials)
+        await api.post('/billing/cancel-immediately');
+        showToast('Subscription cancelled. You\'ve been moved to the Free plan.', 'info');
+      } else {
+        // Cancel at period end
+        await cancelSubscription(true);
+        showToast('Subscription will cancel at end of billing period', 'info');
+      }
       setCancelDialogOpen(false);
-      showToast('Subscription will cancel at end of billing period', 'info');
+      // Refresh subscription data
+      window.location.reload(); // Simple refresh for now
     } catch (error) {
-      showToast('Failed to cancel subscription', 'error');
+      showToast(error.response?.data?.detail || 'Failed to cancel subscription', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -430,10 +439,20 @@ const Settings = () => {
                       />
                     )}
                   </Box>
-                  {subscription?.current_period_end && (
+                  {subscription?.status === 'trialing' && subscription?.trial_end && (
+                    <Alert severity="info" sx={{ mt: 1, mb: 1 }}>
+                      🎉 Free trial ends {new Date(subscription.trial_end).toLocaleDateString()}
+                    </Alert>
+                  )}
+                  {subscription?.current_period_end && subscription?.status !== 'trialing' && (
                     <Typography variant="body2" color="text.secondary">
                       Renews: {new Date(subscription.current_period_end).toLocaleDateString()}
                     </Typography>
+                  )}
+                  {subscription?.cancel_at_period_end && (
+                    <Alert severity="warning" sx={{ mt: 1 }}>
+                      ⚠️ Cancels on {subscription?.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString() : 'period end'}
+                    </Alert>
                   )}
                 </Box>
                 <Box display="flex" gap={1}>
@@ -574,23 +593,36 @@ const Settings = () => {
           <Dialog open={cancelDialogOpen} onClose={() => setCancelDialogOpen(false)}>
             <DialogTitle>Cancel Subscription?</DialogTitle>
             <DialogContent>
-              <Alert severity="warning" sx={{ mb: 2 }}>
-                Your subscription will remain active until the end of your current billing period.
-                You'll continue to have access to all features until then.
-              </Alert>
-              <Typography variant="body2" color="text.secondary">
-                After cancellation, you'll be moved to the Free plan. You can reactivate anytime.
-              </Typography>
+              {subscription?.status === 'trialing' ? (
+                <>
+                  <Alert severity="warning" sx={{ mb: 2 }}>
+                    Your trial will end immediately and you'll be downgraded to the Free plan.
+                  </Alert>
+                  <Typography variant="body2" color="text.secondary">
+                    You can resubscribe anytime, but won't be eligible for another free trial.
+                  </Typography>
+                </>
+              ) : (
+                <>
+                  <Alert severity="warning" sx={{ mb: 2 }}>
+                    Your subscription will remain active until the end of your current billing period.
+                    You'll continue to have access to all features until then.
+                  </Alert>
+                  <Typography variant="body2" color="text.secondary">
+                    After cancellation, you'll be moved to the Free plan. You can reactivate anytime.
+                  </Typography>
+                </>
+              )}
             </DialogContent>
             <DialogActions>
               <Button onClick={() => setCancelDialogOpen(false)}>Keep Subscription</Button>
               <Button
-                onClick={handleCancel}
+                onClick={() => handleCancel(subscription?.status === 'trialing')}
                 color="error"
                 variant="contained"
                 disabled={actionLoading}
               >
-                {actionLoading ? 'Canceling...' : 'Cancel Subscription'}
+                {actionLoading ? 'Canceling...' : 'Yes, Cancel'}
               </Button>
             </DialogActions>
           </Dialog>

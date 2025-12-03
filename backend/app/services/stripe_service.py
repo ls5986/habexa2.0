@@ -73,12 +73,21 @@ class StripeService:
         email: str,
         price_key: str,
         success_url: str = None,
-        cancel_url: str = None
+        cancel_url: str = None,
+        include_trial: bool = True
     ) -> Dict[str, Any]:
         """Create a Stripe Checkout session for subscription.
         
         IMPORTANT: Checks for existing active subscriptions first.
         If user already has an active subscription, returns existing subscription info.
+        
+        Args:
+            user_id: User ID
+            email: User email
+            price_key: Price key (e.g., "starter_monthly")
+            success_url: Success redirect URL
+            cancel_url: Cancel redirect URL
+            include_trial: Whether to include 7-day trial (only if user hasn't had one)
         """
         
         price_id = PRICE_IDS.get(price_key)
@@ -87,6 +96,19 @@ class StripeService:
         
         # Get or create customer
         customer_id = await StripeService.get_or_create_customer(user_id, email)
+        
+        # Check if user already had a free trial
+        had_trial = False
+        try:
+            result = supabase.table("subscriptions")\
+                .select("had_free_trial")\
+                .eq("user_id", user_id)\
+                .maybe_single()\
+                .execute()
+            if result.data:
+                had_trial = result.data.get("had_free_trial", False)
+        except Exception:
+            pass  # Default to False if check fails
         
         # CHECK FOR EXISTING ACTIVE SUBSCRIPTION
         # First check database
@@ -138,24 +160,34 @@ class StripeService:
             logging.getLogger(__name__).warning(f"Error checking Stripe subscriptions: {e}")
         
         # No existing subscription, create new checkout session
-        session = stripe.checkout.Session.create(
-            customer=customer_id,
-            payment_method_types=["card"],
-            line_items=[{
+        session_params = {
+            "customer": customer_id,
+            "payment_method_types": ["card"],
+            "line_items": [{
                 "price": price_id,
                 "quantity": 1,
             }],
-            mode="subscription",
-            success_url=success_url or (settings.STRIPE_SUCCESS_URL + "?session_id={CHECKOUT_SESSION_ID}"),
-            cancel_url=cancel_url or settings.STRIPE_CANCEL_URL,
-            allow_promotion_codes=True,
-            billing_address_collection="auto",
-            subscription_data={
-                "trial_period_days": 14,
-                "metadata": {"user_id": user_id}
-            },
-            metadata={"user_id": user_id}
-        )
+            "mode": "subscription",
+            "success_url": success_url or (settings.STRIPE_SUCCESS_URL + "?session_id={CHECKOUT_SESSION_ID}"),
+            "cancel_url": cancel_url or settings.STRIPE_CANCEL_URL,
+            "allow_promotion_codes": True,
+            "billing_address_collection": "auto",
+            "metadata": {"user_id": user_id}
+        }
+        
+        # Add 7-day trial if user hasn't had one and include_trial is True
+        if include_trial and not had_trial:
+            session_params["subscription_data"] = {
+                "trial_period_days": 7,  # Changed from 14 to 7 days
+                "metadata": {"user_id": user_id, "plan": price_key}
+            }
+        else:
+            # Still include metadata for subscription
+            session_params["subscription_data"] = {
+                "metadata": {"user_id": user_id, "plan": price_key}
+            }
+        
+        session = stripe.checkout.Session.create(**session_params)
         
         return {
             "session_id": session.id,
@@ -205,7 +237,10 @@ class StripeService:
     
     @staticmethod
     async def get_subscription(user_id: str) -> Dict[str, Any]:
-        """Get user's subscription details."""
+        """Get user's subscription details.
+        
+        Optionally syncs with Stripe for fresh data.
+        """
         
         result = supabase.table("subscriptions")\
             .select("*")\
@@ -215,47 +250,112 @@ class StripeService:
         if not result.data or len(result.data) == 0:
             return {
                 "tier": "free",
-                "status": "active",
-                "limits": TIER_LIMITS["free"]
+                "status": "none",
+                "limits": TIER_LIMITS["free"],
+                "had_free_trial": False,
+                "cancel_at_period_end": False
             }
         
         sub = result.data[0]
         tier = sub.get("tier", "free")
         
+        # Optionally sync with Stripe for fresh status
+        subscription_id = sub.get("stripe_subscription_id")
+        if subscription_id:
+            try:
+                stripe_sub = stripe.Subscription.retrieve(subscription_id)
+                # Update local cache if status changed
+                if stripe_sub.status != sub.get("status"):
+                    await StripeWebhookHandler.handle_subscription_updated(stripe_sub)
+                    # Re-fetch after update
+                    result = supabase.table("subscriptions")\
+                        .select("*")\
+                        .eq("user_id", user_id)\
+                        .execute()
+                    if result.data:
+                        sub = result.data[0]
+            except Exception:
+                pass  # Use cached data if Stripe fails
+        
         return {
             "tier": tier,
             "status": sub.get("status", "active"),
             "billing_interval": sub.get("billing_interval"),
+            "current_period_start": sub.get("current_period_start"),
             "current_period_end": sub.get("current_period_end"),
             "cancel_at_period_end": sub.get("cancel_at_period_end", False),
+            "trial_start": sub.get("trial_start"),
             "trial_end": sub.get("trial_end"),
+            "had_free_trial": sub.get("had_free_trial", False),
             "analyses_used": sub.get("analyses_used_this_period", 0),
             "limits": TIER_LIMITS.get(tier, TIER_LIMITS["free"])
         }
     
     @staticmethod
     async def cancel_subscription(user_id: str, at_period_end: bool = True) -> Dict[str, Any]:
-        """Cancel a subscription."""
+        """Cancel a subscription.
+        
+        Args:
+            user_id: User ID
+            at_period_end: If True, cancel at period end (keeps access). If False, cancel immediately.
+        """
         
         result = supabase.table("subscriptions")\
-            .select("stripe_subscription_id")\
+            .select("stripe_subscription_id, status")\
             .eq("user_id", user_id)\
             .execute()
         
         if not result.data or len(result.data) == 0 or not result.data[0].get("stripe_subscription_id"):
             raise ValueError("No active subscription found")
         
+        subscription_id = result.data[0]["stripe_subscription_id"]
+        current_status = result.data[0].get("status", "")
+        
         if at_period_end:
+            # Cancel at period end (user keeps access until then)
             subscription = stripe.Subscription.modify(
-                result.data[0]["stripe_subscription_id"],
+                subscription_id,
                 cancel_at_period_end=True
             )
+            
+            # Update database
+            supabase.table("subscriptions")\
+                .update({
+                    "cancel_at_period_end": True,
+                    "status": "active" if current_status == "trialing" else current_status
+                })\
+                .eq("user_id", user_id)\
+                .execute()
+            
+            return {
+                "status": "scheduled_cancellation",
+                "cancel_at_period_end": True,
+                "access_until": datetime.fromtimestamp(subscription.current_period_end).isoformat(),
+                "message": "Subscription will cancel at end of billing period"
+            }
         else:
-            subscription = stripe.Subscription.delete(
-                result.data[0]["stripe_subscription_id"]
-            )
-        
-        return {"status": "canceled", "cancel_at_period_end": at_period_end}
+            # Cancel immediately (for trials or special cases)
+            subscription = stripe.Subscription.delete(subscription_id)
+            
+            # Downgrade to free immediately
+            supabase.table("subscriptions")\
+                .update({
+                    "tier": "free",
+                    "status": "canceled",
+                    "stripe_subscription_id": None,
+                    "stripe_price_id": None,
+                    "cancel_at_period_end": False,
+                    "canceled_at": datetime.utcnow().isoformat()
+                })\
+                .eq("user_id", user_id)\
+                .execute()
+            
+            return {
+                "status": "canceled",
+                "cancel_at_period_end": False,
+                "new_tier": "free",
+                "message": "Subscription cancelled immediately"
+            }
     
     @staticmethod
     async def reactivate_subscription(user_id: str) -> Dict[str, Any]:
@@ -394,6 +494,25 @@ class StripeWebhookHandler:
         tier = PRICE_TO_TIER.get(price_id, "starter")
         interval = subscription["items"]["data"][0]["price"]["recurring"]["interval"]
         
+        # Check if this subscription has a trial
+        has_trial = subscription.get("trial_start") is not None and subscription.get("trial_end") is not None
+        had_trial_before = False
+        
+        # Check if user already had a trial
+        try:
+            existing = supabase.table("subscriptions")\
+                .select("had_free_trial")\
+                .eq("user_id", user_id)\
+                .maybe_single()\
+                .execute()
+            if existing.data:
+                had_trial_before = existing.data.get("had_free_trial", False)
+        except Exception:
+            pass
+        
+        # Set had_free_trial if this subscription has a trial
+        had_free_trial = had_trial_before or has_trial
+        
         supabase.table("subscriptions").upsert({
             "user_id": user_id,
             "stripe_customer_id": customer_id,
@@ -406,34 +525,65 @@ class StripeWebhookHandler:
             "current_period_end": datetime.fromtimestamp(subscription["current_period_end"]).isoformat(),
             "trial_start": datetime.fromtimestamp(subscription["trial_start"]).isoformat() if subscription.get("trial_start") else None,
             "trial_end": datetime.fromtimestamp(subscription["trial_end"]).isoformat() if subscription.get("trial_end") else None,
+            "had_free_trial": had_free_trial,  # Track that user had a trial
         }, on_conflict="user_id").execute()
     
     @staticmethod
     async def handle_subscription_updated(subscription: Dict[str, Any]):
-        """Handle subscription updates."""
+        """Handle subscription updates (plan changes, trial ending, cancellation scheduled, etc.)."""
         
         subscription_id = subscription["id"]
         price_id = subscription["items"]["data"][0]["price"]["id"]
         tier = PRICE_TO_TIER.get(price_id, "starter")
         interval = subscription["items"]["data"][0]["price"]["recurring"]["interval"]
         
+        # Check if trial ended and subscription became active
+        was_trialing = False
+        try:
+            existing = supabase.table("subscriptions")\
+                .select("status, had_free_trial")\
+                .eq("stripe_subscription_id", subscription_id)\
+                .maybe_single()\
+                .execute()
+            if existing.data:
+                was_trialing = existing.data.get("status") == "trialing"
+        except Exception:
+            pass
+        
+        # If transitioning from trialing to active, ensure had_free_trial is set
+        had_free_trial = False
+        if subscription.get("trial_start") or subscription.get("trial_end") or was_trialing:
+            had_free_trial = True
+        
+        update_data = {
+            "stripe_price_id": price_id,
+            "tier": tier,
+            "billing_interval": interval,
+            "status": subscription["status"],
+            "current_period_start": datetime.fromtimestamp(subscription["current_period_start"]).isoformat(),
+            "current_period_end": datetime.fromtimestamp(subscription["current_period_end"]).isoformat(),
+            "cancel_at_period_end": subscription.get("cancel_at_period_end", False),
+            "canceled_at": datetime.fromtimestamp(subscription["canceled_at"]).isoformat() if subscription.get("canceled_at") else None,
+        }
+        
+        # Update trial fields if present
+        if subscription.get("trial_start"):
+            update_data["trial_start"] = datetime.fromtimestamp(subscription["trial_start"]).isoformat()
+        if subscription.get("trial_end"):
+            update_data["trial_end"] = datetime.fromtimestamp(subscription["trial_end"]).isoformat()
+        
+        # Set had_free_trial if trial exists or was trialing
+        if had_free_trial:
+            update_data["had_free_trial"] = True
+        
         supabase.table("subscriptions")\
-            .update({
-                "stripe_price_id": price_id,
-                "tier": tier,
-                "billing_interval": interval,
-                "status": subscription["status"],
-                "current_period_start": datetime.fromtimestamp(subscription["current_period_start"]).isoformat(),
-                "current_period_end": datetime.fromtimestamp(subscription["current_period_end"]).isoformat(),
-                "cancel_at_period_end": subscription.get("cancel_at_period_end", False),
-                "canceled_at": datetime.fromtimestamp(subscription["canceled_at"]).isoformat() if subscription.get("canceled_at") else None,
-            })\
+            .update(update_data)\
             .eq("stripe_subscription_id", subscription_id)\
             .execute()
     
     @staticmethod
     async def handle_subscription_deleted(subscription: Dict[str, Any]):
-        """Handle subscription cancellation."""
+        """Handle subscription cancellation — downgrade to free."""
         
         subscription_id = subscription["id"]
         
@@ -443,6 +593,8 @@ class StripeWebhookHandler:
                 "status": "canceled",
                 "stripe_subscription_id": None,
                 "stripe_price_id": None,
+                "cancel_at_period_end": False,
+                "canceled_at": datetime.utcnow().isoformat(),
             })\
             .eq("stripe_subscription_id", subscription_id)\
             .execute()
@@ -513,4 +665,37 @@ class StripeWebhookHandler:
             .update({"status": "past_due"})\
             .eq("stripe_customer_id", customer_id)\
             .execute()
+    
+    @staticmethod
+    async def handle_trial_will_end(subscription: Dict[str, Any]):
+        """Handle trial ending soon (3 days before trial ends).
+        
+        This is a good time to send reminder emails to users.
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        subscription_id = subscription["id"]
+        customer_id = subscription.get("customer")
+        trial_end = subscription.get("trial_end")
+        
+        if not trial_end:
+            return
+        
+        # Get user from subscription
+        try:
+            result = supabase.table("subscriptions")\
+                .select("user_id")\
+                .eq("stripe_subscription_id", subscription_id)\
+                .maybe_single()\
+                .execute()
+            
+            if result.data:
+                user_id = result.data["user_id"]
+                logger.info(f"Trial ending soon for user {user_id}. Trial ends: {datetime.fromtimestamp(trial_end).isoformat()}")
+                
+                # TODO: Send reminder email
+                # await send_trial_ending_email(user_id, trial_end)
+        except Exception as e:
+            logger.warning(f"Error handling trial_will_end webhook: {e}")
 

@@ -38,8 +38,18 @@ export function StripeProvider({ children }) {
     }
   };
 
-  const createCheckout = async (priceKey) => {
-    const response = await api.post('/billing/checkout', { price_key: priceKey });
+  const createCheckout = async (priceKey, includeTrial = true) => {
+    const response = await api.post('/billing/checkout', { 
+      price_key: priceKey,
+      include_trial: includeTrial
+    });
+    
+    // If existing subscription found, return it
+    if (response.data.existing) {
+      await fetchSubscription();
+      return response.data;
+    }
+    
     window.location.href = response.data.url;
   };
 
@@ -49,7 +59,19 @@ export function StripeProvider({ children }) {
   };
 
   const cancelSubscription = async (atPeriodEnd = true) => {
-    await api.post(`/billing/cancel?at_period_end=${atPeriodEnd}`);
+    if (atPeriodEnd) {
+      await api.post('/billing/cancel', null, { params: { at_period_end: true } });
+    } else {
+      await api.post('/billing/cancel-immediately');
+    }
+    await fetchSubscription();
+  };
+  
+  const resubscribe = async (priceKey) => {
+    const response = await api.post('/billing/resubscribe', { price_key: priceKey });
+    if (response.data.url) {
+      window.location.href = response.data.url;
+    }
     await fetchSubscription();
   };
 
@@ -108,6 +130,7 @@ export function StripeProvider({ children }) {
       openPortal,
       cancelSubscription,
       reactivateSubscription,
+      resubscribe,
       changePlan,
       setTier,
       syncSubscription,
