@@ -378,6 +378,7 @@ const Settings = () => {
             </Box>
           </CardContent>
         </Card>
+        </>
       )}
 
       {/* Integrations Tab */}
