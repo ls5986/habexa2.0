@@ -59,22 +59,58 @@ class UPCConverter:
             )
             
             if result:
-                # SP-API returns items in different structures
-                items = result.get("items") or result.get("summaries") or []
+                # SP-API catalog search returns items in this structure:
+                # {
+                #   "items": [
+                #     {
+                #       "asin": "B08...",
+                #       "identifiers": {
+                #         "marketplaceASIN": {
+                #           "marketplaceId": "...",
+                #           "asin": "B08..."
+                #         }
+                #       },
+                #       "summaries": [...]
+                #     }
+                #   ]
+                # }
+                items = result.get("items") or []
                 
                 if items:
                     # Get first item's ASIN
                     first_item = items[0]
-                    # ASIN might be in different locations
-                    asin = first_item.get("asin") or first_item.get("productId") or first_item.get("identifiers", {}).get("marketplaceASIN", {}).get("asin")
+                    
+                    # Try multiple locations for ASIN
+                    asin = (
+                        first_item.get("asin") or
+                        first_item.get("productId") or
+                        first_item.get("identifiers", {}).get("marketplaceASIN", {}).get("asin") or
+                        (first_item.get("identifiers", {}) or {}).get("asin")
+                    )
                     
                     if asin:
                         logger.info(f"✅ Converted UPC {upc_clean} to ASIN {asin}")
                         return asin
                     else:
-                        logger.warning(f"UPC {upc_clean} found but no ASIN in response: {first_item}")
+                        # Log the full item structure for debugging
+                        import json
+                        logger.warning(f"UPC {upc_clean} found but no ASIN in response. Item keys: {list(first_item.keys())}")
+                        logger.debug(f"Full item structure: {json.dumps(first_item, indent=2, default=str)[:1000]}")
                 else:
-                    logger.warning(f"No products found for UPC {upc_clean}")
+                    # Check if summaries exist at top level (different response format)
+                    summaries = result.get("summaries") or []
+                    if summaries:
+                        first_summary = summaries[0]
+                        asin = (
+                            first_summary.get("asin") or
+                            first_summary.get("productId") or
+                            first_summary.get("identifiers", {}).get("marketplaceASIN", {}).get("asin")
+                        )
+                        if asin:
+                            logger.info(f"✅ Converted UPC {upc_clean} to ASIN {asin} (from summaries)")
+                            return asin
+                    
+                    logger.warning(f"No products found for UPC {upc_clean}. Response keys: {list(result.keys()) if isinstance(result, dict) else 'N/A'}")
             else:
                 logger.warning(f"No response from SP-API for UPC {upc_clean}")
                 
