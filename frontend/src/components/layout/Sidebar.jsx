@@ -77,6 +77,7 @@ const NavItem = ({ icon: Icon, label, path, active, badge, collapsed }) => {
 
 const Sidebar = ({ collapsed, onToggle }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   // const { subscription } = useSubscription();
   const subscription = { tier: 'free' }; // Fallback until hook is available
   const isActive = (path) => location.pathname === path;
@@ -181,8 +182,7 @@ const Sidebar = ({ collapsed, onToggle }) => {
               size="small"
               variant="contained"
               fullWidth
-              component="a"
-              href="/pricing"
+              onClick={() => navigate('/pricing')}
               sx={{
                 background: 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)',
                 '&:hover': {

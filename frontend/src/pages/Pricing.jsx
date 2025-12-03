@@ -29,9 +29,16 @@ const Pricing = () => {
   const fetchPlans = async () => {
     try {
       const response = await api.get('/billing/plans');
-      setPlans(response.data.plans);
+      console.log('Plans response:', response.data);
+      if (response.data && response.data.plans) {
+        setPlans(response.data.plans);
+      } else {
+        console.error('No plans in response:', response.data);
+        showToast('Failed to load plans', 'error');
+      }
     } catch (error) {
       console.error('Failed to fetch plans:', error);
+      showToast(error.response?.data?.detail || 'Failed to load pricing plans', 'error');
     } finally {
       setLoading(false);
     }
@@ -82,6 +89,31 @@ const Pricing = () => {
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
         <CircularProgress />
       </Box>
+    );
+  }
+
+  if (plans.length === 0) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 8 }}>
+        <Box textAlign="center">
+          <Typography variant="h4" fontWeight={700} mb={2}>
+            No Plans Available
+          </Typography>
+          <Typography variant="body1" color="text.secondary" mb={3}>
+            Unable to load pricing plans. Please try refreshing the page.
+          </Typography>
+          <Button
+            variant="contained"
+            onClick={fetchPlans}
+            sx={{
+              backgroundColor: habexa.purple.main,
+              '&:hover': { backgroundColor: habexa.purple.dark },
+            }}
+          >
+            Retry
+          </Button>
+        </Box>
+      </Container>
     );
   }
 
