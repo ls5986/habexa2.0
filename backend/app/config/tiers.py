@@ -3,7 +3,8 @@ SINGLE SOURCE OF TRUTH FOR ALL TIER LIMITS
 
 Every other file must import from here. Delete all other TIER_LIMITS definitions.
 """
-from typing import Dict, Any
+from typing import Dict, Any, List
+from app.core.config import settings
 
 # Tier limits configuration
 TIER_LIMITS: Dict[str, Dict[str, Any]] = {
@@ -53,18 +54,22 @@ TIER_LIMITS: Dict[str, Dict[str, Any]] = {
     }
 }
 
-# Super admin emails - get unlimited access to everything
-# Move to env var in production
-SUPER_ADMIN_EMAILS = [
-    "lindsey@letsclink.com"
-]
+# Super admin emails - loaded from environment variable
+# Set SUPER_ADMIN_EMAILS env var as comma-separated list: "email1@example.com,email2@example.com"
+def get_super_admin_emails() -> List[str]:
+    """Get super admin emails from settings."""
+    return settings.super_admin_list
+
+SUPER_ADMIN_EMAILS = get_super_admin_emails()
 
 
 def is_super_admin(user_email: str) -> bool:
     """Check if user is super admin by email"""
     if not user_email:
         return False
-    return user_email.lower() in [e.lower() for e in SUPER_ADMIN_EMAILS]
+    # Refresh from settings in case env var changed
+    admin_emails = get_super_admin_emails()
+    return user_email.lower() in [e.lower() for e in admin_emails]
 
 
 def get_tier_limits(tier: str) -> Dict[str, Any]:

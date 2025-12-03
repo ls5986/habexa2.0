@@ -80,6 +80,9 @@ class Settings(BaseSettings):
     STRIPE_SUCCESS_URL: str = "http://localhost:3002/billing/success"
     STRIPE_CANCEL_URL: str = "http://localhost:3002/billing/cancel"
     
+    # Super Admins (comma-separated in env)
+    SUPER_ADMIN_EMAILS: str = "lindsey@letsclink.com"  # Default, can be overridden in env
+    
     # Redis (Optional - for caching)
     REDIS_URL: Optional[str] = None  # e.g., "redis://localhost:6379/0" or "rediss://..." for SSL
     
@@ -93,6 +96,13 @@ class Settings(BaseSettings):
     # API Rate Limits
     SP_API_BATCH_SIZE: int = 20  # SP-API batch size limit
     KEEPA_BATCH_SIZE: int = 100  # Keepa API batch size limit
+
+    @property
+    def super_admin_list(self) -> list[str]:
+        """Parse comma-separated super admin emails."""
+        if not self.SUPER_ADMIN_EMAILS:
+            return []
+        return [e.strip().lower() for e in self.SUPER_ADMIN_EMAILS.split(",") if e.strip()]
 
     model_config = ConfigDict(
         env_file=str(ENV_FILE) if ENV_FILE.exists() else ".env",

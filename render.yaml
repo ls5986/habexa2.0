@@ -116,6 +116,9 @@ services:
         value: https://habexa-frontend.onrender.com/billing/success
       - key: STRIPE_CANCEL_URL
         value: https://habexa-frontend.onrender.com/billing/cancel
+      # Super Admins (comma-separated)
+      - key: SUPER_ADMIN_EMAILS
+        sync: false
       # Redis
       - key: REDIS_URL
         fromService:

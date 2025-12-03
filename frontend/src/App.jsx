@@ -11,6 +11,7 @@ import './index.css';
 import AppLayout from './components/layout/AppLayout';
 
 // Lazy load pages for better performance
+const LandingPage = lazy(() => import('./pages/LandingPage'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Deals = lazy(() => import('./pages/Deals'));
 const DealDetail = lazy(() => import('./pages/DealDetail'));
@@ -55,17 +56,20 @@ function App() {
             <StripeProvider>
               <BrowserRouter>
             <Routes>
+              {/* Public routes */}
+              <Route path="/" element={<Suspense fallback={<Loading />}><LandingPage /></Suspense>} />
               <Route path="/login" element={<Suspense fallback={<Loading />}><Login /></Suspense>} />
               <Route path="/register" element={<Suspense fallback={<Loading />}><Register /></Suspense>} />
               <Route path="/billing/success" element={<Suspense fallback={<Loading />}><BillingSuccess /></Suspense>} />
               <Route path="/billing/cancel" element={<Suspense fallback={<Loading />}><BillingCancel /></Suspense>} />
+              {/* Protected routes */}
               <Route
                 path="/*"
                 element={
                   <ProtectedRoute>
                     <AppLayout>
                       <Routes>
-                        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                        <Route path="/dashboard" element={<Navigate to="/dashboard" replace />} />
                         <Route path="/dashboard" element={<Suspense fallback={<Loading />}><Dashboard /></Suspense>} />
                         <Route path="/deals" element={<Navigate to="/products" replace />} />
                         <Route path="/deals/:dealId" element={<Suspense fallback={<Loading />}><DealDetail /></Suspense>} />
