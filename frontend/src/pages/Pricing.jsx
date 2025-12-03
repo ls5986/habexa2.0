@@ -16,7 +16,7 @@ const Pricing = () => {
   const [yearly, setYearly] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(null);
   const [tierLoading, setTierLoading] = useState(null);
-  const { subscription, createCheckout, setTier } = useStripe();
+  const { subscription, createCheckout, setTier, resubscribe } = useStripe();
   const { user } = useAuth();
   const { showToast } = useToast();
   
@@ -57,11 +57,23 @@ const Pricing = () => {
         setTierLoading(null);
       }
     } else {
-      // Regular user: normal checkout
+      // Regular user: check if cancelled/resubscribing
+      const isCancelled = subscription?.status === 'canceled' || subscription?.status === 'none';
+      const hadTrial = subscription?.had_free_trial === true;
+      
       setCheckoutLoading(plan.tier);
       try {
         const priceKey = yearly ? plan.price_keys.yearly : plan.price_keys.monthly;
-        await createCheckout(priceKey);
+        
+        if (isCancelled) {
+          // Resubscribe (no trial if already had one)
+          const { resubscribe } = useStripe();
+          await resubscribe(priceKey);
+        } else {
+          // New subscription or upgrade (include trial if eligible)
+          const includeTrial = !hadTrial;
+          await createCheckout(priceKey, includeTrial);
+        }
       } catch (error) {
         showToast(error.response?.data?.detail || 'Checkout failed', 'error');
       } finally {
@@ -129,7 +141,11 @@ const Pricing = () => {
           </Alert>
         )}
         <Typography variant="h6" color="text.secondary" mb={3}>
-          {isSuperAdmin ? 'Switch between tiers instantly' : 'Start with a 14-day free trial. No credit card required.'}
+          {isSuperAdmin 
+            ? 'Switch between tiers instantly' 
+            : subscription?.had_free_trial 
+              ? 'Choose your plan to continue using Habexa'
+              : 'Start with a 7-day free trial. No credit card required.'}
         </Typography>
         <FormControlLabel
           control={
@@ -242,8 +258,10 @@ const Pricing = () => {
                       'Current Plan'
                     ) : isSuperAdmin ? (
                       'Switch to This Plan'
+                    ) : subscription?.status === 'canceled' || subscription?.status === 'none' ? (
+                      'Resubscribe'
                     ) : (
-                      'Get Started'
+                      subscription?.had_free_trial ? 'Subscribe' : 'Start Free Trial'
                     )}
                   </Button>
                 </CardContent>

@@ -587,6 +587,15 @@ class StripeWebhookHandler:
         
         subscription_id = subscription["id"]
         
+        # Get user_id before updating
+        result = supabase.table("subscriptions")\
+            .select("user_id")\
+            .eq("stripe_subscription_id", subscription_id)\
+            .maybe_single()\
+            .execute()
+        
+        user_id = result.data.get("user_id") if result.data else None
+        
         supabase.table("subscriptions")\
             .update({
                 "tier": "free",
@@ -598,6 +607,14 @@ class StripeWebhookHandler:
             })\
             .eq("stripe_subscription_id", subscription_id)\
             .execute()
+        
+        # Send cancellation email
+        if user_id:
+            try:
+                from app.services.email_service import EmailService
+                await EmailService.send_subscription_cancelled_email(user_id)
+            except Exception as email_error:
+                logger.warning(f"Failed to send cancellation email: {email_error}")
     
     @staticmethod
     async def handle_invoice_paid(invoice: Dict[str, Any]):
@@ -661,10 +678,19 @@ class StripeWebhookHandler:
         if not result.data or len(result.data) == 0:
             return
         
+        user_id = result.data[0]["user_id"]
+        
         supabase.table("subscriptions")\
             .update({"status": "past_due"})\
             .eq("stripe_customer_id", customer_id)\
             .execute()
+        
+        # Send payment failed email
+        try:
+            from app.services.email_service import EmailService
+            await EmailService.send_payment_failed_email(user_id)
+        except Exception as email_error:
+            logger.warning(f"Failed to send payment failed email: {email_error}")
     
     @staticmethod
     async def handle_trial_will_end(subscription: Dict[str, Any]):
@@ -694,8 +720,13 @@ class StripeWebhookHandler:
                 user_id = result.data["user_id"]
                 logger.info(f"Trial ending soon for user {user_id}. Trial ends: {datetime.fromtimestamp(trial_end).isoformat()}")
                 
-                # TODO: Send reminder email
-                # await send_trial_ending_email(user_id, trial_end)
+                # Send reminder email
+                try:
+                    from app.services.email_service import EmailService
+                    trial_end_dt = datetime.fromtimestamp(trial_end)
+                    await EmailService.send_trial_ending_email(user_id, trial_end_dt)
+                except Exception as email_error:
+                    logger.warning(f"Failed to send trial ending email: {email_error}")
         except Exception as e:
             logger.warning(f"Error handling trial_will_end webhook: {e}")
 

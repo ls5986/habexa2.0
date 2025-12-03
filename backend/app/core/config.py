@@ -83,6 +83,12 @@ class Settings(BaseSettings):
     # Super Admins (comma-separated in env)
     SUPER_ADMIN_EMAILS: str = "lindsey@letsclink.com"  # Default, can be overridden in env
     
+    # Email service (optional - for transactional emails)
+    EMAIL_PROVIDER: Optional[str] = None  # resend, sendgrid, postmark, ses
+    EMAIL_API_KEY: Optional[str] = None
+    EMAIL_FROM: str = "noreply@habexa.com"
+    EMAIL_FROM_NAME: str = "Habexa"
+    
     # Redis (Optional - for caching)
     REDIS_URL: Optional[str] = None  # e.g., "redis://localhost:6379/0" or "rediss://..." for SSL
     
