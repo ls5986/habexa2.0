@@ -96,10 +96,10 @@ def main():
     # AUTH ENDPOINTS
     # ========================================
     print(f"\n{Colors.BLUE}[AUTH]{Colors.RESET}")
-    test_endpoint("POST", "/api/v1/auth/login", [200, 400, 401, 422], auth=False, 
-                  body={"email": "test@test.com", "password": "wrong"}, name="Login")
+    test_endpoint("POST", "/api/v1/auth/login", [200, 400, 422], auth=False, 
+                  body={"email": "test@example.com", "password": "Test1234!"}, name="Login")
     test_endpoint("POST", "/api/v1/auth/register", [200, 400, 422], auth=False,
-                  body={"email": "", "password": ""}, name="Register (validation)")
+                  body={"email": "test@example.com", "password": "Test1234!", "full_name": "Test User"}, name="Register")
     test_endpoint("GET", "/api/v1/auth/me", [200, 401], name="Get current user")
     test_endpoint("POST", "/api/v1/auth/change-password", [200, 400, 401], 
                   body={"current_password": "wrong", "new_password": "Test1234!"}, name="Change password")

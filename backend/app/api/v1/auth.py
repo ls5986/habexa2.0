@@ -2,7 +2,7 @@
 Authentication endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from app.api.deps import get_current_user
 from app.services.supabase_client import supabase
 import logging
@@ -10,6 +10,49 @@ import logging
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class RegisterRequest(BaseModel):
+    email: EmailStr
+    password: str
+    full_name: str = ""
+
+
+@router.post("/login")
+async def login(request: LoginRequest):
+    """
+    Login is handled client-side by Supabase Auth.
+    
+    This endpoint provides documentation for client-side authentication.
+    Use Supabase client SDK: supabase.auth.signInWithPassword()
+    """
+    return {
+        "message": "Use Supabase client-side auth",
+        "method": "supabase.auth.signInWithPassword({ email, password })",
+        "docs": "https://supabase.com/docs/reference/javascript/auth-signinwithpassword",
+        "note": "Authentication is handled client-side for security. This endpoint is informational only."
+    }
+
+
+@router.post("/register")
+async def register(request: RegisterRequest):
+    """
+    Registration is handled client-side by Supabase Auth.
+    
+    This endpoint provides documentation for client-side authentication.
+    Use Supabase client SDK: supabase.auth.signUp()
+    """
+    return {
+        "message": "Use Supabase client-side auth",
+        "method": "supabase.auth.signUp({ email, password, options: { data: { full_name } } })",
+        "docs": "https://supabase.com/docs/reference/javascript/auth-signup",
+        "note": "Authentication is handled client-side for security. This endpoint is informational only."
+    }
 
 
 @router.get("/me")
