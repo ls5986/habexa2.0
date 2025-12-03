@@ -131,7 +131,8 @@ async def test_endpoints():
             print(f"{Colors.RED}FAILURES:{Colors.RESET}")
             for r in results:
                 if not r.get("success", False):
-                    print(f"  {r['method']} {r['path']}: {r.get('error', f'Status {r.get(\"status_code\")}')}")
+                    error_msg = r.get('error') or f"Status {r.get('status_code')}"
+                    print(f"  {r['method']} {r['path']}: {error_msg}")
 
 if __name__ == "__main__":
     asyncio.run(test_endpoints())
