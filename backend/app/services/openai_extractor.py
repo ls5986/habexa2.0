@@ -4,7 +4,11 @@ import re
 from typing import Dict, Any, List, Optional
 from app.core.config import settings
 
-openai.api_key = settings.OPENAI_API_KEY
+if settings.OPENAI_API_KEY:
+    openai.api_key = settings.OPENAI_API_KEY
+else:
+    # Will fail gracefully when used if not set
+    pass
 
 
 async def extract_products_from_message(raw_message: str) -> List[Dict[str, Any]]:
@@ -37,6 +41,10 @@ Example output:
 
 Return JSON array only."""
 
+    if not settings.OPENAI_API_KEY:
+        # Fallback to regex if OpenAI key not configured
+        return extract_products_regex(raw_message)
+    
     try:
         response = await openai.ChatCompletion.acreate(
             model="gpt-4",

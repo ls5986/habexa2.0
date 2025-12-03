@@ -48,14 +48,14 @@ class Settings(BaseSettings):
     AWS_REGION: str = "us-east-1"
     SP_API_ROLE_ARN: Optional[str] = None
 
-    # ASIN Data API
-    ASIN_DATA_API_KEY: str
+    # ASIN Data API (Optional - only needed if using asin_data_client, but we use batch_analyzer)
+    ASIN_DATA_API_KEY: Optional[str] = None
 
     # Keepa
     KEEPA_API_KEY: Optional[str] = None
 
-    # OpenAI
-    OPENAI_API_KEY: str
+    # OpenAI (Optional - only needed for Telegram message extraction)
+    OPENAI_API_KEY: Optional[str] = None
 
     # Telegram
     TELEGRAM_API_ID: Optional[str] = None

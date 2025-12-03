@@ -245,12 +245,14 @@ services:
         sync: false
       - key: SECRET_KEY
         sync: false
-      # ASIN Data API (Required - needed for config initialization)
+      # ASIN Data API (Optional - only needed if using asin_data_client)
       - key: ASIN_DATA_API_KEY
         sync: false
-      # OpenAI (Required - needed for config initialization)
+        required: false
+      # OpenAI (Optional - only needed for Telegram message extraction)
       - key: OPENAI_API_KEY
         sync: false
+        required: false
       # Telegram
       - key: TELEGRAM_API_ID
         sync: false
@@ -288,12 +290,14 @@ services:
         sync: false
       - key: SECRET_KEY
         sync: false
-      # ASIN Data API (Required - needed for config initialization)
+      # ASIN Data API (Optional - only needed if using asin_data_client)
       - key: ASIN_DATA_API_KEY
         sync: false
-      # OpenAI (Required - needed for config initialization)
+        required: false
+      # OpenAI (Optional - only needed for Telegram message extraction)
       - key: OPENAI_API_KEY
         sync: false
+        required: false
       # Telegram
       - key: TELEGRAM_API_ID
         sync: false

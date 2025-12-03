@@ -11,6 +11,8 @@ class ASINDataClient:
     
     def __init__(self):
         self.api_key = settings.ASIN_DATA_API_KEY
+        if not self.api_key:
+            raise ValueError("ASIN_DATA_API_KEY not configured")
     
     async def get_product(self, asin: str, marketplace: str = "US") -> Dict[str, Any]:
         """
