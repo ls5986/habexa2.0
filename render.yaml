@@ -245,7 +245,10 @@ services:
         sync: false
       - key: SECRET_KEY
         sync: false
-      # OpenAI
+      # ASIN Data API (Required - needed for config initialization)
+      - key: ASIN_DATA_API_KEY
+        sync: false
+      # OpenAI (Required - needed for config initialization)
       - key: OPENAI_API_KEY
         sync: false
       # Telegram
@@ -284,6 +287,12 @@ services:
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
       - key: SECRET_KEY
+        sync: false
+      # ASIN Data API (Required - needed for config initialization)
+      - key: ASIN_DATA_API_KEY
+        sync: false
+      # OpenAI (Required - needed for config initialization)
+      - key: OPENAI_API_KEY
         sync: false
       # Telegram
       - key: TELEGRAM_API_ID
