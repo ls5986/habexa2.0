@@ -9,6 +9,7 @@ import { useFeatureGate } from '../../../hooks/useFeatureGate';
 import { formatCurrency, formatROI } from '../../../utils/formatters';
 import UsageDisplay from '../../common/UsageDisplay';
 import { habexa } from '../../../theme';
+import api from '../../../services/api';
 
 const QuickAnalyzeModal = ({ open, onClose, onViewDeal }) => {
   const [identifierType, setIdentifierType] = useState('asin'); // 'asin' or 'upc'
@@ -44,7 +45,7 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal }) => {
 
     try {
       // For UPC, we need to convert to ASIN first, but the backend can handle it
-      const analysisResult = await analyzeSingle(
+      const response = await analyzeSingle(
         identifier, 
         parseFloat(buyCost), 
         moq, 
@@ -52,8 +53,74 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal }) => {
         identifierType,
         identifierType === 'upc' ? quantity : 1
       );
-      setResult(analysisResult);
-      showToast('Analysis complete!', 'success');
+      
+      // Response contains job_id - poll for completion
+      if (response.job_id) {
+        showToast('Analysis started! Waiting for results...', 'info');
+        
+        // Poll for job completion
+        const pollJob = async () => {
+          const maxAttempts = 60; // 60 seconds max
+          let attempts = 0;
+          
+          const checkJob = async () => {
+            try {
+              const jobRes = await api.get(`/jobs/${response.job_id}`);
+              const job = jobRes.data;
+              
+              if (job.status === 'completed') {
+                // Fetch the product/analysis result
+                const productRes = await api.get(`/products/${response.product_id}`);
+                const product = productRes.data;
+                
+                // Format result for display
+                setResult({
+                  asin: product.asin,
+                  title: product.title,
+                  deal_score: product.deal_score || 'N/A',
+                  net_profit: product.net_profit || 0,
+                  roi: product.roi || 0,
+                  gating_status: product.gating_status || 'unknown',
+                  meets_threshold: product.meets_threshold || false,
+                  is_profitable: (product.net_profit || 0) > 0
+                });
+                showToast('Analysis complete!', 'success');
+                
+                // Trigger refresh of products list if callback exists
+                if (onViewDeal) {
+                  setTimeout(() => {
+                    window.location.reload(); // Simple refresh for now
+                  }, 1000);
+                }
+              } else if (job.status === 'failed') {
+                showToast('Analysis failed. Please try again.', 'error');
+              } else if (attempts < maxAttempts) {
+                // Still processing, poll again
+                attempts++;
+                setTimeout(checkJob, 1000);
+              } else {
+                showToast('Analysis is taking longer than expected. Check Products page for results.', 'warning');
+              }
+            } catch (err) {
+              console.error('Error polling job:', err);
+              if (attempts < maxAttempts) {
+                attempts++;
+                setTimeout(checkJob, 1000);
+              } else {
+                showToast('Could not check analysis status. Check Products page for results.', 'warning');
+              }
+            }
+          };
+          
+          checkJob();
+        };
+        
+        pollJob();
+      } else {
+        // Legacy: if result is returned directly (shouldn't happen)
+        setResult(response);
+        showToast('Analysis complete!', 'success');
+      }
     } catch (error) {
       showToast(error.message || `Failed to analyze ${identifierType.toUpperCase()}`, 'error');
     }

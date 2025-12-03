@@ -24,29 +24,73 @@ PROCESS_BATCH_SIZE = settings.CELERY_PROCESS_BATCH_SIZE  # Batch size for proces
 def analyze_single_product(self, job_id: str, user_id: str, product_id: str, asin: str, buy_cost: float = None):
     """
     Analyze a single product using batch analyzer (still uses batch API calls for efficiency).
+    Creates product_source entry so product appears in products list.
     """
     job = JobManager(job_id)
     
     try:
         job.start(total_items=1)
         
+        # Get job metadata for buy_cost, moq, supplier_id
+        job_data = job.get()
+        metadata = job_data.get("metadata", {})
+        buy_cost = buy_cost or metadata.get("buy_cost") or metadata.get("original_buy_cost")
+        moq = metadata.get("moq", 1)
+        supplier_id = metadata.get("supplier_id")
+        
         # Use batch analyzer even for single product (it's still efficient)
         results = run_async(batch_analyzer.analyze_products([asin]))
         result = results.get(asin, {})
         
         if result.get("success"):
-            # Get supplier_id from product_sources if available
-            supplier_id = None
-            try:
-                sources = supabase.table("product_sources")\
-                    .select("supplier_id")\
-                    .eq("product_id", product_id)\
-                    .limit(1)\
-                    .execute()
-                if sources.data and sources.data[0].get("supplier_id"):
-                    supplier_id = sources.data[0]["supplier_id"]
-            except Exception as e:
-                logger.warning(f"Could not get supplier_id for product {product_id}: {e}")
+            # Get or create product_source entry (required for product to show in list)
+            if buy_cost:
+                try:
+                    # Check if product_source already exists
+                    existing_source = supabase.table("product_sources")\
+                        .select("id, supplier_id")\
+                        .eq("product_id", product_id)\
+                        .eq("user_id", user_id)\
+                        .limit(1)\
+                        .execute()
+                    
+                    if existing_source.data:
+                        # Update existing source
+                        source_id = existing_source.data[0]["id"]
+                        supabase.table("product_sources").update({
+                            "buy_cost": buy_cost,
+                            "moq": moq,
+                            "supplier_id": supplier_id,
+                            "stage": "reviewed",
+                            "updated_at": datetime.utcnow().isoformat()
+                        }).eq("id", source_id).execute()
+                    else:
+                        # Create new product_source
+                        supabase.table("product_sources").insert({
+                            "user_id": user_id,
+                            "product_id": product_id,
+                            "supplier_id": supplier_id,
+                            "buy_cost": buy_cost,
+                            "moq": moq,
+                            "stage": "reviewed",
+                            "source": "quick_analyze"
+                        }).execute()
+                    logger.info(f"✅ Created/updated product_source for product {product_id}")
+                except Exception as e:
+                    logger.warning(f"Could not create product_source: {e}")
+            
+            # Get supplier_id from product_sources if not set
+            if not supplier_id:
+                try:
+                    sources = supabase.table("product_sources")\
+                        .select("supplier_id")\
+                        .eq("product_id", product_id)\
+                        .limit(1)\
+                        .execute()
+                    if sources.data and sources.data[0].get("supplier_id"):
+                        supplier_id = sources.data[0]["supplier_id"]
+                except Exception as e:
+                    logger.warning(f"Could not get supplier_id for product {product_id}: {e}")
             
             # Save analysis
             analysis_result = supabase.table("analyses").upsert({
@@ -86,7 +130,7 @@ def analyze_single_product(self, job_id: str, user_id: str, product_id: str, asi
                 "updated_at": datetime.utcnow().isoformat()
             }).eq("id", product_id).execute()
             
-            job.complete({"analysis_id": analysis_id}, success=1, errors=0)
+            job.complete({"analysis_id": analysis_id, "product_id": product_id}, success=1, errors=0)
         else:
             supabase.table("products").update({
                 "status": "error",
