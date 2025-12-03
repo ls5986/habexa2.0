@@ -67,7 +67,6 @@ const Pricing = () => {
         
         if (isCancelled) {
           // Resubscribe (no trial if already had one)
-          const { resubscribe } = useStripe();
           await resubscribe(priceKey);
         } else {
           // New subscription or upgrade (include trial if eligible)
