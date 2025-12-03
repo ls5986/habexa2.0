@@ -286,8 +286,11 @@ async def test_upc_conversion(upc: str, current_user=Depends(get_current_user)):
     """
     Test UPC to ASIN conversion endpoint.
     Calls SP-API /catalog/2022-04-01/items with UPC identifier.
+    Shows full SP-API response for debugging.
     """
     from app.services.upc_converter import upc_converter
+    from app.services.sp_api_client import sp_api_client
+    import json
     
     logger.info(f"🧪 Testing UPC conversion for: {upc}")
     
@@ -297,28 +300,49 @@ async def test_upc_conversion(upc: str, current_user=Depends(get_current_user)):
         raise HTTPException(400, f"Invalid UPC format: {upc}. Must be 12-14 digits.")
     
     try:
+        # Call SP-API directly to see full response
+        logger.info(f"📞 Calling SP-API catalog search for UPC: {upc_clean}")
+        raw_result = await sp_api_client.search_catalog_items(
+            identifiers=[upc_clean],
+            identifiers_type="UPC",
+            marketplace_id="ATVPDKIKX0DER"
+        )
+        
+        # Log the full response structure
+        logger.info(f"📦 SP-API raw response type: {type(raw_result)}")
+        if raw_result:
+            logger.info(f"📦 SP-API response keys: {list(raw_result.keys()) if isinstance(raw_result, dict) else 'N/A (not dict)'}")
+            logger.debug(f"📦 SP-API full response: {json.dumps(raw_result, indent=2, default=str)[:2000]}")
+        
         # Test the conversion
         asin = await upc_converter.upc_to_asin(upc_clean)
         
+        response_data = {
+            "success": asin is not None,
+            "upc": upc_clean,
+            "asin": asin,
+            "raw_sp_api_response": raw_result,
+            "sp_api_response_keys": list(raw_result.keys()) if isinstance(raw_result, dict) and raw_result else None,
+        }
+        
         if asin:
             # Also get full catalog item details
-            from app.services.sp_api_client import sp_api_client
             catalog_item = await sp_api_client.get_catalog_item(asin)
-            
-            return {
-                "success": True,
-                "upc": upc_clean,
-                "asin": asin,
-                "catalog_item": catalog_item,
-                "message": f"✅ Successfully converted UPC {upc_clean} to ASIN {asin}"
-            }
+            response_data["catalog_item"] = catalog_item
+            response_data["message"] = f"✅ Successfully converted UPC {upc_clean} to ASIN {asin}"
         else:
-            return {
-                "success": False,
-                "upc": upc_clean,
-                "asin": None,
-                "message": f"❌ Could not find ASIN for UPC {upc_clean}. Product may not be available on Amazon."
-            }
+            response_data["message"] = f"❌ Could not find ASIN for UPC {upc_clean}. Product may not be available on Amazon."
+            if raw_result:
+                # Show what we got back
+                items = raw_result.get("items") or raw_result.get("summaries") or []
+                response_data["debug_info"] = {
+                    "items_found": len(items),
+                    "first_item_keys": list(items[0].keys()) if items and len(items) > 0 else None,
+                    "first_item_sample": str(items[0])[:500] if items and len(items) > 0 else None
+                }
+        
+        return response_data
+        
     except Exception as e:
         logger.error(f"Error testing UPC conversion: {e}", exc_info=True)
         raise HTTPException(500, f"Error converting UPC: {str(e)}")
