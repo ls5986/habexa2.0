@@ -46,7 +46,7 @@ async def analyze_single(
     
     # Check limit (but don't block if feature_gate fails)
     try:
-        limit_check = await feature_gate.check_limit(current_user.id, "analyses_per_month")
+        limit_check = await feature_gate.check_limit(current_user, "analyses_per_month")
         if not limit_check.get("allowed", True) and not limit_check.get("unlimited", False):
             raise HTTPException(
                 status_code=403,
@@ -153,7 +153,7 @@ async def analyze_single(
     
     # Get usage info
     try:
-        check = await feature_gate.check_limit(user_id, "analyses_per_month")
+        check = await feature_gate.check_limit(current_user, "analyses_per_month")
         usage = {
             "analyses_remaining": check.get("remaining", 999),
             "analyses_limit": check.get("limit", 999),
@@ -189,7 +189,7 @@ async def analyze_batch(
     user_id = str(current_user.id)
     
     # Check if user has enough analyses remaining
-    check = await feature_gate.check_limit(current_user.id, "analyses_per_month")
+    check = await feature_gate.check_limit(current_user, "analyses_per_month")
     
     item_count = len(request.items)
     
@@ -253,7 +253,7 @@ async def analyze_batch(
     batch_analyze_products.delay(job_id, user_id, product_ids)
     
     # Get updated usage
-    final_check = await feature_gate.check_limit(current_user.id, "analyses_per_month")
+    final_check = await feature_gate.check_limit(current_user, "analyses_per_month")
     
     return {
         "job_id": job_id,

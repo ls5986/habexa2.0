@@ -5,61 +5,9 @@ import logging
 
 from app.services.supabase_client import supabase
 from app.api.deps import get_current_user
+from app.config.tiers import TIER_LIMITS, SUPER_ADMIN_EMAILS, is_super_admin, get_tier_limits
 
 logger = logging.getLogger(__name__)
-
-# Super admin emails - get unlimited access to everything
-SUPER_ADMIN_EMAILS = [
-    "lindsey@letsclink.com"
-]
-
-# Tier limits configuration
-TIER_LIMITS = {
-    "free": {
-        "telegram_channels": 1,
-        "analyses_per_month": 10,
-        "suppliers": 3,
-        "alerts": False,
-        "bulk_analyze": False,
-        "api_access": False,
-        "team_seats": 1,
-        "export_data": False,
-        "priority_support": False,
-    },
-    "starter": {
-        "telegram_channels": 3,
-        "analyses_per_month": 100,
-        "suppliers": 10,
-        "alerts": True,
-        "bulk_analyze": False,
-        "api_access": False,
-        "team_seats": 1,
-        "export_data": True,
-        "priority_support": False,
-    },
-    "pro": {
-        "telegram_channels": 10,
-        "analyses_per_month": 500,
-        "suppliers": 50,
-        "alerts": True,
-        "bulk_analyze": True,
-        "api_access": False,
-        "team_seats": 3,
-        "export_data": True,
-        "priority_support": True,
-    },
-    "agency": {
-        "telegram_channels": -1,
-        "analyses_per_month": -1,
-        "suppliers": -1,
-        "alerts": True,
-        "bulk_analyze": True,
-        "api_access": True,
-        "team_seats": 10,
-        "export_data": True,
-        "priority_support": True,
-    }
-}
 
 
 class FeatureGate:
@@ -71,7 +19,7 @@ class FeatureGate:
         from app.services.redis_client import cache_service
         
         # Check if user is super admin
-        if user_email and user_email.lower() in [email.lower() for email in SUPER_ADMIN_EMAILS]:
+        if is_super_admin(user_email):
             return "agency"  # Super admins get agency tier (unlimited)
         
         # Try cache first
@@ -106,19 +54,29 @@ class FeatureGate:
             return "free"
     
     @staticmethod
-    async def get_user_limits(user_id: str) -> Dict[str, Any]:
-        """Get all limits for user's tier."""
+    async def get_user_limits(user) -> Dict[str, Any]:
+        """Get all limits for user's tier.
         
-        tier = await FeatureGate.get_user_tier(user_id)
+        Args:
+            user: User object with .id and .email attributes
+        """
+        from app.services.permissions_service import PermissionsService
+        
+        limits = PermissionsService.get_effective_limits(user)
         return {
-            "tier": tier,
-            "limits": TIER_LIMITS.get(tier, TIER_LIMITS["free"])
+            "tier": limits["tier"],
+            "limits": {k: v for k, v in limits.items() if k not in ["unlimited", "is_super_admin", "tier", "tier_display"]}
         }
     
     @staticmethod
-    async def check_limit(user_id: str, feature: str, user_email: Optional[str] = None) -> Dict[str, Any]:
+    async def check_limit(user, feature: str) -> Dict[str, Any]:
         """
         Check if user can use a feature.
+        NOW USES PermissionsService for centralized logic.
+        
+        Args:
+            user: User object with .id and .email attributes (from get_current_user)
+            feature: Feature name (e.g., "analyses_per_month")
         
         Returns:
             {
@@ -129,79 +87,30 @@ class FeatureGate:
                 "used": int,
                 "remaining": int (or -1 for unlimited),
                 "unlimited": bool,
-                "upgrade_required": bool
+                "upgrade_required": bool,
+                "is_super_admin": bool
             }
         """
+        from app.services.permissions_service import PermissionsService
         
-        # Check if user is super admin - grant unlimited access
-        if user_email and user_email.lower() in [email.lower() for email in SUPER_ADMIN_EMAILS]:
-            return {
-                "allowed": True,
-                "tier": "agency",
-                "feature": feature,
-                "limit": -1,
-                "used": 0,
-                "remaining": -1,
-                "unlimited": True,
-                "upgrade_required": False
-            }
-        
-        # Use database function for accurate count
-        try:
-            result = supabase.rpc("check_user_limit", {
-                "p_user_id": user_id,
-                "p_feature": feature
-            }).execute()
-            
-            if result.data:
-                return result.data
-        except Exception as e:
-            logger.debug(f"Error calling check_user_limit function: {e}, using fallback")
-        
-        # Fallback to Python calculation
-        tier = await FeatureGate.get_user_tier(user_id, user_email)
-        limits = TIER_LIMITS.get(tier, TIER_LIMITS["free"])
-        
-        # Boolean features
-        if feature in ["alerts", "bulk_analyze", "api_access", "export_data", "priority_support"]:
-            allowed = limits.get(feature, False)
-            return {
-                "allowed": allowed,
-                "tier": tier,
-                "feature": feature,
-                "upgrade_required": not allowed
-            }
-        
-        # Numeric limits
-        limit = limits.get(feature, 0)
-        
-        # Unlimited
-        if limit == -1:
-            return {
-                "allowed": True,
-                "tier": tier,
-                "feature": feature,
-                "limit": -1,
-                "used": 0,
-                "remaining": -1,
-                "unlimited": True,
-                "upgrade_required": False
-            }
-        
-        # Get current usage
+        # Get current usage from database
+        user_id = str(user.id)
         used = await FeatureGate._get_usage(user_id, feature)
-        remaining = max(0, limit - used)
-        allowed = used < limit
         
+        # Use centralized permissions service
+        permission = PermissionsService.check_limit(user, feature, used)
+        
+        # Format response to match expected structure
         return {
-            "allowed": allowed,
-            "tier": tier,
+            "allowed": permission["allowed"],
+            "tier": permission.get("tier", "free"),
             "feature": feature,
-            "limit": limit,
+            "limit": permission["limit"],
             "used": used,
-            "remaining": remaining,
-            "unlimited": False,
-            "upgrade_required": not allowed
+            "remaining": permission["remaining"],
+            "unlimited": permission["unlimited"],
+            "is_super_admin": permission.get("is_super_admin", False),
+            "upgrade_required": not permission["allowed"]
         }
     
     @staticmethod
@@ -240,14 +149,33 @@ class FeatureGate:
         return 0
     
     @staticmethod
-    async def increment_usage(user_id: str, feature: str, amount: int = 1) -> Dict[str, Any]:
+    async def increment_usage(user, feature: str, amount: int = 1) -> Dict[str, Any]:
         """
         Increment usage for a feature.
+        DOES NOT INCREMENT FOR SUPER ADMINS.
         First checks if allowed, then increments.
+        
+        Args:
+            user: User object with .id and .email attributes
+            feature: Feature name
+            amount: Amount to increment (default 1)
         """
+        from app.services.permissions_service import PermissionsService
+        
+        # Check if we should track this user's usage (super admins skip)
+        if not PermissionsService.should_track_usage(user):
+            logger.info(f"Skipping usage increment for super admin: {getattr(user, 'email', 'unknown')}")
+            return {
+                "success": True,
+                "feature": feature,
+                "incremented_by": 0,
+                "skipped": True,
+                "reason": "super_admin"
+            }
         
         # Check limit first
-        check = await FeatureGate.check_limit(user_id, feature)
+        user_id = str(user.id)
+        check = await FeatureGate.check_limit(user, feature)
         
         if not check.get("allowed"):
             return {
@@ -268,7 +196,7 @@ class FeatureGate:
             if result.data and result.data.get("success"):
                 return result.data
         except Exception as e:
-            print(f"Error calling increment_usage: {e}")
+            logger.debug(f"Error calling increment_usage RPC: {e}, using fallback")
         
         # Fallback manual increment
         if feature == "analyses_per_month":
@@ -284,16 +212,20 @@ class FeatureGate:
                 .execute()
         
         # Log usage record
-        supabase.table("usage_records").insert({
-            "user_id": user_id,
-            "feature": feature,
-            "quantity": amount
-        }).execute()
+        try:
+            supabase.table("usage_records").insert({
+                "user_id": user_id,
+                "feature": feature,
+                "quantity": amount
+            }).execute()
+        except Exception as e:
+            logger.warning(f"Failed to log usage record: {e}")
         
         return {
             "success": True,
             "feature": feature,
-            "incremented_by": amount
+            "incremented_by": amount,
+            "skipped": False
         }
     
     @staticmethod
@@ -310,22 +242,26 @@ class FeatureGate:
             print(f"Error calling decrement_usage: {e}")
     
     @staticmethod
-    async def can_use_feature(user_id: str, feature: str) -> bool:
+    async def can_use_feature(user, feature: str) -> bool:
         """Simple boolean check if user can use a feature."""
         
-        check = await FeatureGate.check_limit(user_id, feature)
+        check = await FeatureGate.check_limit(user, feature)
         return check.get("allowed", False)
     
     @staticmethod
-    async def get_all_usage(user_id: str) -> Dict[str, Any]:
-        """Get all usage stats for a user."""
+    async def get_all_usage(user) -> Dict[str, Any]:
+        """Get all usage stats for a user.
         
-        tier = await FeatureGate.get_user_tier(user_id)
-        limits = TIER_LIMITS.get(tier, TIER_LIMITS["free"])
+        Args:
+            user: User object with .id and .email attributes
+        """
+        user_id = str(user.id)
+        tier = await FeatureGate.get_user_tier(user_id, getattr(user, 'email', None))
+        limits = get_tier_limits(tier)
         
         usage = {}
         for feature in ["analyses_per_month", "telegram_channels", "suppliers", "team_seats"]:
-            check = await FeatureGate.check_limit(user_id, feature)
+            check = await FeatureGate.check_limit(user, feature)
             usage[feature] = check
         
         # Add boolean features
@@ -349,8 +285,7 @@ def require_feature(feature: str):
     """
     
     async def check_feature(current_user = Depends(get_current_user)):
-        user_email = getattr(current_user, 'email', None)
-        check = await FeatureGate.check_limit(current_user.id, feature, user_email)
+        check = await FeatureGate.check_limit(current_user, feature)
         
         if not check.get("allowed"):
             raise HTTPException(
@@ -378,8 +313,7 @@ def require_limit(feature: str):
     """
     
     async def check_limit(current_user = Depends(get_current_user)):
-        user_email = getattr(current_user, 'email', None)
-        check = await FeatureGate.check_limit(current_user.id, feature, user_email)
+        check = await FeatureGate.check_limit(current_user, feature)
         
         if not check.get("allowed"):
             limit = check.get("limit", 0)

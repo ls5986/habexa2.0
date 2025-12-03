@@ -41,7 +41,7 @@ async def list_suppliers(current_user=Depends(get_current_user)):
     result = supabase.table("suppliers").select("*").eq("user_id", current_user.id).order("created_at", desc=True).execute()
     
     # Add limit info
-    check = await feature_gate.check_limit(current_user.id, "suppliers")
+        check = await feature_gate.check_limit(current_user, "suppliers")
     
     return {
         "suppliers": result.data,
@@ -73,7 +73,7 @@ async def create_supplier(
             raise HTTPException(status_code=500, detail="Failed to create supplier")
         
         # Get updated limit info
-        check = await feature_gate.check_limit(current_user.id, "suppliers")
+        check = await feature_gate.check_limit(current_user, "suppliers")
         
         return {
             "supplier": result.data[0],

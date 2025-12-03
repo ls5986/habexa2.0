@@ -30,44 +30,8 @@ if settings.STRIPE_PRICE_AGENCY_MONTHLY:
 if settings.STRIPE_PRICE_AGENCY_YEARLY:
     PRICE_TO_TIER[settings.STRIPE_PRICE_AGENCY_YEARLY] = "agency"
 
-TIER_LIMITS = {
-    "free": {
-        "telegram_channels": 1,
-        "analyses_per_month": 10,
-        "suppliers": 3,
-        "alerts": False,
-        "bulk_analyze": False,
-        "api_access": False,
-        "team_seats": 1,
-    },
-    "starter": {
-        "telegram_channels": 3,
-        "analyses_per_month": 100,
-        "suppliers": 10,
-        "alerts": True,
-        "bulk_analyze": False,
-        "api_access": False,
-        "team_seats": 1,
-    },
-    "pro": {
-        "telegram_channels": 10,
-        "analyses_per_month": 500,
-        "suppliers": 50,
-        "alerts": True,
-        "bulk_analyze": True,
-        "api_access": False,
-        "team_seats": 3,
-    },
-    "agency": {
-        "telegram_channels": -1,
-        "analyses_per_month": -1,
-        "suppliers": -1,
-        "alerts": True,
-        "bulk_analyze": True,
-        "api_access": True,
-        "team_seats": 10,
-    }
-}
+# Import from centralized config - single source of truth
+from app.config.tiers import TIER_LIMITS
 
 
 class StripeService:

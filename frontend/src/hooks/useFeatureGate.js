@@ -1,99 +1,128 @@
-import { useCallback } from 'react';
-import { useStripe } from '../context/StripeContext';
+import { useCallback, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
-
-// Tier limits (mirror of backend)
-const TIER_LIMITS = {
-  free: {
-    telegram_channels: 1,
-    analyses_per_month: 10,
-    suppliers: 3,
-    alerts: false,
-    bulk_analyze: false,
-    api_access: false,
-    team_seats: 1,
-    export_data: false,
-  },
-  starter: {
-    telegram_channels: 3,
-    analyses_per_month: 100,
-    suppliers: 10,
-    alerts: true,
-    bulk_analyze: false,
-    api_access: false,
-    team_seats: 1,
-    export_data: true,
-  },
-  pro: {
-    telegram_channels: 10,
-    analyses_per_month: 500,
-    suppliers: 50,
-    alerts: true,
-    bulk_analyze: true,
-    api_access: false,
-    team_seats: 3,
-    export_data: true,
-  },
-  agency: {
-    telegram_channels: -1,
-    analyses_per_month: -1,
-    suppliers: -1,
-    alerts: true,
-    bulk_analyze: true,
-    api_access: true,
-    team_seats: 10,
-    export_data: true,
-  },
-};
+import api from '../services/api';
 
 export function useFeatureGate() {
-  const { subscription } = useStripe();
   const navigate = useNavigate();
   const { showToast } = useToast();
+  
+  // Fetch limits from backend API - single source of truth
+  const [limitsData, setLimitsData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const tier = subscription?.tier || 'free';
-  const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
+  useEffect(() => {
+    const fetchLimits = async () => {
+      try {
+        setIsLoading(true);
+        const response = await api.get('/billing/user/limits');
+        setLimitsData(response.data);
+        setError(null);
+      } catch (err) {
+        console.error('Failed to fetch user limits:', err);
+        setError(err);
+        // Fallback to free tier on error
+        setLimitsData({
+          tier: 'free',
+          tier_display: 'Free',
+          is_super_admin: false,
+          unlimited: false,
+          limits: {
+            analyses_per_month: { limit: 5, used: 0, remaining: 5, unlimited: false },
+            telegram_channels: { limit: 1, used: 0, remaining: 1, unlimited: false },
+            suppliers: { limit: 3, used: 0, remaining: 3, unlimited: false },
+          }
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchLimits();
+    
+    // Refresh every 30 seconds to keep usage up to date
+    const interval = setInterval(fetchLimits, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const tier = limitsData?.tier || 'free';
+  const isSuperAdmin = limitsData?.is_super_admin || false;
+  const isUnlimited = limitsData?.unlimited || false;
+
+  /**
+   * Check limit for a feature - returns backend data
+   */
+  const checkLimit = useCallback((feature) => {
+    if (isLoading || !limitsData) {
+      return { allowed: false, loading: true };
+    }
+
+    const featureLimit = limitsData.limits[feature];
+    if (!featureLimit) {
+      // Unknown feature, allow by default
+      return { allowed: true, unlimited: true };
+    }
+
+    // Boolean feature
+    if (typeof featureLimit.allowed === 'boolean') {
+      return {
+        allowed: featureLimit.allowed,
+        unlimited: featureLimit.unlimited || false,
+      };
+    }
+
+    // Numeric feature
+    return {
+      allowed: featureLimit.unlimited || featureLimit.remaining > 0,
+      remaining: featureLimit.remaining,
+      limit: featureLimit.limit,
+      used: featureLimit.used,
+      unlimited: featureLimit.unlimited,
+    };
+  }, [limitsData, isLoading]);
 
   /**
    * Check if user has access to a boolean feature
    */
   const hasFeature = useCallback((feature) => {
-    return limits[feature] === true;
-  }, [limits]);
+    const check = checkLimit(feature);
+    return check.allowed === true;
+  }, [checkLimit]);
 
   /**
    * Get the limit for a numeric feature
    * Returns -1 for unlimited
    */
   const getLimit = useCallback((feature) => {
-    return limits[feature] ?? 0;
-  }, [limits]);
+    const check = checkLimit(feature);
+    return check.unlimited ? -1 : (check.limit ?? 0);
+  }, [checkLimit]);
 
   /**
    * Check if a numeric limit has been reached
    */
-  const isLimitReached = useCallback((feature, currentUsage) => {
-    const limit = limits[feature];
-    if (limit === -1) return false; // Unlimited
-    return currentUsage >= limit;
-  }, [limits]);
+  const isLimitReached = useCallback((feature) => {
+    const check = checkLimit(feature);
+    if (check.unlimited) return false;
+    return check.remaining <= 0;
+  }, [checkLimit]);
 
   /**
    * Get remaining count for a numeric feature
    */
-  const getRemaining = useCallback((feature, currentUsage) => {
-    const limit = limits[feature];
-    if (limit === -1) return Infinity;
-    return Math.max(0, limit - currentUsage);
-  }, [limits]);
+  const getRemaining = useCallback((feature) => {
+    const check = checkLimit(feature);
+    return check.unlimited ? Infinity : (check.remaining ?? 0);
+  }, [checkLimit]);
 
   /**
    * Check if feature is unlimited
    */
   const isUnlimited = useCallback((feature) => {
-    return limits[feature] === -1;
-  }, [limits]);
+    const check = checkLimit(feature);
+    return check.unlimited || false;
+  }, [checkLimit]);
 
   /**
    * Show upgrade prompt and optionally navigate to pricing
@@ -162,17 +191,36 @@ export function useFeatureGate() {
     }
   }, [tier]);
 
+  /**
+   * Refresh limits from backend
+   */
+  const refetch = useCallback(async () => {
+    try {
+      const response = await api.get('/billing/user/limits');
+      setLimitsData(response.data);
+    } catch (err) {
+      console.error('Failed to refresh limits:', err);
+    }
+  }, []);
+
   return {
     tier,
-    limits,
+    tierDisplay: limitsData?.tier_display || tier,
+    isSuperAdmin,
+    isUnlimited: isUnlimited,
+    limits: limitsData?.limits || {},
+    isLoading,
+    error,
     hasFeature,
     getLimit,
     isLimitReached,
     getRemaining,
-    isUnlimited,
+    isUnlimited: (feature) => isUnlimited(feature),
+    checkLimit,
     promptUpgrade,
     gateFeature,
     getUpgradeSuggestion,
+    refetch,
   };
 }
 

@@ -330,11 +330,53 @@ async def get_usage(current_user=Depends(get_current_user)):
     }
 
 
+@router.get("/user/limits")
+async def get_user_limits(current_user=Depends(get_current_user)):
+    """
+    Returns user's effective limits and current usage.
+    Frontend should call this instead of using hardcoded limits.
+    This endpoint properly handles super admin bypass.
+    """
+    from app.services.permissions_service import PermissionsService
+    from app.services.feature_gate import feature_gate
+    
+    # Get effective limits (includes super admin bypass)
+    limits = PermissionsService.get_effective_limits(current_user)
+    
+    # Get current usage for numeric features
+    usage_data = {}
+    for feature in ["analyses_per_month", "telegram_channels", "suppliers", "team_seats"]:
+        used = await feature_gate._get_usage(str(current_user.id), feature)
+        feature_limit = limits.get(feature, 0)
+        
+        usage_data[feature] = {
+            "limit": feature_limit,
+            "used": used,
+            "remaining": -1 if limits["unlimited"] or feature_limit == -1 else max(0, feature_limit - used),
+            "unlimited": limits["unlimited"] or feature_limit == -1
+        }
+    
+    # Add boolean features
+    for feature in ["alerts", "bulk_analyze", "api_access", "export_data", "priority_support"]:
+        usage_data[feature] = {
+            "allowed": limits.get(feature, False),
+            "unlimited": limits["unlimited"]
+        }
+    
+    return {
+        "tier": limits["tier"],
+        "tier_display": limits.get("tier_display", limits["tier"].title()),
+        "is_super_admin": limits.get("is_super_admin", False),
+        "unlimited": limits["unlimited"],
+        "limits": usage_data
+    }
+
+
 @router.get("/limits")
 async def get_all_limits(current_user=Depends(get_current_user)):
     """Get all feature limits and current usage."""
     from app.services.feature_gate import feature_gate
-    return await feature_gate.get_all_usage(current_user.id)
+    return await feature_gate.get_all_usage(current_user)
 
 
 @router.get("/limits/{feature}")
@@ -353,7 +395,7 @@ async def check_feature_limit(
     if feature not in valid_features:
         raise HTTPException(400, f"Invalid feature. Valid: {valid_features}")
     
-    return await feature_gate.check_limit(current_user.id, feature)
+    return await feature_gate.check_limit(current_user, feature)
 
 
 @router.post("/webhook")

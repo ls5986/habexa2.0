@@ -4,12 +4,12 @@ import { useState } from 'react';
 import { useAnalysis } from '../../../hooks/useAnalysis';
 import { useSuppliers } from '../../../hooks/useSuppliers';
 import { useToast } from '../../../context/ToastContext';
-import { useStripe } from '../../../context/StripeContext';
 import { useFeatureGate } from '../../../hooks/useFeatureGate';
 import { formatCurrency, formatROI } from '../../../utils/formatters';
 import UsageDisplay from '../../common/UsageDisplay';
 import { habexa } from '../../../theme';
 import api from '../../../services/api';
+import { useNavigate } from 'react-router-dom';
 
 const QuickAnalyzeModal = ({ open, onClose, onViewDeal }) => {
   const [identifierType, setIdentifierType] = useState('asin'); // 'asin' or 'upc'
@@ -23,12 +23,12 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal }) => {
   const { analyzeSingle, loading } = useAnalysis();
   const { suppliers } = useSuppliers();
   const { showToast } = useToast();
-  const { subscription } = useStripe();
-  const { isLimitReached, getLimit, promptUpgrade } = useFeatureGate();
+  const navigate = useNavigate();
+  const { checkLimit, isLimitReached, isLoading: limitsLoading, isSuperAdmin } = useFeatureGate();
   
-  const analysesUsed = subscription?.analyses_used || 0;
-  const analysesLimit = getLimit('analyses_per_month');
-  const limitReached = isLimitReached('analyses_per_month', analysesUsed);
+  // Get analysis limit info from backend
+  const analysisLimit = checkLimit('analyses_per_month');
+  const limitReached = isLimitReached('analyses_per_month');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -38,8 +38,9 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal }) => {
       return;
     }
 
-    if (limitReached) {
-      promptUpgrade('analyses_per_month');
+    if (!analysisLimit.loading && limitReached) {
+      showToast('You\'ve reached your analysis limit. Please upgrade for more.', 'warning');
+      setTimeout(() => navigate('/pricing'), 1500);
       return;
     }
 
@@ -185,11 +186,38 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal }) => {
             <Box display="flex" flexDirection="column" gap={3}>
               {/* Usage display at top */}
               <Box mb={1}>
-                <UsageDisplay
-                  label="Analyses This Month"
-                  used={analysesUsed}
-                  limit={analysesLimit}
-                />
+                {limitsLoading ? (
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <CircularProgress size={16} />
+                    <Typography variant="body2" color="text.secondary">
+                      Loading usage...
+                    </Typography>
+                  </Box>
+                ) : analysisLimit.unlimited ? (
+                  <Box
+                    sx={{
+                      p: 1.5,
+                      borderRadius: 2,
+                      backgroundColor: habexa.success.light,
+                      color: habexa.success.dark,
+                    }}
+                  >
+                    <Typography variant="body2" fontWeight={600}>
+                      Analyses This Month: Unlimited ∞
+                    </Typography>
+                    {isSuperAdmin && (
+                      <Typography variant="caption" color="text.secondary">
+                        Super Admin Mode
+                      </Typography>
+                    )}
+                  </Box>
+                ) : (
+                  <UsageDisplay
+                    label="Analyses This Month"
+                    used={analysisLimit.used || 0}
+                    limit={analysisLimit.limit || 5}
+                  />
+                )}
               </Box>
 
               {limitReached && (

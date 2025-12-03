@@ -110,7 +110,7 @@ async def get_telegram_status(current_user=Depends(get_current_user)):
     status["channel_count"] = len(channels)
     
     # Add limit info
-    limit_check = await feature_gate.check_limit(current_user.id, "telegram_channels")
+    limit_check = await feature_gate.check_limit(current_user, "telegram_channels")
     status["channel_limit"] = limit_check.get("limit")
     status["channels_remaining"] = limit_check.get("remaining")
     
@@ -153,7 +153,7 @@ async def get_monitored_channels(current_user=Depends(get_current_user)):
     channels = await telegram_service.get_monitored_channels(current_user.id)
     
     # Add limit info
-    limit_check = await feature_gate.check_limit(current_user.id, "telegram_channels")
+    limit_check = await feature_gate.check_limit(current_user, "telegram_channels")
     
     return {
         "channels": channels,
@@ -247,7 +247,7 @@ async def add_monitored_channel(
         )
         
         # Increment usage
-        await feature_gate.increment_usage(current_user.id, "telegram_channels")
+        await feature_gate.increment_usage(current_user, "telegram_channels")
         
         # Auto backfill if requested
         backfill_result = None
@@ -283,7 +283,7 @@ async def add_channels_bulk(
     """
     
     # Check how many we can add
-    check = await feature_gate.check_limit(current_user.id, "telegram_channels")
+    check = await feature_gate.check_limit(current_user, "telegram_channels")
     
     if not check.get("unlimited"):
         remaining = check.get("remaining", 0)
@@ -329,7 +329,7 @@ async def remove_monitored_channel(
     await telegram_service.remove_channel(current_user.id, channel_id)
     
     # Decrement usage
-    await feature_gate.decrement_usage(current_user.id, "telegram_channels")
+    await feature_gate.decrement_usage(current_user, "telegram_channels")
     
     return {"message": "Channel removed"}
 
