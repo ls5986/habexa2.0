@@ -119,7 +119,7 @@ export function useFeatureGate() {
   /**
    * Check if feature is unlimited
    */
-  const isUnlimited = useCallback((feature) => {
+  const isFeatureUnlimited = useCallback((feature) => {
     const check = checkLimit(feature);
     return check.unlimited || false;
   }, [checkLimit]);
@@ -215,7 +215,7 @@ export function useFeatureGate() {
     getLimit,
     isLimitReached,
     getRemaining,
-    isUnlimited: (feature) => isUnlimited(feature),
+    isUnlimited: (feature) => isFeatureUnlimited(feature),
     checkLimit,
     promptUpgrade,
     gateFeature,

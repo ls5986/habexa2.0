@@ -182,11 +182,6 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal }) => {
           },
         },
       }}
-      PaperProps={{
-        sx: {
-          borderRadius: 3,
-        },
-      }}
     >
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 2 }}>
         <Box display="flex" alignItems="center" gap={1}>
