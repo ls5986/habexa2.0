@@ -817,10 +817,12 @@ async def analyze_product(
     current_user = Depends(get_current_user)
 ):
     """
-    Analyze a single product - alias for /analyze/single endpoint.
+    Analyze a single product - forwards to /analyze/single endpoint.
     Accepts: {asin, cost, moq} or {asin, buy_cost, moq}
     """
-    from app.api.v1.analysis import analyze_single, ASINInput
+    from app.api.v1.analysis import ASINInput
+    from app.tasks.analysis import analyze_single_product
+    import uuid
     
     # Convert request format
     asin = request.get("asin") or request.get("ASIN")
@@ -828,7 +830,6 @@ async def analyze_product(
     moq = request.get("moq") or request.get("MOQ") or 1
     
     if not asin or not buy_cost:
-        from fastapi import HTTPException
         raise HTTPException(400, "Missing required fields: asin and cost/buy_cost")
     
     # Create ASINInput object
@@ -839,8 +840,24 @@ async def analyze_product(
         identifier_type="asin"
     )
     
-    # Call the actual analysis endpoint
-    return await analyze_single(asin_input, current_user)
+    # Queue analysis task
+    user_id = str(current_user.id)
+    job_id = str(uuid.uuid4())
+    
+    analyze_single_product.delay(
+        asin=asin_input.asin,
+        user_id=user_id,
+        buy_cost=asin_input.buy_cost,
+        moq=asin_input.moq,
+        supplier_id=None,
+        job_id=job_id
+    )
+    
+    return {
+        "job_id": job_id,
+        "status": "queued",
+        "message": "Analysis queued successfully"
+    }
 
 
 @router.post("/bulk-analyze")
