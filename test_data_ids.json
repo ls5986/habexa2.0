@@ -1,0 +1,39 @@
+{
+  "user_id": "d320935d-80e8-4b5f-ae69-06315b6b1b36",
+  "seeded_ids": {
+    "suppliers": [
+      "939f636a-6798-4dc3-af75-e1ada24efb09",
+      "9e716659-efbc-4d22-adf2-6c9606de032d",
+      "a5bbbb71-8afa-40a8-98e8-c0f145dde313"
+    ],
+    "products": [
+      "84390ee4-012e-4d7f-bd54-1ce23e81a4cb",
+      "4575e557-893a-4e09-b2ff-fa25e83bf85f",
+      "408c5d82-0020-4be8-a006-04408265f033"
+    ],
+    "product_sources": [
+      "8b310c77-1142-4481-b777-0959b0161f15",
+      "7f350184-9806-4214-9d73-067334b4ecd9",
+      "fbfbb0c6-dce3-4b83-aebf-1623391c0fe6"
+    ],
+    "analyses": [
+      "6bb7801c-7fcf-417c-be19-f2a230df8d70",
+      "1e3b30aa-45a8-44e0-b15f-284897f1840e",
+      "3463c07e-47dc-4059-9553-0fb5f1d57bbd"
+    ],
+    "jobs": [
+      "a80dc918-04aa-4da8-8205-7278870cb500",
+      "29e88847-13fb-4d67-8592-a2fbff5d015c"
+    ],
+    "brands": [
+      "95764350-7d93-45cc-89ad-016bad1b16d8",
+      "23763390-c5c8-4410-a347-b96cb3d5aba7",
+      "e7f17d35-5864-485d-bd58-ead083db4d2b"
+    ],
+    "orders": [],
+    "watchlist": [
+      "8972ed08-759c-4952-9cea-a842fa1614a8",
+      "7b8be487-4862-4d80-94dc-6955ab72dd3e"
+    ]
+  }
+}
