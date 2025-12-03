@@ -498,6 +498,18 @@ async def initialize_subscription(current_user=Depends(get_current_user)):
     try:
         user_id = str(current_user.id)
         
+        # Ensure profile exists first (required for foreign key constraint)
+        profile_check = supabase.table("profiles").select("id").eq("id", user_id).maybe_single().execute()
+        if not profile_check or not profile_check.data:
+            # Create profile if it doesn't exist
+            supabase.table("profiles").insert({
+                "id": user_id,
+                "email": current_user.email,
+                "full_name": getattr(current_user, 'user_metadata', {}).get('full_name'),
+                "created_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.utcnow().isoformat()
+            }).execute()
+        
         # Check if subscription already exists
         result = supabase.table("subscriptions")\
             .select("id")\

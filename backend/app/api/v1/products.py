@@ -820,44 +820,36 @@ async def analyze_product(
     Analyze a single product - forwards to /analyze/single endpoint.
     Accepts: {asin, cost, moq} or {asin, buy_cost, moq}
     """
-    from app.api.v1.analysis import ASINInput
-    from app.tasks.analysis import analyze_single_product
-    import uuid
+    from app.api.v1.analysis import ASINInput, analyze_single
+    from pydantic import ValidationError
     
-    # Convert request format
-    asin = request.get("asin") or request.get("ASIN")
-    buy_cost = request.get("cost") or request.get("buy_cost") or request.get("buyCost")
-    moq = request.get("moq") or request.get("MOQ") or 1
-    
-    if not asin or not buy_cost:
-        raise HTTPException(400, "Missing required fields: asin and cost/buy_cost")
-    
-    # Create ASINInput object
-    asin_input = ASINInput(
-        asin=asin,
-        buy_cost=float(buy_cost),
-        moq=int(moq),
-        identifier_type="asin"
-    )
-    
-    # Queue analysis task
-    user_id = str(current_user.id)
-    job_id = str(uuid.uuid4())
-    
-    analyze_single_product.delay(
-        asin=asin_input.asin,
-        user_id=user_id,
-        buy_cost=asin_input.buy_cost,
-        moq=asin_input.moq,
-        supplier_id=None,
-        job_id=job_id
-    )
-    
-    return {
-        "job_id": job_id,
-        "status": "queued",
-        "message": "Analysis queued successfully"
-    }
+    try:
+        # Convert request format
+        asin = request.get("asin") or request.get("ASIN")
+        buy_cost = request.get("cost") or request.get("buy_cost") or request.get("buyCost")
+        moq = request.get("moq") or request.get("MOQ") or 1
+        
+        if not asin or not buy_cost:
+            raise HTTPException(400, "Missing required fields: asin and cost/buy_cost")
+        
+        # Create ASINInput object
+        try:
+            asin_input = ASINInput(
+                asin=asin,
+                buy_cost=float(buy_cost),
+                moq=int(moq),
+                identifier_type="asin"
+            )
+        except (ValueError, ValidationError) as e:
+            raise HTTPException(400, f"Invalid input: {str(e)}")
+        
+        # Call the actual analysis endpoint
+        return await analyze_single(asin_input, current_user)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in /products/analyze: {e}", exc_info=True)
+        raise HTTPException(500, f"Failed to analyze product: {str(e)}")
 
 
 @router.post("/bulk-analyze")
