@@ -51,10 +51,10 @@ class Settings(BaseSettings):
     # ASIN Data API (Optional - only needed if using asin_data_client, but we use batch_analyzer)
     ASIN_DATA_API_KEY: Optional[str] = None
 
-    # Keepa
+    # Keepa (REQUIRED for analysis workers - used by batch_analyzer and keepa_analysis_service)
     KEEPA_API_KEY: Optional[str] = None
 
-    # OpenAI (Optional - only needed for Telegram message extraction)
+    # OpenAI (REQUIRED for telegram worker - used for message extraction)
     OPENAI_API_KEY: Optional[str] = None
 
     # Telegram

@@ -144,6 +144,10 @@ services:
         sync: false
 
   # Celery Worker (Analysis Queue)
+  # REQUIRES: KEEPA_API_KEY + SP-API credentials for batch_analyzer
+  # This worker processes product analysis using batch_analyzer which needs:
+  # - Keepa API for catalog data (100 ASINs per call)
+  # - SP-API for pricing and fees (20 ASINs per call)
   - type: worker
     name: habexa-celery-worker
     env: python
@@ -166,7 +170,7 @@ services:
         sync: false
       - key: SECRET_KEY
         sync: false
-      # Amazon SP-API
+      # Amazon SP-API (REQUIRED for analysis - used by batch_analyzer for pricing/fees)
       - key: SP_API_LWA_APP_ID
         sync: false
         required: false
@@ -198,23 +202,9 @@ services:
       - key: SP_API_ROLE_ARN
         sync: false
         required: false
-      # ASIN Data API
-      - key: ASIN_DATA_API_KEY
-        sync: false
-      # Keepa
+      # Keepa API (REQUIRED for analysis - used by batch_analyzer for catalog data)
       - key: KEEPA_API_KEY
         sync: false
-        required: false
-      # OpenAI
-      - key: OPENAI_API_KEY
-        sync: false
-      # Telegram
-      - key: TELEGRAM_API_ID
-        sync: false
-        required: false
-      - key: TELEGRAM_API_HASH
-        sync: false
-        required: false
       # Redis
       - key: REDIS_URL
         fromService:
@@ -223,6 +213,8 @@ services:
           property: connectionString
 
   # Celery Worker (Telegram Queue)
+  # REQUIRES: OPENAI_API_KEY for message extraction, TELEGRAM_API_ID/HASH for channel access
+  # This worker processes Telegram messages and extracts product info using OpenAI
   - type: worker
     name: habexa-celery-telegram
     env: python
@@ -245,21 +237,14 @@ services:
         sync: false
       - key: SECRET_KEY
         sync: false
-      # ASIN Data API (Optional - only needed if using asin_data_client)
-      - key: ASIN_DATA_API_KEY
-        sync: false
-        required: false
-      # OpenAI (Optional - only needed for Telegram message extraction)
+      # OpenAI (REQUIRED for Telegram message extraction)
       - key: OPENAI_API_KEY
         sync: false
-        required: false
-      # Telegram
+      # Telegram (REQUIRED for channel access)
       - key: TELEGRAM_API_ID
         sync: false
-        required: false
       - key: TELEGRAM_API_HASH
         sync: false
-        required: false
       # Redis
       - key: REDIS_URL
         fromService:
