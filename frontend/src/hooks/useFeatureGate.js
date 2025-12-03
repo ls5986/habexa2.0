@@ -207,7 +207,7 @@ export function useFeatureGate() {
     tier,
     tierDisplay: limitsData?.tier_display || tier,
     isSuperAdmin,
-    isUnlimited: isUnlimited,
+    isUnlimited: isUnlimited, // Boolean: overall unlimited status
     limits: limitsData?.limits || {},
     isLoading,
     error,
@@ -215,7 +215,7 @@ export function useFeatureGate() {
     getLimit,
     isLimitReached,
     getRemaining,
-    isUnlimited: (feature) => isFeatureUnlimited(feature),
+    isFeatureUnlimited: isFeatureUnlimited, // Function: check if specific feature is unlimited
     checkLimit,
     promptUpgrade,
     gateFeature,
