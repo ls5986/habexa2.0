@@ -289,42 +289,43 @@ const Settings = () => {
 
       {/* Profile Tab */}
       {tab === 0 && (
-        <Card>
-          <CardContent>
-            <Typography variant="h6" fontWeight={600} mb={3}>
-              Profile Settings
-            </Typography>
-            <Box display="flex" flexDirection="column" gap={3}>
-              <TextField
-                label="Full Name"
-                value={profileForm.full_name}
-                onChange={(e) => setProfileForm({ ...profileForm, full_name: e.target.value })}
-                fullWidth
-              />
-              <TextField
-                label="Avatar URL"
-                value={profileForm.avatar_url}
-                onChange={(e) => setProfileForm({ ...profileForm, avatar_url: e.target.value })}
-                fullWidth
-                placeholder="https://..."
-              />
-              <Button
-                variant="contained"
-                onClick={handleSaveProfile}
-                sx={{
-                  backgroundColor: habexa.purple.main,
-                  '&:hover': { backgroundColor: habexa.purple.dark },
-                  alignSelf: 'flex-start',
-                }}
-              >
-                Save Profile
-              </Button>
-            </Box>
-          </CardContent>
-        </Card>
+        <>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" fontWeight={600} mb={3}>
+                Profile Settings
+              </Typography>
+              <Box display="flex" flexDirection="column" gap={3}>
+                <TextField
+                  label="Full Name"
+                  value={profileForm.full_name}
+                  onChange={(e) => setProfileForm({ ...profileForm, full_name: e.target.value })}
+                  fullWidth
+                />
+                <TextField
+                  label="Avatar URL"
+                  value={profileForm.avatar_url}
+                  onChange={(e) => setProfileForm({ ...profileForm, avatar_url: e.target.value })}
+                  fullWidth
+                  placeholder="https://..."
+                />
+                <Button
+                  variant="contained"
+                  onClick={handleSaveProfile}
+                  sx={{
+                    backgroundColor: habexa.purple.main,
+                    '&:hover': { backgroundColor: habexa.purple.dark },
+                    alignSelf: 'flex-start',
+                  }}
+                >
+                  Save Profile
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
 
-        {/* Change Password Card */}
-        <Card sx={{ mt: 3 }}>
+          {/* Change Password Card */}
+          <Card sx={{ mt: 3 }}>
           <CardContent>
             <Typography variant="h6" fontWeight={600} mb={3}>
               Change Password
