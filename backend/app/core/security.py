@@ -16,6 +16,9 @@ def get_password_hash(password: str) -> str:
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    if not settings.SECRET_KEY:
+        raise ValueError("SECRET_KEY not configured. Set SECRET_KEY environment variable.")
+    
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -27,6 +30,9 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
 
 def decode_token(token: str) -> Optional[dict]:
+    if not settings.SECRET_KEY:
+        raise ValueError("SECRET_KEY not configured. Set SECRET_KEY environment variable.")
+    
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
         return payload

@@ -62,7 +62,7 @@ class Settings(BaseSettings):
     TELEGRAM_API_HASH: Optional[str] = None
 
     # App
-    SECRET_KEY: str
+    SECRET_KEY: Optional[str] = None  # Optional to allow workers to start, but required for JWT/encryption
     FRONTEND_URL: str = "http://localhost:3002"
     BACKEND_URL: str = "http://localhost:8000"
     API_V1_PREFIX: str = "/api/v1"
