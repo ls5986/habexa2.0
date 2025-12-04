@@ -130,7 +130,11 @@ This document provides a comprehensive overview of all APIs, API keys, and endpo
 
 ## 🔑 API Keys & Credentials
 
+> ⚠️ **Security Note:** Actual API keys are stored in your `.env` file and Render.com environment variables. They are NOT committed to git. See `API_KEYS_LOCATION.md` for where to find your actual keys.
+
 ### Required Environment Variables
+
+> **To view your actual keys:** See `API_KEYS_LOCATION.md` for instructions on viewing keys from your `.env` file or Render dashboard.
 
 #### 1. **Amazon SP-API Credentials**
 
