@@ -1,52 +1,10 @@
 // Application constants
 
-// API base URL - must be set in environment variables
-const envApiUrl = import.meta.env.VITE_API_URL;
-
-// Production default fallback - ALWAYS use full URL
-const PRODUCTION_API_URL = 'https://habexa-backend-w5u5.onrender.com';
-
-// Get API URL with fallback
-let API_URL = envApiUrl || PRODUCTION_API_URL;
-
-// If it's a relative path (starts with /), it's wrong - use production default
-if (API_URL && API_URL.startsWith('/')) {
-  console.error('VITE_API_URL is a relative path:', API_URL, '- using production default');
-  API_URL = PRODUCTION_API_URL;
-}
-
-// If it doesn't start with http, assume it's missing protocol
-if (API_URL && !API_URL.startsWith('http')) {
-  // Check if it's missing .onrender.com
-  if (API_URL.includes('habexa-backend-w5u5') && !API_URL.includes('.onrender.com')) {
-    console.error('VITE_API_URL missing .onrender.com domain:', API_URL, '- using production default');
-    API_URL = PRODUCTION_API_URL;
-  } else {
-    console.warn('VITE_API_URL missing protocol, adding https://');
-    API_URL = `https://${API_URL}`;
-  }
-}
-
-// Final validation - ensure it's the correct production URL format
-if (API_URL && API_URL.includes('habexa-backend-w5u5') && !API_URL.includes('.onrender.com')) {
-  console.error('API_URL validation failed - missing .onrender.com, using production default');
-  API_URL = PRODUCTION_API_URL;
-}
-
-// Final fallback - always use production default if anything is wrong
-if (!API_URL || !API_URL.startsWith('https://') || !API_URL.includes('.onrender.com')) {
-  console.error('API_URL is invalid:', API_URL, '- using production default');
-  API_URL = PRODUCTION_API_URL;
-}
-
-// Log the final URL (only in dev to avoid spam)
-if (import.meta.env.DEV) {
-  console.log('API_BASE_URL configured as:', API_URL);
-}
+// API base URL - simple fallback, no manipulation
+export const API_URL = import.meta.env.VITE_API_URL || 'https://habexa-backend-w5u5.onrender.com';
 
 // For backward compatibility, export as API_BASE_URL as well
 export const API_BASE_URL = API_URL;
-export { API_URL };
 
 export const DEAL_STATUSES = {
   PENDING: 'pending',

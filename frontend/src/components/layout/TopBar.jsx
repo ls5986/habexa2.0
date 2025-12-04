@@ -29,8 +29,8 @@ const TopBar = ({ onQuickAnalyze }) => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'flex-end',
-        borderBottom: `1px solid ${habexa.gray[300]}`,
-        bgcolor: habexa.navy.dark,
+        borderBottom: '1px solid #e0e0e0',
+        bgcolor: '#ffffff',
       }}
     >
       {/* Quick Analyze Button */}
@@ -54,7 +54,7 @@ const TopBar = ({ onQuickAnalyze }) => {
 
       {/* Notifications */}
       <IconButton 
-        sx={{ color: habexa.gray[500], mr: 1, '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.1)' } }}
+        sx={{ color: '#666666', mr: 1, '&:hover': { bgcolor: '#f5f5f5' } }}
         onClick={handleNotificationClick}
       >
         <Badge badgeContent={unreadCount} sx={{ 
