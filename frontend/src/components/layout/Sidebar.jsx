@@ -194,7 +194,7 @@ const Sidebar = ({ collapsed, onToggle }) => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          borderTop: (theme) => `1px solid ${theme.palette.divider}`,
+          borderTop: '1px solid #e0e0e0',
         }}
       >
         <Box
