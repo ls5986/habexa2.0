@@ -525,7 +525,15 @@ export default function Products() {
           </Box>
         )}
         
-        <IconButton onClick={fetchData}><RefreshCw size={18} /></IconButton>
+        <Tooltip title="Refresh products (clears cache)">
+          <IconButton onClick={() => {
+            // Force refresh by adding timestamp to bypass cache
+            fetchData(true);
+            showToast('Refreshing products...', 'info');
+          }}>
+            <RefreshCw size={18} />
+          </IconButton>
+        </Tooltip>
         <IconButton 
           onClick={handleExport} 
           disabled={!hasFeature('export_data')}

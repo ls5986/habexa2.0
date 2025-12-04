@@ -236,7 +236,7 @@ def upsert_deal(product_id: str, supplier_id: Optional[str], data: dict) -> Dict
 
 @router.get("")
 @router.get("/deals")  # Alias for frontend compatibility
-@cached(ttl=30)  # Cache for 30 seconds
+@cached(ttl=10)  # Cache for 10 seconds (reduced from 30 for faster updates)
 async def get_deals(
     stage: Optional[str] = Query(None),
     source: Optional[str] = Query(None),
@@ -279,16 +279,24 @@ async def get_deals(
         result = query.execute()
         deals = result.data or []
         
+        # Log if view returns empty but we expect data (for debugging)
+        if len(deals) == 0 and offset == 0:
+            logger.debug(f"No deals found for user {user_id} - view might be empty or missing data")
+        
         return {"deals": deals, "total": len(deals)}
         
     except Exception as e:
         logger.error(f"Failed to fetch deals: {e}")
+        # Check if it's a view missing error
+        if "relation" in str(e).lower() and "product_deals" in str(e).lower():
+            logger.error("product_deals view does not exist! Please create it in the database.")
+            raise HTTPException(500, "Database view missing. Please contact support.")
         import traceback
         traceback.print_exc()
         raise HTTPException(500, str(e))
 
 @router.get("/stats")
-@cached(ttl=60)  # Cache stats for 60 seconds
+@cached(ttl=10)  # Cache stats for 10 seconds (reduced from 60 for faster updates)
 async def get_stats(current_user = Depends(get_current_user)):
     """Get counts by stage and source. Cached for performance."""
     user_id = str(current_user.id)
@@ -332,9 +340,21 @@ async def get_stats(current_user = Depends(get_current_user)):
             if source in stats["sources"]:
                 stats["sources"][source] += 1
         
+        # Log stats for debugging
+        logger.debug(f"Stats for user {user_id}: {stats}")
+        
         return stats
     except Exception as e:
         logger.error(f"Failed to fetch stats: {e}")
+        # Check if it's a view missing error
+        if "relation" in str(e).lower() and "product_deals" in str(e).lower():
+            logger.error("product_deals view does not exist! Please create it in the database.")
+            # Return empty stats instead of crashing
+            return {
+                "stages": {"new": 0, "analyzing": 0, "reviewed": 0, "top_products": 0, "buy_list": 0, "ordered": 0},
+                "sources": {"telegram": 0, "csv": 0, "manual": 0, "quick_analyze": 0},
+                "total": 0
+            }
         import traceback
         traceback.print_exc()
         raise HTTPException(500, str(e))
