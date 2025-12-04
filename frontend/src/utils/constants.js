@@ -27,9 +27,9 @@ if (API_URL && !API_URL.startsWith('http')) {
   }
 }
 
-// Final validation - ensure it's the correct production URL
+// Final validation - ensure it's the correct production URL format
 if (API_URL && API_URL.includes('habexa-backend-w5u5') && !API_URL.includes('.onrender.com')) {
-  console.error('API_URL is missing .onrender.com, using production default');
+  console.error('API_URL validation failed - missing .onrender.com, using production default');
   API_URL = PRODUCTION_API_URL;
 }
 
