@@ -3,27 +3,39 @@
 // API base URL - must be set in environment variables
 const envApiUrl = import.meta.env.VITE_API_URL;
 
-// Production default fallback
+// Production default fallback - ALWAYS use full URL
 const PRODUCTION_API_URL = 'https://habexa-backend-w5u5.onrender.com';
 
 // Get API URL with fallback
 let API_URL = envApiUrl || PRODUCTION_API_URL;
 
 // If it's a relative path (starts with /), it's wrong - use production default
-if (API_URL.startsWith('/')) {
+if (API_URL && API_URL.startsWith('/')) {
   console.error('VITE_API_URL is a relative path:', API_URL, '- using production default');
   API_URL = PRODUCTION_API_URL;
 }
 
 // If it doesn't start with http, assume it's missing protocol
 if (API_URL && !API_URL.startsWith('http')) {
-  console.warn('VITE_API_URL missing protocol, adding https://');
-  API_URL = `https://${API_URL}`;
+  // Check if it's missing .onrender.com
+  if (API_URL.includes('habexa-backend-w5u5') && !API_URL.includes('.onrender.com')) {
+    console.error('VITE_API_URL missing .onrender.com domain:', API_URL, '- using production default');
+    API_URL = PRODUCTION_API_URL;
+  } else {
+    console.warn('VITE_API_URL missing protocol, adding https://');
+    API_URL = `https://${API_URL}`;
+  }
 }
 
-// Final fallback
-if (!API_URL) {
-  console.error('API_URL is undefined, using production default');
+// Final validation - ensure it's the correct production URL
+if (API_URL && API_URL.includes('habexa-backend-w5u5') && !API_URL.includes('.onrender.com')) {
+  console.error('API_URL is missing .onrender.com, using production default');
+  API_URL = PRODUCTION_API_URL;
+}
+
+// Final fallback - always use production default if anything is wrong
+if (!API_URL || !API_URL.startsWith('https://') || !API_URL.includes('.onrender.com')) {
+  console.error('API_URL is invalid:', API_URL, '- using production default');
   API_URL = PRODUCTION_API_URL;
 }
 
