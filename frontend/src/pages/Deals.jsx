@@ -47,12 +47,14 @@ export default function Deals() {
 
   // Filter deals by tab - NO API call, just filter existing data
   const filteredDeals = React.useMemo(() => {
-    let result = deals;
+    // Ensure deals is always an array
+    const dealsArray = Array.isArray(deals) ? deals : [];
+    let result = dealsArray;
     
     if (tab === 1) {
-      result = deals.filter(d => d.analysis?.roi >= 30);
+      result = dealsArray.filter(d => d.analysis?.roi >= 30);
     } else if (tab === 2) {
-      result = deals.filter(d => d.status === 'pending' || !d.status);
+      result = dealsArray.filter(d => d.status === 'pending' || !d.status);
     }
     
     if (search) {
