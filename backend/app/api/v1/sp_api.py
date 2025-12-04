@@ -222,7 +222,11 @@ async def get_sales_estimate(
         except:
             pass
         
-        pricing = await sp_api_client.get_competitive_pricing(asin, marketplace_id)
+        try:
+            pricing = await sp_api_client.get_competitive_pricing(asin, marketplace_id)
+        except Exception as e:
+            logger.warning(f"SP-API pricing failed for {asin}: {e}")
+            pricing = None
         
         sales_rank = None
         category = None
@@ -233,10 +237,13 @@ async def get_sales_estimate(
         
         # If no SP-API data, try Keepa
         if not sales_rank:
-            keepa_data = await keepa_client.get_product(asin, domain=1, days=90, history=False)
-            if keepa_data:
-                sales_rank = keepa_data.get("sales_rank")
-                category = keepa_data.get("category")
+            try:
+                keepa_data = await keepa_client.get_product(asin, domain=1, days=90, history=False)
+                if keepa_data:
+                    sales_rank = keepa_data.get("bsr") or keepa_data.get("sales_rank")
+                    category = keepa_data.get("category")
+            except Exception as e:
+                logger.warning(f"Keepa fallback failed for {asin}: {e}")
         
         # Estimate monthly sales based on BSR (rough formula)
         est_monthly_sales = None
