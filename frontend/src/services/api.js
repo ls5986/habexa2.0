@@ -9,13 +9,28 @@ const api = axios.create({
 });
 
 // Add auth token to requests
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('auth_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('auth_token');
+    
+    // Temporary debugging - remove once auth is working
+    console.log('API Request:', config.url);
+    console.log('Token exists:', !!token);
+    console.log('Token length:', token ? token.length : 0);
+    
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+      console.log('Auth header set');
+    } else {
+      console.warn('No auth token found for request:', config.url);
+    }
+    
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
   }
-  return config;
-});
+);
 
 // Handle auth errors
 api.interceptors.response.use(

@@ -9,20 +9,34 @@ const StripeContext = createContext(null);
 export function StripeProvider({ children }) {
   const [subscription, setSubscription] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchSubscription();
   }, []);
 
-  const fetchSubscription = async () => {
+  const fetchSubscription = async (retryCount = 0) => {
     try {
+      setLoading(true);
       const response = await api.get('/billing/subscription');
       setSubscription(response.data);
-    } catch (error) {
-      console.error('Failed to fetch subscription:', error);
+      setError(null);
+    } catch (err) {
+      console.error('Subscription fetch failed:', err.response?.status, err.response?.data);
+      console.error('Full error:', err);
+      
+      // Retry once (unless it's a 401 auth error)
+      if (retryCount === 0 && err.response?.status !== 401) {
+        console.log('Retrying subscription fetch...');
+        setTimeout(() => fetchSubscription(1), 2000);
+        return;
+      }
+      
+      // Fall back to free tier but log the error
       setSubscription({
         tier: 'free',
-        status: 'active',
+        status: 'error',
+        error: err.response?.data?.detail || 'Failed to load subscription',
         limits: {
           telegram_channels: 1,
           analyses_per_month: 10,
@@ -33,6 +47,7 @@ export function StripeProvider({ children }) {
           team_seats: 1,
         }
       });
+      setError('Could not load subscription. Using free tier.');
     } finally {
       setLoading(false);
     }
@@ -126,6 +141,7 @@ export function StripeProvider({ children }) {
     <StripeContext.Provider value={{
       subscription,
       loading,
+      error,
       createCheckout,
       openPortal,
       cancelSubscription,

@@ -1302,3 +1302,130 @@ async def get_keepa_analysis(asin: str, current_user = Depends(get_current_user)
     except Exception as e:
         logger.error(f"Failed to get Keepa analysis: {e}", exc_info=True)
         raise HTTPException(500, str(e))
+
+
+@router.get("/{asin}/variations")
+async def get_product_variations(
+    asin: str,
+    current_user=Depends(get_current_user)
+):
+    """
+    Get product variations (parent/child relationships) for an ASIN.
+    
+    Uses SP-API catalog to find variation relationships and returns
+    variation ASINs with their titles and prices.
+    
+    Args:
+        asin: Amazon ASIN to get variations for
+        
+    Returns:
+        List of variation objects with asin, title, price, image_url
+    """
+    from app.services.sp_api_client import sp_api_client
+    
+    try:
+        marketplace_id = "ATVPDKIKX0DER"  # Default to US
+        
+        # Get raw catalog item data to access relationships
+        # We need the raw response, not the simplified version
+        if not sp_api_client.app_configured:
+            return {"variations": []}
+        
+        # Get raw catalog data with relationships included
+        raw_catalog = await sp_api_client._request(
+            "GET",
+            f"/catalog/2022-04-01/items/{asin}",
+            marketplace_id,
+            limiter_name="catalog",
+            params={
+                "marketplaceIds": marketplace_id,
+                "includedData": "summaries,images,relationships"
+            }
+        )
+        
+        if not raw_catalog:
+            return {"variations": []}
+        
+        # Extract variation ASINs from relationships
+        variation_asins = []
+        items = raw_catalog.get("items", [])
+        
+        if items:
+            item = items[0]
+            relationships = item.get("relationships", [])
+            
+            for relationship in relationships:
+                if relationship.get("type") == "VARIATION":
+                    # Get child ASINs (if this is a parent)
+                    child_asins = relationship.get("childAsins", [])
+                    if child_asins:
+                        variation_asins.extend(child_asins)
+                    # Get parent ASIN (if this is a child)
+                    parent_asin = relationship.get("parentAsin")
+                    if parent_asin:
+                        # Fetch parent to get all siblings
+                        parent_raw = await sp_api_client._request(
+                            "GET",
+                            f"/catalog/2022-04-01/items/{parent_asin}",
+                            marketplace_id,
+                            limiter_name="catalog",
+                            params={
+                                "marketplaceIds": marketplace_id,
+                                "includedData": "summaries,images,relationships"
+                            }
+                        )
+                        if parent_raw and parent_raw.get("items"):
+                            parent_item = parent_raw["items"][0]
+                            for rel in parent_item.get("relationships", []):
+                                if rel.get("type") == "VARIATION":
+                                    sibling_asins = rel.get("childAsins", [])
+                                    variation_asins.extend(sibling_asins)
+        
+        # Remove duplicates and the original ASIN
+        variation_asins = list(set(variation_asins))
+        if asin in variation_asins:
+            variation_asins.remove(asin)
+        
+        if not variation_asins:
+            return {"variations": []}
+        
+        # Limit to first 20 variations to avoid too many API calls
+        variation_asins = variation_asins[:20]
+        variations = []
+        
+        # Get catalog data for each variation ASIN
+        for var_asin in variation_asins:
+            try:
+                var_catalog = await sp_api_client.get_catalog_item(var_asin, marketplace_id)
+                if var_catalog:
+                    # Get price from competitive pricing
+                    price = None
+                    try:
+                        pricing = await sp_api_client.get_competitive_pricing(var_asin, marketplace_id)
+                        if pricing and "buy_box_price" in pricing:
+                            price = pricing["buy_box_price"]
+                    except:
+                        pass  # Price is optional
+                    
+                    variations.append({
+                        "asin": var_asin,
+                        "title": var_catalog.get("title") or f"Variation {var_asin}",
+                        "price": price,
+                        "image_url": var_catalog.get("image_url")
+                    })
+            except Exception as e:
+                logger.warning(f"Failed to get catalog for variation {var_asin}: {e}")
+                # Still add the variation with minimal data
+                variations.append({
+                    "asin": var_asin,
+                    "title": f"Variation {var_asin}",
+                    "price": None,
+                    "image_url": None
+                })
+        
+        return {"variations": variations}
+        
+    except Exception as e:
+        logger.error(f"Failed to get variations for {asin}: {e}", exc_info=True)
+        # Return empty list on error rather than failing
+        return {"variations": []}

@@ -1,0 +1,3090 @@
+{
+  "config": {
+    "configFile": "/Users/lindseystevens/habexa2.0/frontend/playwright.config.ts",
+    "rootDir": "/Users/lindseystevens/habexa2.0/frontend/tests/e2e",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {},
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        null
+      ],
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/Users/lindseystevens/habexa2.0/frontend/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/lindseystevens/habexa2.0/frontend/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.57.0",
+    "workers": 8,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "analyze.spec.ts",
+      "file": "analyze.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Quick Analyze Modal",
+          "file": "analyze.spec.ts",
+          "line": 5,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Modal opens",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "36a8f0fbfbc63aa2c6d2-fe396f22b60414cff2fa",
+              "file": "analyze.spec.ts",
+              "line": 11,
+              "column": 3
+            },
+            {
+              "title": "ASIN/UPC toggle works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "36a8f0fbfbc63aa2c6d2-a636fad14c132eb8d4f4",
+              "file": "analyze.spec.ts",
+              "line": 36,
+              "column": 3
+            },
+            {
+              "title": "ASIN input accepts valid ASIN",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "36a8f0fbfbc63aa2c6d2-b8eff8433a2145bdb5aa",
+              "file": "analyze.spec.ts",
+              "line": 62,
+              "column": 3
+            },
+            {
+              "title": "UPC input accepts valid UPC",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "36a8f0fbfbc63aa2c6d2-847f633840128ca397b5",
+              "file": "analyze.spec.ts",
+              "line": 81,
+              "column": 3
+            },
+            {
+              "title": "Cost input accepts numbers",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "36a8f0fbfbc63aa2c6d2-ce577f97429f619fda06",
+              "file": "analyze.spec.ts",
+              "line": 106,
+              "column": 3
+            },
+            {
+              "title": "Supplier dropdown loads suppliers",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "36a8f0fbfbc63aa2c6d2-2ed3b6e857119a743f89",
+              "file": "analyze.spec.ts",
+              "line": 124,
+              "column": 3
+            },
+            {
+              "title": "Analyze button submits",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "36a8f0fbfbc63aa2c6d2-a4540691554eb29b5941",
+              "file": "analyze.spec.ts",
+              "line": 148,
+              "column": 3
+            },
+            {
+              "title": "Loading state shows during analysis",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "36a8f0fbfbc63aa2c6d2-9d15a9ab18b7858383a7",
+              "file": "analyze.spec.ts",
+              "line": 180,
+              "column": 3
+            },
+            {
+              "title": "Error handling for invalid ASIN",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "36a8f0fbfbc63aa2c6d2-ffa4d9c1a40a43bf1a06",
+              "file": "analyze.spec.ts",
+              "line": 208,
+              "column": 3
+            },
+            {
+              "title": "Close button closes and resets",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "36a8f0fbfbc63aa2c6d2-1ac53f16e7957b0fd003",
+              "file": "analyze.spec.ts",
+              "line": 235,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Analyze Page",
+          "file": "analyze.spec.ts",
+          "line": 272,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Page loads",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "36a8f0fbfbc63aa2c6d2-4e07f91cb011cd11d8ea",
+              "file": "analyze.spec.ts",
+              "line": 278,
+              "column": 3
+            },
+            {
+              "title": "Input ASIN works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "36a8f0fbfbc63aa2c6d2-0e2f903ef86120474dbf",
+              "file": "analyze.spec.ts",
+              "line": 285,
+              "column": 3
+            },
+            {
+              "title": "Input UPC works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "36a8f0fbfbc63aa2c6d2-5e0dcabbd09fab0f09dd",
+              "file": "analyze.spec.ts",
+              "line": 297,
+              "column": 3
+            },
+            {
+              "title": "Analyze button submits",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "36a8f0fbfbc63aa2c6d2-37213e1051514f4e8927",
+              "file": "analyze.spec.ts",
+              "line": 315,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "auth.spec.ts",
+      "file": "auth.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Authentication",
+          "file": "auth.spec.ts",
+          "line": 5,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Login with valid credentials",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d748ac400d08b85935ef-39b4904e46c268909337",
+              "file": "auth.spec.ts",
+              "line": 7,
+              "column": 3
+            },
+            {
+              "title": "Login with invalid credentials shows error",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d748ac400d08b85935ef-fb5061f3e0d9a0186b31",
+              "file": "auth.spec.ts",
+              "line": 17,
+              "column": 3
+            },
+            {
+              "title": "Register new account",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d748ac400d08b85935ef-04a9fb9944ddb1b8e8ae",
+              "file": "auth.spec.ts",
+              "line": 31,
+              "column": 3
+            },
+            {
+              "title": "Register with existing email shows error",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d748ac400d08b85935ef-90b32c21bc83bc8fc3dd",
+              "file": "auth.spec.ts",
+              "line": 45,
+              "column": 3
+            },
+            {
+              "title": "Logout works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d748ac400d08b85935ef-396c504c7c82a362c11a",
+              "file": "auth.spec.ts",
+              "line": 57,
+              "column": 3
+            },
+            {
+              "title": "Session persists on page refresh",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d748ac400d08b85935ef-f0bfe38fe52c0242b7c0",
+              "file": "auth.spec.ts",
+              "line": 72,
+              "column": 3
+            },
+            {
+              "title": "Protected routes redirect to login when not authenticated",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d748ac400d08b85935ef-63bf9acbf35aade9bd4c",
+              "file": "auth.spec.ts",
+              "line": 95,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "buylist.spec.ts",
+      "file": "buylist.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Buy List Page",
+          "file": "buylist.spec.ts",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Page loads, buy list items display",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "aa7001b413235d2c1c91-5f5c931bdc0aa6ab8fd9",
+              "file": "buylist.spec.ts",
+              "line": 12,
+              "column": 3
+            },
+            {
+              "title": "Quantity adjustment works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "aa7001b413235d2c1c91-6533bb60f15b40947565",
+              "file": "buylist.spec.ts",
+              "line": 16,
+              "column": 3
+            },
+            {
+              "title": "Quantity validates min 1",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "aa7001b413235d2c1c91-5cb57e5ff7d72a3c6e9f",
+              "file": "buylist.spec.ts",
+              "line": 34,
+              "column": 3
+            },
+            {
+              "title": "Remove item with confirmation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "aa7001b413235d2c1c91-36b3e2e132bdb9d4a028",
+              "file": "buylist.spec.ts",
+              "line": 57,
+              "column": 3
+            },
+            {
+              "title": "Clear all with confirmation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "aa7001b413235d2c1c91-e51f60989373a4dfeed8",
+              "file": "buylist.spec.ts",
+              "line": 77,
+              "column": 3
+            },
+            {
+              "title": "Create order button works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "aa7001b413235d2c1c91-63670f7994b7d62865d8",
+              "file": "buylist.spec.ts",
+              "line": 97,
+              "column": 3
+            },
+            {
+              "title": "Empty state displays when no items",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "aa7001b413235d2c1c91-90cd62669cfbabeeb054",
+              "file": "buylist.spec.ts",
+              "line": 113,
+              "column": 3
+            },
+            {
+              "title": "Total cost calculates correctly",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "aa7001b413235d2c1c91-16ff0ba7cfaf3c959129",
+              "file": "buylist.spec.ts",
+              "line": 125,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "dashboard.spec.ts",
+      "file": "dashboard.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Dashboard",
+          "file": "dashboard.spec.ts",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Page loads without errors",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "90cda532ab82d274b30b-6d12fa53e99a5cc84a41",
+              "file": "dashboard.spec.ts",
+              "line": 10,
+              "column": 3
+            },
+            {
+              "title": "Stats display correctly",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "90cda532ab82d274b30b-66cbb70b325e702c0d0b",
+              "file": "dashboard.spec.ts",
+              "line": 37,
+              "column": 3
+            },
+            {
+              "title": "Deal cards render",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "90cda532ab82d274b30b-c2c1a2195822ac469d75",
+              "file": "dashboard.spec.ts",
+              "line": 52,
+              "column": 3
+            },
+            {
+              "title": "Deal card click navigates to detail",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "90cda532ab82d274b30b-57f44b59af0e88626e1b",
+              "file": "dashboard.spec.ts",
+              "line": 67,
+              "column": 3
+            },
+            {
+              "title": "Quick analyze button opens modal",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "90cda532ab82d274b30b-9b8178fb24c1eb4140a6",
+              "file": "dashboard.spec.ts",
+              "line": 86,
+              "column": 3
+            },
+            {
+              "title": "Recent activity displays",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "90cda532ab82d274b30b-4caf987630deaf19b1d5",
+              "file": "dashboard.spec.ts",
+              "line": 104,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "deals.spec.ts",
+      "file": "deals.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Deals Page",
+          "file": "deals.spec.ts",
+          "line": 5,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Page loads, deals display",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "6f49d6cabc2227a45bce-015221661978c27ff335",
+              "file": "deals.spec.ts",
+              "line": 13,
+              "column": 3
+            },
+            {
+              "title": "Tabs filter correctly",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "6f49d6cabc2227a45bce-af3b5c2483ac5b15626d",
+              "file": "deals.spec.ts",
+              "line": 17,
+              "column": 3
+            },
+            {
+              "title": "Search by ASIN works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "6f49d6cabc2227a45bce-004c23d4d1da900e30a2",
+              "file": "deals.spec.ts",
+              "line": 30,
+              "column": 3
+            },
+            {
+              "title": "Analyze All button queues analyses",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "6f49d6cabc2227a45bce-f55e919be4d8d6cf18ef",
+              "file": "deals.spec.ts",
+              "line": 42,
+              "column": 3
+            },
+            {
+              "title": "Deal card displays correct data",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "6f49d6cabc2227a45bce-703a5fadd7a06b606a05",
+              "file": "deals.spec.ts",
+              "line": 55,
+              "column": 3
+            },
+            {
+              "title": "Deal card click navigates to detail",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "6f49d6cabc2227a45bce-51b9f5a8f543fc1c3205",
+              "file": "deals.spec.ts",
+              "line": 69,
+              "column": 3
+            },
+            {
+              "title": "Refresh button works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "6f49d6cabc2227a45bce-8036514ede0d0473e3fe",
+              "file": "deals.spec.ts",
+              "line": 82,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "error-handling.spec.ts",
+      "file": "error-handling.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Error Handling",
+          "file": "error-handling.spec.ts",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "401 redirects to login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "1a72721d9ac5c938e1fe-0d2c8dcc138886dd3470",
+              "file": "error-handling.spec.ts",
+              "line": 10,
+              "column": 3
+            },
+            {
+              "title": "403 shows forbidden message",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "1a72721d9ac5c938e1fe-f8cc77408dd6ca070f5a",
+              "file": "error-handling.spec.ts",
+              "line": 24,
+              "column": 3
+            },
+            {
+              "title": "404 shows not found",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "1a72721d9ac5c938e1fe-4d2f0e0808dd00904bb2",
+              "file": "error-handling.spec.ts",
+              "line": 38,
+              "column": 3
+            },
+            {
+              "title": "500 shows error message",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "1a72721d9ac5c938e1fe-71f98cfb32405597cd82",
+              "file": "error-handling.spec.ts",
+              "line": 45,
+              "column": 3
+            },
+            {
+              "title": "Network timeout handled",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "1a72721d9ac5c938e1fe-17024d7900fdf4f11cbe",
+              "file": "error-handling.spec.ts",
+              "line": 61,
+              "column": 3
+            },
+            {
+              "title": "API rate limiting handled",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "1a72721d9ac5c938e1fe-bdbcbd4b6c675fefd3d9",
+              "file": "error-handling.spec.ts",
+              "line": 76,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "orders.spec.ts",
+      "file": "orders.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Orders Page",
+          "file": "orders.spec.ts",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Page loads, orders display",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "de3f15501f825e0a6f88-af4a4a04f18d40c6134c",
+              "file": "orders.spec.ts",
+              "line": 12,
+              "column": 3
+            },
+            {
+              "title": "Create order from buy list",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "de3f15501f825e0a6f88-8e0b42efe3c6d72a71b2",
+              "file": "orders.spec.ts",
+              "line": 16,
+              "column": 3
+            },
+            {
+              "title": "Order detail view",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "de3f15501f825e0a6f88-a36fea2a7e82ae0ac2e6",
+              "file": "orders.spec.ts",
+              "line": 35,
+              "column": 3
+            },
+            {
+              "title": "Order status displays",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "de3f15501f825e0a6f88-7314e4603a6f7da91d1f",
+              "file": "orders.spec.ts",
+              "line": 48,
+              "column": 3
+            },
+            {
+              "title": "Order history displays",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "de3f15501f825e0a6f88-da582ffad252711d7ec1",
+              "file": "orders.spec.ts",
+              "line": 59,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "pricing.spec.ts",
+      "file": "pricing.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Pricing Page",
+          "file": "pricing.spec.ts",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Page loads",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "727e3f52dedb009881fb-d757531ecd67025957d9",
+              "file": "pricing.spec.ts",
+              "line": 12,
+              "column": 3
+            },
+            {
+              "title": "All tiers display",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "727e3f52dedb009881fb-65c18eb77fcdc288649c",
+              "file": "pricing.spec.ts",
+              "line": 16,
+              "column": 3
+            },
+            {
+              "title": "Monthly/yearly toggle works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "727e3f52dedb009881fb-0218bb0da18341b159c6",
+              "file": "pricing.spec.ts",
+              "line": 27,
+              "column": 3
+            },
+            {
+              "title": "Feature lists display correctly",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "727e3f52dedb009881fb-abccd5d981607e68330d",
+              "file": "pricing.spec.ts",
+              "line": 41,
+              "column": 3
+            },
+            {
+              "title": "Subscribe button loads checkout (verify page loads, do not complete)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "727e3f52dedb009881fb-2c2fe82e3a4b4187f96f",
+              "file": "pricing.spec.ts",
+              "line": 52,
+              "column": 3
+            },
+            {
+              "title": "Current plan highlighted if logged in",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "727e3f52dedb009881fb-c4e49587722c6584bb96",
+              "file": "pricing.spec.ts",
+              "line": 78,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "product-upload.spec.ts",
+      "file": "product-upload.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "CSV Product Upload",
+          "file": "product-upload.spec.ts",
+          "line": 6,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Upload button opens modal",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b8be0cef08bb645f102d-3acb51a7c7bc487851b5",
+              "file": "product-upload.spec.ts",
+              "line": 14,
+              "column": 3
+            },
+            {
+              "title": "File picker accepts CSV",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b8be0cef08bb645f102d-d2cc6d6a8dfbf8bb55b9",
+              "file": "product-upload.spec.ts",
+              "line": 28,
+              "column": 3
+            },
+            {
+              "title": "File picker rejects non-CSV",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b8be0cef08bb645f102d-139fc418270769c51036",
+              "file": "product-upload.spec.ts",
+              "line": 48,
+              "column": 3
+            },
+            {
+              "title": "Valid CSV shows preview",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b8be0cef08bb645f102d-4a00a49fab33060480c1",
+              "file": "product-upload.spec.ts",
+              "line": 68,
+              "column": 3
+            },
+            {
+              "title": "Import button processes CSV",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b8be0cef08bb645f102d-13b3a3f53c512e58620f",
+              "file": "product-upload.spec.ts",
+              "line": 89,
+              "column": 3
+            },
+            {
+              "title": "Progress indicator shows during import",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b8be0cef08bb645f102d-dfee15d8a9a2bc616804",
+              "file": "product-upload.spec.ts",
+              "line": 127,
+              "column": 3
+            },
+            {
+              "title": "Invalid rows show errors",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b8be0cef08bb645f102d-d15e31b9bf142e8622a4",
+              "file": "product-upload.spec.ts",
+              "line": 162,
+              "column": 3
+            },
+            {
+              "title": "Large file handling",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b8be0cef08bb645f102d-d835f3e196b3f3b9d7b0",
+              "file": "product-upload.spec.ts",
+              "line": 198,
+              "column": 3
+            },
+            {
+              "title": "Cancel upload works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b8be0cef08bb645f102d-de761c04396e81bdd94a",
+              "file": "product-upload.spec.ts",
+              "line": 234,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "products.spec.ts",
+      "file": "products.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Products Page",
+          "file": "products.spec.ts",
+          "line": 5,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Page loads, products display",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "000c94276132c4f97581-593aa74877ae9e566183",
+              "file": "products.spec.ts",
+              "line": 13,
+              "column": 3
+            },
+            {
+              "title": "Stage tabs filter correctly",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "000c94276132c4f97581-0551cae60ae2957bae05",
+              "file": "products.spec.ts",
+              "line": 24,
+              "column": 3
+            },
+            {
+              "title": "Search by ASIN works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "000c94276132c4f97581-e0e57e1626ad334c16d8",
+              "file": "products.spec.ts",
+              "line": 41,
+              "column": 3
+            },
+            {
+              "title": "Search by title works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "000c94276132c4f97581-b45d2dfc31ffcf1a4404",
+              "file": "products.spec.ts",
+              "line": 53,
+              "column": 3
+            },
+            {
+              "title": "Supplier filter works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "000c94276132c4f97581-a466728cbf58a4703f56",
+              "file": "products.spec.ts",
+              "line": 63,
+              "column": 3
+            },
+            {
+              "title": "ROI filter works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "000c94276132c4f97581-823dbfd7d3011ca4dc0b",
+              "file": "products.spec.ts",
+              "line": 79,
+              "column": 3
+            },
+            {
+              "title": "Clear filters works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "000c94276132c4f97581-e57ebf58f5be66acade5",
+              "file": "products.spec.ts",
+              "line": 90,
+              "column": 3
+            },
+            {
+              "title": "Product row click navigates to detail",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "000c94276132c4f97581-c3b6c657a914b617cd4c",
+              "file": "products.spec.ts",
+              "line": 103,
+              "column": 3
+            },
+            {
+              "title": "Checkbox selection works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "000c94276132c4f97581-605ec09b5421babffe29",
+              "file": "products.spec.ts",
+              "line": 116,
+              "column": 3
+            },
+            {
+              "title": "Select all works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "000c94276132c4f97581-ace374b6976236a024d7",
+              "file": "products.spec.ts",
+              "line": 127,
+              "column": 3
+            },
+            {
+              "title": "Bulk analyze selected products",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "000c94276132c4f97581-0d7454a1fcc1a50a3c4b",
+              "file": "products.spec.ts",
+              "line": 147,
+              "column": 3
+            },
+            {
+              "title": "Bulk change stage",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "000c94276132c4f97581-de206e35c4cf1ba722cb",
+              "file": "products.spec.ts",
+              "line": 166,
+              "column": 3
+            },
+            {
+              "title": "Export to CSV",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "000c94276132c4f97581-7e48c59025e6048b6dd2",
+              "file": "products.spec.ts",
+              "line": 183,
+              "column": 3
+            },
+            {
+              "title": "Add product manually",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "000c94276132c4f97581-e22371e9e59e3b00d278",
+              "file": "products.spec.ts",
+              "line": 200,
+              "column": 3
+            },
+            {
+              "title": "MOQ edit inline",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "000c94276132c4f97581-8bb827496d825d832c29",
+              "file": "products.spec.ts",
+              "line": 228,
+              "column": 3
+            },
+            {
+              "title": "Refresh button reloads data",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "000c94276132c4f97581-32552b1f9bf303abf964",
+              "file": "products.spec.ts",
+              "line": 247,
+              "column": 3
+            },
+            {
+              "title": "External link opens Amazon",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "000c94276132c4f97581-953b94bfff7ece194696",
+              "file": "products.spec.ts",
+              "line": 256,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "settings.spec.ts",
+      "file": "settings.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Settings Page - Profile",
+          "file": "settings.spec.ts",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Profile tab loads",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-2c22dda2f21eb04a217e",
+              "file": "settings.spec.ts",
+              "line": 12,
+              "column": 3
+            },
+            {
+              "title": "Current values display",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-85c310f67f0b4706f652",
+              "file": "settings.spec.ts",
+              "line": 22,
+              "column": 3
+            },
+            {
+              "title": "Edit name works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-e4ac02ce5f6a975bc145",
+              "file": "settings.spec.ts",
+              "line": 30,
+              "column": 3
+            },
+            {
+              "title": "Save profile works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-be7772bbea5f8e5a4861",
+              "file": "settings.spec.ts",
+              "line": 40,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Settings Page - Password",
+          "file": "settings.spec.ts",
+          "line": 56,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Password tab loads",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-09a222bd2321508848d4",
+              "file": "settings.spec.ts",
+              "line": 64,
+              "column": 3
+            },
+            {
+              "title": "Current password required",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-4f83674838416498627c",
+              "file": "settings.spec.ts",
+              "line": 68,
+              "column": 3
+            },
+            {
+              "title": "New password validation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-fc86abf94e8216577b71",
+              "file": "settings.spec.ts",
+              "line": 77,
+              "column": 3
+            },
+            {
+              "title": "Confirm password must match",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-5828f5637cc1c0b8dc8d",
+              "file": "settings.spec.ts",
+              "line": 90,
+              "column": 3
+            },
+            {
+              "title": "Change password works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-302e235889c84cfd6072",
+              "file": "settings.spec.ts",
+              "line": 107,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Settings Page - Alerts",
+          "file": "settings.spec.ts",
+          "line": 133,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Alerts tab loads",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-db76253a6d1e7394c698",
+              "file": "settings.spec.ts",
+              "line": 148,
+              "column": 3
+            },
+            {
+              "title": "Toggle email alerts",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-e8680a8256049233a546",
+              "file": "settings.spec.ts",
+              "line": 152,
+              "column": 3
+            },
+            {
+              "title": "Set alert thresholds",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-966e860c9fcda5b51137",
+              "file": "settings.spec.ts",
+              "line": 163,
+              "column": 3
+            },
+            {
+              "title": "Save alerts works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-774f5726f99da8bd6749",
+              "file": "settings.spec.ts",
+              "line": 180,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Settings Page - Costs",
+          "file": "settings.spec.ts",
+          "line": 191,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Costs tab loads",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-221ee99eebeee0f7d95e",
+              "file": "settings.spec.ts",
+              "line": 205,
+              "column": 3
+            },
+            {
+              "title": "Input validation numbers only",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-98b8a5c420bc58be2338",
+              "file": "settings.spec.ts",
+              "line": 209,
+              "column": 3
+            },
+            {
+              "title": "Save costs works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-e015505de77a26710c1b",
+              "file": "settings.spec.ts",
+              "line": 223,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Settings Page - Subscription",
+          "file": "settings.spec.ts",
+          "line": 234,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Subscription tab loads",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-aec3094564308d5f9a03",
+              "file": "settings.spec.ts",
+              "line": 248,
+              "column": 3
+            },
+            {
+              "title": "Current plan displays",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-f74ace45fa5393fd758c",
+              "file": "settings.spec.ts",
+              "line": 252,
+              "column": 3
+            },
+            {
+              "title": "Usage stats display",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-08c77145a8bd8b0ba61d",
+              "file": "settings.spec.ts",
+              "line": 262,
+              "column": 3
+            },
+            {
+              "title": "Cancel subscription with confirmation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-97e782a52b5b378d893a",
+              "file": "settings.spec.ts",
+              "line": 272,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "subscriptions.spec.ts",
+      "file": "subscriptions.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Subscription Tier Testing - Free",
+          "file": "subscriptions.spec.ts",
+          "line": 5,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Correct features accessible on Free tier",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "3dff583044165241f1bb-61f14db03927812a648d",
+              "file": "subscriptions.spec.ts",
+              "line": 13,
+              "column": 3
+            },
+            {
+              "title": "Locked features show upgrade prompt",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "3dff583044165241f1bb-69822c64458f81662f21",
+              "file": "subscriptions.spec.ts",
+              "line": 24,
+              "column": 3
+            },
+            {
+              "title": "Usage limits enforced",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "3dff583044165241f1bb-69560fcd13d1410e8c0b",
+              "file": "subscriptions.spec.ts",
+              "line": 37,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Subscription Tier Testing - Starter",
+          "file": "subscriptions.spec.ts",
+          "line": 48,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Correct features accessible on Starter tier",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "3dff583044165241f1bb-a2a9a6c76d7fc210f46e",
+              "file": "subscriptions.spec.ts",
+              "line": 55,
+              "column": 3
+            },
+            {
+              "title": "Usage limits enforced",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "3dff583044165241f1bb-6583adb0cfd1ee3c6a7b",
+              "file": "subscriptions.spec.ts",
+              "line": 65,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Subscription Tier Testing - Pro",
+          "file": "subscriptions.spec.ts",
+          "line": 76,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Bulk analyze enabled on Pro tier",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "3dff583044165241f1bb-437cdf4ceb7d19d39af0",
+              "file": "subscriptions.spec.ts",
+              "line": 83,
+              "column": 3
+            },
+            {
+              "title": "Usage limits enforced",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "3dff583044165241f1bb-829c5ecfd839ce842c48",
+              "file": "subscriptions.spec.ts",
+              "line": 92,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Subscription Tier Testing - Agency",
+          "file": "subscriptions.spec.ts",
+          "line": 103,
+          "column": 6,
+          "specs": [
+            {
+              "title": "All features accessible on Agency tier",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "3dff583044165241f1bb-a7333bcf5efee04489a9",
+              "file": "subscriptions.spec.ts",
+              "line": 110,
+              "column": 3
+            },
+            {
+              "title": "Unlimited badges display",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "3dff583044165241f1bb-ae11a814a4573f1c2d9f",
+              "file": "subscriptions.spec.ts",
+              "line": 125,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "suppliers.spec.ts",
+      "file": "suppliers.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Suppliers Page",
+          "file": "suppliers.spec.ts",
+          "line": 5,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Page loads, suppliers display",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "aab0ac69f8e8c07c3318-bbf42cb70239db24a116",
+              "file": "suppliers.spec.ts",
+              "line": 13,
+              "column": 3
+            },
+            {
+              "title": "Add supplier button opens modal",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "aab0ac69f8e8c07c3318-a4556409ff7f68accad1",
+              "file": "suppliers.spec.ts",
+              "line": 17,
+              "column": 3
+            },
+            {
+              "title": "Create supplier with all fields",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "aab0ac69f8e8c07c3318-b05ed3d007592ebb8636",
+              "file": "suppliers.spec.ts",
+              "line": 31,
+              "column": 3
+            },
+            {
+              "title": "Edit supplier opens modal with data",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "aab0ac69f8e8c07c3318-28f9c0dceeaee1623a14",
+              "file": "suppliers.spec.ts",
+              "line": 61,
+              "column": 3
+            },
+            {
+              "title": "Update supplier saves changes",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "aab0ac69f8e8c07c3318-08f0db0c60962f3bbe82",
+              "file": "suppliers.spec.ts",
+              "line": 79,
+              "column": 3
+            },
+            {
+              "title": "Message button works or shows appropriate UI",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "aab0ac69f8e8c07c3318-72e8634e0463caa67b50",
+              "file": "suppliers.spec.ts",
+              "line": 100,
+              "column": 3
+            },
+            {
+              "title": "Orders button works or shows appropriate UI",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "aab0ac69f8e8c07c3318-298c7c36df438b4c3873",
+              "file": "suppliers.spec.ts",
+              "line": 121,
+              "column": 3
+            },
+            {
+              "title": "Search suppliers works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "aab0ac69f8e8c07c3318-53f8220a2db8b7e0cbde",
+              "file": "suppliers.spec.ts",
+              "line": 140,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "telegram.spec.ts",
+      "file": "telegram.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Telegram Integration",
+          "file": "telegram.spec.ts",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Telegram section loads in settings",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "81946fad69cb7ff6a590-88372277cb9603c7bf54",
+              "file": "telegram.spec.ts",
+              "line": 19,
+              "column": 3
+            },
+            {
+              "title": "Connection status shows correctly",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "81946fad69cb7ff6a590-20ea8f28165a6a591bed",
+              "file": "telegram.spec.ts",
+              "line": 23,
+              "column": 3
+            },
+            {
+              "title": "Add channel button works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "81946fad69cb7ff6a590-580306879b84b4014b71",
+              "file": "telegram.spec.ts",
+              "line": 33,
+              "column": 3
+            },
+            {
+              "title": "Channel list displays",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "81946fad69cb7ff6a590-b64cccb65f383fdb0a38",
+              "file": "telegram.spec.ts",
+              "line": 46,
+              "column": 3
+            },
+            {
+              "title": "Remove channel works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "81946fad69cb7ff6a590-8294108295395ba0521a",
+              "file": "telegram.spec.ts",
+              "line": 57,
+              "column": 3
+            },
+            {
+              "title": "Start/Stop monitoring works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "81946fad69cb7ff6a590-b2bb88be3561f42f42ab",
+              "file": "telegram.spec.ts",
+              "line": 67,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "ui-ux.spec.ts",
+      "file": "ui-ux.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "UI/UX",
+          "file": "ui-ux.spec.ts",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "All modals can be closed (X and click outside)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "e121d5c986d935446888-2f1a32a6b4b7fb550efa",
+              "file": "ui-ux.spec.ts",
+              "line": 10,
+              "column": 3
+            },
+            {
+              "title": "All forms can be cancelled",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "e121d5c986d935446888-7288ba9ce6bb75e6e9b5",
+              "file": "ui-ux.spec.ts",
+              "line": 36,
+              "column": 3
+            },
+            {
+              "title": "Loading states show appropriately",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "e121d5c986d935446888-6abd55933e03e9999225",
+              "file": "ui-ux.spec.ts",
+              "line": 56,
+              "column": 3
+            },
+            {
+              "title": "Success toasts display",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "e121d5c986d935446888-ff1f5b71f6dbbe16e2cf",
+              "file": "ui-ux.spec.ts",
+              "line": 72,
+              "column": 3
+            },
+            {
+              "title": "Error toasts display (not alert())",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "e121d5c986d935446888-ef6ad785b6f72ff2adb5",
+              "file": "ui-ux.spec.ts",
+              "line": 92,
+              "column": 3
+            },
+            {
+              "title": "No console errors on any page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "e121d5c986d935446888-bca6247a85b699676188",
+              "file": "ui-ux.spec.ts",
+              "line": 122,
+              "column": 3
+            },
+            {
+              "title": "No failed network requests that are not handled",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "e121d5c986d935446888-16fd7a8ed818e599a79f",
+              "file": "ui-ux.spec.ts",
+              "line": 146,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-12-04T02:16:19.941Z",
+    "duration": 171.01300000000003,
+    "expected": 0,
+    "skipped": 135,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

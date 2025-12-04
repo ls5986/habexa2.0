@@ -5,6 +5,7 @@ import {
 } from '@mui/material';
 import { Users, TrendingUp, Shield, AlertTriangle } from 'lucide-react';
 import api from '../../../services/api';
+import { habexa } from '../../../theme';
 
 export default function CompetitorAnalysis({ asin, spOffers }) {
   const [loading, setLoading] = useState(!spOffers);
@@ -26,7 +27,7 @@ export default function CompetitorAnalysis({ asin, spOffers }) {
       <Card>
         <CardContent>
           <Box sx={{ textAlign: 'center', py: 6 }}>
-            <Users size={48} color="#8B8B9B" style={{ marginBottom: 16 }} />
+            <Users size={48} color={habexa.gray[400]} style={{ marginBottom: 16 }} />
             <Typography variant="h6" gutterBottom>No Competitor Data</Typography>
             <Typography color="text.secondary">
               Competitor analysis requires SP-API access. Connect your Amazon Seller account to see live seller data.
@@ -51,7 +52,7 @@ export default function CompetitorAnalysis({ asin, spOffers }) {
         {/* Summary */}
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={6} sm={3}>
-            <Box sx={{ textAlign: 'center', p: 2, bgcolor: '#1A1A2E', borderRadius: 2 }}>
+            <Box sx={{ textAlign: 'center', p: 2, bgcolor: habexa.navy.main, borderRadius: 2 }}>
               <Typography variant="caption" color="text.secondary">Buy Box Price</Typography>
               <Typography variant="h5" fontWeight="700" color="warning.main">
                 ${spOffers.buy_box_price?.toFixed(2) || '—'}
@@ -59,7 +60,7 @@ export default function CompetitorAnalysis({ asin, spOffers }) {
             </Box>
           </Grid>
           <Grid item xs={6} sm={3}>
-            <Box sx={{ textAlign: 'center', p: 2, bgcolor: '#1A1A2E', borderRadius: 2 }}>
+            <Box sx={{ textAlign: 'center', p: 2, bgcolor: habexa.navy.main, borderRadius: 2 }}>
               <Typography variant="caption" color="text.secondary">Sales Rank</Typography>
               <Typography variant="h5" fontWeight="700">
                 #{spOffers.sales_rank?.toLocaleString() || '—'}

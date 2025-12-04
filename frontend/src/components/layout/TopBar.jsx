@@ -5,6 +5,8 @@ import { useNotifications } from '../../context/NotificationContext';
 import { getInitials } from '../../utils/formatters';
 import { useState } from 'react';
 import NotificationDropdown from './NotificationDropdown';
+import ThemeToggle from '../common/ThemeToggle';
+import { habexa } from '../../theme';
 
 const TopBar = ({ onQuickAnalyze }) => {
   const { user } = useAuth();
@@ -27,8 +29,8 @@ const TopBar = ({ onQuickAnalyze }) => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'flex-end',
-        borderBottom: '1px solid #2D2D3D',
-        bgcolor: '#0F0F1A',
+        borderBottom: `1px solid ${habexa.gray[300]}`,
+        bgcolor: habexa.navy.dark,
       }}
     >
       {/* Quick Analyze Button */}
@@ -38,24 +40,27 @@ const TopBar = ({ onQuickAnalyze }) => {
         onClick={onQuickAnalyze}
         sx={{
           mr: 2,
-          background: 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)',
+          background: `linear-gradient(135deg, ${habexa.purple.main} 0%, ${habexa.purple.dark} 100%)`,
           '&:hover': {
-            background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
+            background: `linear-gradient(135deg, ${habexa.purple.light} 0%, ${habexa.purple.dark} 100%)`,
           },
         }}
       >
         Quick Analyze
       </Button>
 
+      {/* Theme Toggle */}
+      <ThemeToggle />
+
       {/* Notifications */}
       <IconButton 
-        sx={{ color: '#A0A0B0', mr: 1, '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.1)' } }}
+        sx={{ color: habexa.gray[500], mr: 1, '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.1)' } }}
         onClick={handleNotificationClick}
       >
         <Badge badgeContent={unreadCount} sx={{ 
           '& .MuiBadge-badge': { 
-            bgcolor: '#EF4444',
-            color: '#FFFFFF',
+            bgcolor: habexa.error.main,
+            color: habexa.gray[600],
           } 
         }}>
           <Bell size={20} />
@@ -74,7 +79,7 @@ const TopBar = ({ onQuickAnalyze }) => {
           sx={{
             width: 36,
             height: 36,
-            bgcolor: '#7C3AED',
+            bgcolor: habexa.purple.main,
             fontSize: 14,
             fontWeight: 600,
           }}

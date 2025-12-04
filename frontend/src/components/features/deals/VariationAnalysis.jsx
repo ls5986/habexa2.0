@@ -1,32 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box, Typography, Card, CardContent, Grid, Chip, CircularProgress
+  Box, Typography, Card, CardContent, Grid, Chip, CircularProgress, Alert
 } from '@mui/material';
 import { Layers, Package } from 'lucide-react';
 import api from '../../../services/api';
+import { handleApiError } from '../../../utils/errorHandler';
+import { habexa } from '../../../theme';
 
 export default function VariationAnalysis({ asin, keepaData }) {
   const [loading, setLoading] = useState(true);
   const [variations, setVariations] = useState([]);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchVariations();
+    if (asin) {
+      fetchVariations();
+    } else {
+      setLoading(false);
+    }
   }, [asin]);
 
   const fetchVariations = async () => {
     setLoading(true);
+    setError(null);
     try {
-      // TODO: Implement variation analysis endpoint
-      // const res = await api.get(`/products/${asin}/variations`);
-      // setVariations(res.data);
-      
-      // Placeholder data
-      setTimeout(() => {
-        setVariations([]);
-        setLoading(false);
-      }, 500);
+      const res = await api.get(`/products/${asin}/variations`);
+      setVariations(res.data.variations || []);
     } catch (err) {
-      console.error('Failed to fetch variations:', err);
+      const errorMessage = handleApiError(err, null); // No toast in this component
+      setError(errorMessage);
+      setVariations([]);
+    } finally {
       setLoading(false);
     }
   };
@@ -51,19 +55,25 @@ export default function VariationAnalysis({ asin, keepaData }) {
           <Typography variant="h6" fontWeight="600">Product Variations</Typography>
         </Box>
 
-        {variations.length === 0 ? (
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+
+        {!error && variations.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 6 }}>
-            <Layers size={48} color="#8B8B9B" style={{ marginBottom: 16 }} />
+            <Layers size={48} color={habexa.gray[400]} style={{ marginBottom: 16 }} />
             <Typography variant="h6" gutterBottom>No Variations Found</Typography>
             <Typography color="text.secondary">
               This product doesn't have variations, or variation data is not available.
             </Typography>
           </Box>
-        ) : (
+        ) : !error && (
           <Grid container spacing={2}>
             {variations.map((variation, i) => (
               <Grid item xs={12} sm={6} md={4} key={i}>
-                <Card sx={{ bgcolor: '#1A1A2E' }}>
+                <Card sx={{ bgcolor: habexa.navy.main }}>
                   <CardContent>
                     <Typography variant="body2" fontWeight="600" gutterBottom>
                       {variation.title || `Variation ${i + 1}`}

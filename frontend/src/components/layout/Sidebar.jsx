@@ -36,16 +36,16 @@ const NavItem = ({ icon: Icon, label, path, active, badge, collapsed }) => {
         cursor: 'pointer',
         width: collapsed ? 'auto' : 'calc(100% - 24px)',
         justifyContent: collapsed ? 'center' : 'flex-start',
-        color: active ? '#FFFFFF' : '#A0A0B0',
+        color: active ? habexa.gray[600] : habexa.gray[500],
         background: active 
-          ? 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)'
+          ? `linear-gradient(135deg, ${habexa.purple.main} 0%, ${habexa.purple.dark} 100%)`
           : 'transparent',
         transition: 'all 0.2s ease',
         '&:hover': {
           background: active 
-            ? 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)'
-            : 'rgba(124, 58, 237, 0.1)',
-          color: '#FFFFFF',
+            ? `linear-gradient(135deg, ${habexa.purple.main} 0%, ${habexa.purple.dark} 100%)`
+            : `rgba(124, 58, 237, 0.1)`,
+          color: habexa.gray[600],
         },
       }}
     >
@@ -60,8 +60,8 @@ const NavItem = ({ icon: Icon, label, path, active, badge, collapsed }) => {
               width: 8,
               height: 8,
               borderRadius: '50%',
-              bgcolor: '#EF4444',
-              border: '2px solid #0F0F1A',
+              bgcolor: habexa.error.main,
+              border: `2px solid ${habexa.navy.dark}`,
             }}
           />
         </Box>
@@ -84,56 +84,45 @@ const Sidebar = ({ collapsed, onToggle }) => {
   const subscription = { tier: 'free' }; // Fallback until hook is available
   const isActive = (path) => location.pathname === path;
 
-  // Check for logo files
-  const logoExists = false; // Will be true if logo files are found
-
   return (
     <Box
       sx={{
         width: collapsed ? 72 : 260,
         height: '100vh',
-        background: 'linear-gradient(180deg, #0F0F1A 0%, #1A1A2E 100%)',
-        borderRight: '1px solid #2D2D3D',
+        background: `linear-gradient(180deg, ${habexa.navy.dark} 0%, ${habexa.navy.main} 100%)`,
+        borderRight: `1px solid ${habexa.gray[300]}`,
         display: 'flex',
         flexDirection: 'column',
         transition: 'width 0.3s ease',
       }}
     >
       {/* Logo Section */}
-      <Box sx={{ p: 3, borderBottom: '1px solid #2D2D3D' }}>
+      <Box sx={{ p: 3, borderBottom: `1px solid ${habexa.gray[300]}` }}>
         {collapsed ? (
           <Box
             sx={{
               width: 32,
               height: 32,
               borderRadius: 2,
-              bgcolor: '#7C3AED',
+              bgcolor: habexa.purple.main,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: 'white',
-              fontWeight: 700,
-              fontSize: '0.875rem',
               mx: 'auto',
             }}
           >
-            H
+            <img 
+              src="/logos/Asset 5@300x.png" 
+              alt="Habexa" 
+              style={{ width: 32, height: 32, objectFit: 'contain' }}
+            />
           </Box>
-        ) : logoExists ? (
-          <img src="/logo.svg" alt="Habexa" style={{ height: 32 }} />
         ) : (
-          <Typography 
-            variant="h5" 
-            sx={{ 
-              fontWeight: 800, 
-              background: 'linear-gradient(135deg, #7C3AED 0%, #A78BFA 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              letterSpacing: '-0.5px'
-            }}
-          >
-            Habexa
-          </Typography>
+          <img 
+            src="/logos/Asset 1@300x.png" 
+            alt="Habexa" 
+            style={{ height: 32, maxWidth: '100%' }}
+          />
         )}
       </Box>
 
@@ -170,8 +159,8 @@ const Sidebar = ({ collapsed, onToggle }) => {
             sx={{
               p: 2,
               borderRadius: 2,
-              background: 'rgba(124, 58, 237, 0.1)',
-              border: '1px solid rgba(124, 58, 237, 0.2)',
+              background: habexa.purple.light,
+              border: `1px solid ${habexa.purple.main}40`,
             }}
           >
             <Typography variant="caption" color="text.secondary">
@@ -186,9 +175,9 @@ const Sidebar = ({ collapsed, onToggle }) => {
               fullWidth
               onClick={() => navigate('/pricing')}
               sx={{
-                background: 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)',
+                background: `linear-gradient(135deg, ${habexa.purple.main} 0%, ${habexa.purple.dark} 100%)`,
                 '&:hover': {
-                  background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
+                  background: `linear-gradient(135deg, ${habexa.purple.light} 0%, ${habexa.purple.dark} 100%)`,
                 },
               }}
             >
@@ -205,7 +194,7 @@ const Sidebar = ({ collapsed, onToggle }) => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          borderTop: '1px solid #2D2D3D',
+          borderTop: `1px solid ${habexa.gray[300]}`,
         }}
       >
         <Box
@@ -214,7 +203,7 @@ const Sidebar = ({ collapsed, onToggle }) => {
           sx={{
             border: 'none',
             background: 'transparent',
-            color: '#A0A0B0',
+            color: habexa.gray[500],
             cursor: 'pointer',
             p: 1,
             borderRadius: 1,
@@ -222,7 +211,7 @@ const Sidebar = ({ collapsed, onToggle }) => {
             alignItems: 'center',
             justifyContent: 'center',
             '&:hover': {
-              color: '#FFFFFF',
+              color: habexa.gray[600],
               backgroundColor: 'rgba(255, 255, 255, 0.1)',
             },
           }}

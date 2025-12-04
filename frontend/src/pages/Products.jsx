@@ -15,14 +15,16 @@ import api from '../services/api';
 import FileUploadModal from '../components/features/products/FileUploadModal';
 import BatchAnalyzeButton from '../components/features/products/BatchAnalyzeButton';
 import { useFeatureGate } from '../hooks/useFeatureGate';
+import { useToast } from '../context/ToastContext';
+import { handleApiError } from '../utils/errorHandler';
 import { habexa } from '../theme';
 
 const STAGES = [
-  { id: 'new', label: 'New', icon: Package, color: '#7C3AED' },
-  { id: 'analyzing', label: 'Analyzing', icon: Clock, color: '#F59E0B' },
-  { id: 'reviewed', label: 'Reviewed', icon: TrendingUp, color: '#3B82F6' },
-  { id: 'buy_list', label: 'Buy List', icon: ShoppingCart, color: '#10B981' },
-  { id: 'ordered', label: 'Ordered', icon: Archive, color: '#6B7280' },
+  { id: 'new', label: 'New', icon: Package, color: habexa.purple.main },
+  { id: 'analyzing', label: 'Analyzing', icon: Clock, color: habexa.warning.main },
+  { id: 'reviewed', label: 'Reviewed', icon: TrendingUp, color: habexa.info.main },
+  { id: 'buy_list', label: 'Buy List', icon: ShoppingCart, color: habexa.success.main },
+  { id: 'ordered', label: 'Ordered', icon: Archive, color: habexa.gray[400] },
 ];
 
 // Debounce hook
@@ -90,7 +92,7 @@ const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq }) 
             sx={{ width: 32, height: 32, borderRadius: 1, objectFit: 'cover', flexShrink: 0 }}
           />
         ) : (
-          <Box sx={{ width: 32, height: 32, bgcolor: '#252540', borderRadius: 1 }} />
+          <Box sx={{ width: 32, height: 32, bgcolor: habexa.navy.light, borderRadius: 1 }} />
         )}
         <Typography variant="body2" noWrap sx={{ minWidth: 0 }}>
           {deal.title || 'Pending analysis...'}
@@ -124,8 +126,8 @@ const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq }) 
             sx={{ 
               minWidth: 40,
               cursor: 'pointer',
-              bgcolor: '#2D2D4A',
-              '&:hover': { bgcolor: '#3D3D5A' }
+              bgcolor: habexa.gray[300],
+              '&:hover': { bgcolor: habexa.navy.light }
             }}
           />
         )}
@@ -205,6 +207,7 @@ export default function Products() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const { hasFeature, promptUpgrade } = useFeatureGate();
+  const { showToast } = useToast();
 
   // Debounce search to reduce API calls
   const debouncedSearch = useDebounce(filters.search, 500);
@@ -286,12 +289,11 @@ export default function Products() {
     setAnalyzing(true);
     try {
       const res = await api.post('/products/bulk-analyze', { deal_ids: selected });
-      alert(`Queued ${res.data.queued} products for analysis`);
+      showToast(`Queued ${res.data.queued} products for analysis`, 'success');
       setSelected([]);
       fetchData();
     } catch (err) {
-      console.error('Bulk analyze failed:', err);
-      alert('Bulk analyze failed: ' + (err.response?.data?.detail || err.message));
+      handleApiError(err, showToast);
     } finally {
       setAnalyzing(false);
     }
@@ -304,8 +306,7 @@ export default function Products() {
       setSelected([]);
       fetchData();
     } catch (err) {
-      console.error('Bulk move failed:', err);
-      alert('Failed to move deals: ' + (err.response?.data?.detail || err.message));
+      handleApiError(err, showToast);
     }
   };
 
@@ -347,7 +348,7 @@ export default function Products() {
       a.click();
     } catch (err) {
       console.error('Export failed:', err);
-      alert('Export failed: ' + (err.response?.data?.detail || err.message));
+      showToast('Export failed: ' + (err.response?.data?.detail || err.message), 'error');
     }
   };
 
@@ -360,7 +361,7 @@ export default function Products() {
       ));
     } catch (err) {
       console.error('Failed to update MOQ:', err);
-      alert('Failed to update MOQ: ' + (err.response?.data?.detail || err.message));
+      showToast('Failed to update MOQ: ' + (err.response?.data?.detail || err.message), 'error');
     }
   };
 
@@ -522,7 +523,7 @@ export default function Products() {
         </Box>
       ) : filteredDeals.length === 0 ? (
         <Card sx={{ p: 4, textAlign: 'center' }}>
-          <Package size={48} color="#8B8B9B" />
+          <Package size={48} color={habexa.gray[400]} />
           <Typography variant="h6" sx={{ mt: 2 }}>No deals found</Typography>
           <Typography color="text.secondary" sx={{ mb: 2 }}>
             Upload a CSV or Excel file or add ASINs manually to get started
@@ -663,6 +664,7 @@ export default function Products() {
 function AddProductDialog({ open, onClose, onAdded, suppliers }) {
   const [form, setForm] = useState({ asin: '', buy_cost: '', supplier_id: '', supplier_name: '', moq: '1', notes: '' });
   const [loading, setLoading] = useState(false);
+  const { showToast } = useToast();
 
   const handleSubmit = async () => {
     if (!form.asin) return;
@@ -679,7 +681,7 @@ function AddProductDialog({ open, onClose, onAdded, suppliers }) {
       setForm({ asin: '', buy_cost: '', supplier_id: '', supplier_name: '', moq: '1', notes: '' });
       onAdded();
     } catch (err) {
-      alert(err.response?.data?.detail || 'Failed to add product');
+      showToast(err.response?.data?.detail || 'Failed to add product', 'error');
     } finally {
       setLoading(false);
     }

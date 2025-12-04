@@ -3,6 +3,7 @@ import { Box, Card, CardContent, TextField, Button, Typography, Link } from '@mu
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useStripe } from '../context/StripeContext';
+import { habexa } from '../theme';
 
 const Register = () => {
   const [email, setEmail] = useState('');
@@ -63,14 +64,18 @@ const Register = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#F9FAFB',
+        backgroundColor: habexa.navy.dark,
       }}
     >
       <Card sx={{ width: '100%', maxWidth: 400 }}>
         <CardContent sx={{ p: 4 }}>
-          <Typography variant="h4" fontWeight={700} mb={1} textAlign="center" color="#1A1A4E">
-            Habexa
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+            <img 
+              src="/logos/fulllogo@300x.png" 
+              alt="Habexa" 
+              style={{ height: 48, maxWidth: '100%' }}
+            />
+          </Box>
           <Typography variant="body2" color="text.secondary" mb={4} textAlign="center">
             Create your account
           </Typography>
@@ -115,9 +120,8 @@ const Register = () => {
               variant="contained"
               disabled={loading}
               sx={{
-                backgroundColor: '#7C3AED', // Changed from #7C6AFA for better contrast (5.1:1 on light bg)
-                color: '#FFFFFF',
-                '&:hover': { backgroundColor: '#6D28D9' },
+                backgroundColor: habexa.purple.main,
+                '&:hover': { backgroundColor: habexa.purple.dark },
                 mb: 2,
               }}
             >
@@ -127,7 +131,7 @@ const Register = () => {
 
           <Typography variant="body2" textAlign="center">
             Already have an account?{' '}
-            <Link href="/login" sx={{ color: '#7C3AED', fontWeight: 600 }}>
+            <Link href="/login" sx={{ color: habexa.purple.main, fontWeight: 600 }}>
               Sign in
             </Link>
           </Typography>

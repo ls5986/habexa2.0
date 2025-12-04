@@ -11,6 +11,7 @@ import { CircularProgress } from '@mui/material';
 import api from '../../../services/api';
 import SupplierSelectionDialog from './SupplierSelectionDialog';
 import { useFeatureGate } from '../../../hooks/useFeatureGate';
+import { useToast } from '../../../context/ToastContext';
 
 export default function BatchAnalyzeButton({ 
   productIds = null,  // Specific products
@@ -20,6 +21,7 @@ export default function BatchAnalyzeButton({
   className = ""
 }) {
   const { hasFeature, promptUpgrade } = useFeatureGate();
+  const { showToast } = useToast();
   const [jobId, setJobId] = useState(null);
   const [job, setJob] = useState(null);
   const [starting, setStarting] = useState(false);
@@ -128,10 +130,10 @@ export default function BatchAnalyzeButton({
         setGroupedByFile(errorObj.grouped_by_file || {});
         setShowSupplierDialog(true);
       } else {
-        // Other error - show alert with full details for debugging
+        // Other error - show toast with full details for debugging
         const errorMsg = errorObj?.message || errorDetail?.message || (typeof errorDetail === 'string' ? errorDetail : JSON.stringify(errorDetail)) || 'Failed to start analysis';
-        console.error('Showing error alert:', errorMsg);
-        alert(errorMsg);
+        console.error('Showing error toast:', errorMsg);
+        showToast(errorMsg, 'error');
       }
     } finally {
       setStarting(false);
@@ -163,7 +165,7 @@ export default function BatchAnalyzeButton({
     } catch (err) {
       console.error('Error cancelling:', err);
       const errorMsg = err.response?.data?.detail || err.message || 'Failed to cancel job';
-      alert(`Failed to cancel: ${errorMsg}`);
+      showToast(`Failed to cancel: ${errorMsg}`, 'error');
     }
   };
 

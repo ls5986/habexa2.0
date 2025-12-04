@@ -36,7 +36,7 @@ const Settings = () => {
   }, [tabParam, searchParams]);
   const { profile, alertSettings, costSettings, loading, updateProfile, updateAlertSettings, updateCostSettings } = useSettings();
   const { showToast } = useToast();
-  const { subscription, openPortal, cancelSubscription, reactivateSubscription } = useStripe();
+  const { subscription, openPortal, cancelSubscription, reactivateSubscription, refreshSubscription } = useStripe();
   const navigate = useNavigate();
   
   // Billing state
@@ -147,8 +147,10 @@ const Settings = () => {
         showToast('Subscription will cancel at end of billing period', 'info');
       }
       setCancelDialogOpen(false);
-      // Refresh subscription data
-      window.location.reload(); // Simple refresh for now
+      // Refresh subscription data without page reload
+      await refreshSubscription();
+      // Also refresh usage data
+      await fetchUsage();
     } catch (error) {
       showToast(error.response?.data?.detail || 'Failed to cancel subscription', 'error');
     } finally {

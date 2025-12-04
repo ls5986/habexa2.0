@@ -10,6 +10,7 @@ import {
   FileText, DollarSign, ShoppingCart, Check, CheckCircle, XCircle, AlertTriangle
 } from 'lucide-react';
 import api from '../services/api';
+import { habexa } from '../theme';
 
 // Import tab components
 import ProfitCalculator from '../components/features/deals/ProfitCalculator';
@@ -198,7 +199,7 @@ export default function DealDetail() {
               <Box sx={{ 
                 width: '100%', 
                 aspectRatio: '1', 
-                bgcolor: '#1A1A2E', 
+                bgcolor: habexa.navy.main, 
                 borderRadius: 2, 
                 mb: 2,
                 display: 'flex',
@@ -213,7 +214,7 @@ export default function DealDetail() {
                     style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                   />
                 ) : (
-                  <Package size={64} color="#8B8B9B" />
+                  <Package size={64} color={habexa.gray[400]} />
                 )}
               </Box>
 
@@ -255,13 +256,13 @@ export default function DealDetail() {
                 }}>
                   {isEligible ? (
                     <>
-                      <CheckCircle size={16} color="#10B981" />
-                      <Typography variant="body2" color="#10B981">Eligible to Sell</Typography>
+                      <CheckCircle size={16} color={habexa.success.main} />
+                      <Typography variant="body2" color={habexa.success.main}>Eligible to Sell</Typography>
                     </>
                   ) : (
                     <>
-                      <XCircle size={16} color="#EF4444" />
-                      <Typography variant="body2" color="#EF4444">Restricted / Gated</Typography>
+                      <XCircle size={16} color={habexa.error.main} />
+                      <Typography variant="body2" color={habexa.error.main}>Restricted / Gated</Typography>
                     </>
                   )}
                 </Box>
@@ -315,8 +316,8 @@ export default function DealDetail() {
                       sx={{ 
                         height: 18, 
                         fontSize: 10, 
-                        bgcolor: '#10B98120', 
-                        color: '#10B981' 
+                        bgcolor: habexa.success.light,
+                        color: habexa.success.main
                       }} 
                     />
                   )}
@@ -327,8 +328,8 @@ export default function DealDetail() {
                       sx={{ 
                         height: 18, 
                         fontSize: 10, 
-                        bgcolor: '#F59E0B20', 
-                        color: '#F59E0B' 
+                        bgcolor: habexa.warning.light,
+                        color: habexa.warning.main
                       }} 
                     />
                   )}

@@ -4,6 +4,7 @@ import {
   Divider, Grid, InputAdornment, Tooltip, IconButton
 } from '@mui/material';
 import { Calculator, Info, TrendingUp, Package, DollarSign, Percent } from 'lucide-react';
+import { habexa } from '../../../theme';
 
 export default function ProfitCalculator({ 
   initialBuyCost = 0,
@@ -72,16 +73,16 @@ export default function ProfitCalculator({
   }, [buyCost, quantity, customSellPrice, prepCost, shippingCost, miscCost, referralFee, fbaFee]);
 
   const StatBox = ({ label, value, prefix = '', suffix = '', color, tooltip }) => (
-    <Box sx={{ textAlign: 'center', p: 2, bgcolor: '#1A1A2E', borderRadius: 2 }}>
+    <Box sx={{ textAlign: 'center', p: 2, bgcolor: habexa.navy.main, borderRadius: 2 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
         <Typography variant="caption" color="text.secondary">{label}</Typography>
         {tooltip && (
           <Tooltip title={tooltip}>
-            <Info size={12} color="#8B8B9B" />
+            <Info size={12} color={habexa.gray[400]} />
           </Tooltip>
         )}
       </Box>
-      <Typography variant="h5" fontWeight="700" color={color || 'white'}>
+      <Typography variant="h5" fontWeight="700" color={color || habexa.gray[600]}>
         {prefix}{value}{suffix}
       </Typography>
     </Box>
@@ -117,8 +118,8 @@ export default function ProfitCalculator({
                 }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    bgcolor: '#252540',
-                    '& fieldset': { borderColor: '#2D2D3D' },
+                    bgcolor: habexa.navy.light,
+                    '& fieldset': { borderColor: habexa.gray[300] },
                   }
                 }}
               />
@@ -133,8 +134,8 @@ export default function ProfitCalculator({
                 }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    bgcolor: '#252540',
-                    '& fieldset': { borderColor: '#2D2D3D' },
+                    bgcolor: habexa.navy.light,
+                    '& fieldset': { borderColor: habexa.gray[300] },
                   }
                 }}
               />
@@ -149,8 +150,8 @@ export default function ProfitCalculator({
                 }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    bgcolor: '#252540',
-                    '& fieldset': { borderColor: '#2D2D3D' },
+                    bgcolor: habexa.navy.light,
+                    '& fieldset': { borderColor: habexa.gray[300] },
                   }
                 }}
               />
@@ -165,8 +166,8 @@ export default function ProfitCalculator({
                 }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    bgcolor: '#252540',
-                    '& fieldset': { borderColor: '#2D2D3D' },
+                    bgcolor: habexa.navy.light,
+                    '& fieldset': { borderColor: habexa.gray[300] },
                   }
                 }}
               />
@@ -187,8 +188,8 @@ export default function ProfitCalculator({
               }}
               sx={{ mb: 3,
                 '& .MuiOutlinedInput-root': {
-                  bgcolor: '#252540',
-                  '& fieldset': { borderColor: '#2D2D3D' },
+                  bgcolor: habexa.navy.light,
+                  '& fieldset': { borderColor: habexa.gray[300] },
                 }
               }}
             />
@@ -217,8 +218,8 @@ export default function ProfitCalculator({
               }}
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  bgcolor: '#252540',
-                  '& fieldset': { borderColor: '#2D2D3D' },
+                  bgcolor: habexa.navy.light,
+                  '& fieldset': { borderColor: habexa.gray[300] },
                 }
               }}
             />
@@ -238,7 +239,7 @@ export default function ProfitCalculator({
                   label="Profit" 
                   value={calculations.profitPerUnit} 
                   prefix="$"
-                  color={calculations.isProfitable ? '#10B981' : '#EF4444'}
+                  color={calculations.isProfitable ? habexa.success.main : habexa.error.main}
                 />
               </Grid>
               <Grid item xs={6} sm={3}>
@@ -246,7 +247,7 @@ export default function ProfitCalculator({
                   label="ROI" 
                   value={calculations.roi} 
                   suffix="%"
-                  color={parseFloat(calculations.roi) >= 30 ? '#10B981' : '#F59E0B'}
+                  color={parseFloat(calculations.roi) >= 30 ? habexa.success.main : habexa.warning.main}
                 />
               </Grid>
               <Grid item xs={6} sm={3}>
@@ -277,7 +278,7 @@ export default function ProfitCalculator({
                   label="Net Profit" 
                   value={calculations.totalProfit} 
                   prefix="$"
-                  color={calculations.isProfitable ? '#10B981' : '#EF4444'}
+                  color={calculations.isProfitable ? habexa.success.main : habexa.error.main}
                 />
               </Grid>
             </Grid>

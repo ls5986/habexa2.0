@@ -1,0 +1,1026 @@
+
+> habexa-frontend@1.0.0 test:e2e /Users/lindseystevens/habexa2.0/frontend
+> playwright test --reporter=list --timeout=120000
+
+
+Running 135 tests using 8 workers
+
+  -    5 [chromium] › tests/e2e/analyze.spec.ts:106:3 › Quick Analyze Modal › Cost input accepts numbers
+  -    3 [chromium] › tests/e2e/analyze.spec.ts:124:3 › Quick Analyze Modal › Supplier dropdown loads suppliers
+  -   10 [chromium] › tests/e2e/analyze.spec.ts:235:3 › Quick Analyze Modal › Close button closes and resets
+  ✘   11 [chromium] › tests/e2e/analyze.spec.ts:278:3 › Analyze Page › Page loads (12.7s)
+  -   12 [chromium] › tests/e2e/analyze.spec.ts:285:3 › Analyze Page › Input ASIN works
+  -   13 [chromium] › tests/e2e/analyze.spec.ts:297:3 › Analyze Page › Input UPC works
+  -   14 [chromium] › tests/e2e/analyze.spec.ts:315:3 › Analyze Page › Analyze button submits
+  ✓   15 [chromium] › tests/e2e/auth.spec.ts:7:3 › Authentication › Login with valid credentials (8.9s)
+  ✘    7 [chromium] › tests/e2e/analyze.spec.ts:180:3 › Quick Analyze Modal › Loading state shows during analysis (1.5m)
+  ✘    8 [chromium] › tests/e2e/analyze.spec.ts:148:3 › Quick Analyze Modal › Analyze button submits (1.5m)
+  ✘    4 [chromium] › tests/e2e/analyze.spec.ts:36:3 › Quick Analyze Modal › ASIN/UPC toggle works (1.5m)
+  ✘    2 [chromium] › tests/e2e/analyze.spec.ts:81:3 › Quick Analyze Modal › UPC input accepts valid UPC (1.5m)
+  ✘    1 [chromium] › tests/e2e/analyze.spec.ts:11:3 › Quick Analyze Modal › Modal opens (1.5m)
+  ✘    6 [chromium] › tests/e2e/analyze.spec.ts:62:3 › Quick Analyze Modal › ASIN input accepts valid ASIN (1.5m)
+  ✘   21 [chromium] › tests/e2e/auth.spec.ts:95:3 › Authentication › Protected routes redirect to login when not authenticated (5.8s)
+  ✓   19 [chromium] › tests/e2e/auth.spec.ts:57:3 › Authentication › Logout works (7.6s)
+  ✓   20 [chromium] › tests/e2e/auth.spec.ts:72:3 › Authentication › Session persists on page refresh (7.8s)
+  ✘    9 [chromium] › tests/e2e/analyze.spec.ts:208:3 › Quick Analyze Modal › Error handling for invalid ASIN (1.5m)
+  ✘   22 [chromium] › tests/e2e/buylist.spec.ts:12:3 › Buy List Page › Page loads, buy list items display (13.1s)
+  -   23 [chromium] › tests/e2e/buylist.spec.ts:16:3 › Buy List Page › Quantity adjustment works
+  -   24 [chromium] › tests/e2e/buylist.spec.ts:34:3 › Buy List Page › Quantity validates min 1
+  -   25 [chromium] › tests/e2e/buylist.spec.ts:57:3 › Buy List Page › Remove item with confirmation
+  -   26 [chromium] › tests/e2e/buylist.spec.ts:77:3 › Buy List Page › Clear all with confirmation
+  -   27 [chromium] › tests/e2e/buylist.spec.ts:97:3 › Buy List Page › Create order button works
+  ✘   28 [chromium] › tests/e2e/buylist.spec.ts:113:3 › Buy List Page › Empty state displays when no items (7.5s)
+  -   29 [chromium] › tests/e2e/buylist.spec.ts:125:3 › Buy List Page › Total cost calculates correctly
+  ✘   31 [chromium] › tests/e2e/dashboard.spec.ts:37:3 › Dashboard › Stats display correctly (7.4s)
+  ✓   32 [chromium] › tests/e2e/dashboard.spec.ts:52:3 › Dashboard › Deal cards render (7.2s)
+  -   33 [chromium] › tests/e2e/dashboard.spec.ts:67:3 › Dashboard › Deal card click navigates to detail
+  -   34 [chromium] › tests/e2e/dashboard.spec.ts:86:3 › Dashboard › Quick analyze button opens modal
+  ✓   35 [chromium] › tests/e2e/dashboard.spec.ts:104:3 › Dashboard › Recent activity displays (7.2s)
+  ✓   37 [chromium] › tests/e2e/deals.spec.ts:17:3 › Deals Page › Tabs filter correctly (7.4s)
+  -   38 [chromium] › tests/e2e/deals.spec.ts:30:3 › Deals Page › Search by ASIN works
+  ✘   36 [chromium] › tests/e2e/deals.spec.ts:13:3 › Deals Page › Page loads, deals display (12.5s)
+  -   40 [chromium] › tests/e2e/deals.spec.ts:55:3 › Deals Page › Deal card displays correct data
+  -   41 [chromium] › tests/e2e/deals.spec.ts:69:3 › Deals Page › Deal card click navigates to detail
+  -   42 [chromium] › tests/e2e/deals.spec.ts:82:3 › Deals Page › Refresh button works
+  -   44 [chromium] › tests/e2e/error-handling.spec.ts:24:3 › Error Handling › 403 shows forbidden message
+  ✓   45 [chromium] › tests/e2e/error-handling.spec.ts:38:3 › Error Handling › 404 shows not found (6.8s)
+  ✓   30 [chromium] › tests/e2e/dashboard.spec.ts:10:3 › Dashboard › Page loads without errors (38.2s)
+  ✘   43 [chromium] › tests/e2e/error-handling.spec.ts:10:3 › Error Handling › 401 redirects to login (12.1s)
+  -   48 [chromium] › tests/e2e/error-handling.spec.ts:76:3 › Error Handling › API rate limiting handled
+  ✓   47 [chromium] › tests/e2e/error-handling.spec.ts:61:3 › Error Handling › Network timeout handled (11.9s)
+  ✘   49 [chromium] › tests/e2e/orders.spec.ts:12:3 › Orders Page › Page loads, orders display (12.5s)
+  -   50 [chromium] › tests/e2e/orders.spec.ts:16:3 › Orders Page › Create order from buy list
+  -   51 [chromium] › tests/e2e/orders.spec.ts:35:3 › Orders Page › Order detail view
+  ✘   53 [chromium] › tests/e2e/orders.spec.ts:59:3 › Orders Page › Order history displays (7.3s)
+  ✘   54 [chromium] › tests/e2e/pricing.spec.ts:12:3 › Pricing Page › Page loads (12.3s)
+  ✓   55 [chromium] › tests/e2e/pricing.spec.ts:16:3 › Pricing Page › All tiers display (7.3s)
+  ✘   16 [chromium] › tests/e2e/auth.spec.ts:17:3 › Authentication › Login with invalid credentials shows error (2.0m)
+  -   58 [chromium] › tests/e2e/pricing.spec.ts:52:3 › Pricing Page › Subscribe button loads checkout (verify page loads, do not complete)
+  -   52 [chromium] › tests/e2e/orders.spec.ts:48:3 › Orders Page › Order status displays
+  -   59 [chromium] › tests/e2e/pricing.spec.ts:78:3 › Pricing Page › Current plan highlighted if logged in
+  -   60 [chromium] › tests/e2e/product-upload.spec.ts:14:3 › CSV Product Upload › Upload button opens modal
+  -   61 [chromium] › tests/e2e/product-upload.spec.ts:28:3 › CSV Product Upload › File picker accepts CSV
+  ✘   18 [chromium] › tests/e2e/auth.spec.ts:45:3 › Authentication › Register with existing email shows error (2.0m)
+  ✘   17 [chromium] › tests/e2e/auth.spec.ts:31:3 › Authentication › Register new account (2.0m)
+  -   62 [chromium] › tests/e2e/product-upload.spec.ts:48:3 › CSV Product Upload › File picker rejects non-CSV
+  -   56 [chromium] › tests/e2e/pricing.spec.ts:27:3 › Pricing Page › Monthly/yearly toggle works
+  -   57 [chromium] › tests/e2e/pricing.spec.ts:41:3 › Pricing Page › Feature lists display correctly
+  ✘   39 [chromium] › tests/e2e/deals.spec.ts:42:3 › Deals Page › Analyze All button queues analyses (1.5m)
+  -   63 [chromium] › tests/e2e/product-upload.spec.ts:68:3 › CSV Product Upload › Valid CSV shows preview
+  -   65 [chromium] › tests/e2e/product-upload.spec.ts:127:3 › CSV Product Upload › Progress indicator shows during import
+  ✓   69 [chromium] › tests/e2e/products.spec.ts:24:3 › Products Page › Stage tabs filter correctly (7.6s)
+  -   67 [chromium] › tests/e2e/product-upload.spec.ts:198:3 › CSV Product Upload › Large file handling
+  -   66 [chromium] › tests/e2e/product-upload.spec.ts:162:3 › CSV Product Upload › Invalid rows show errors
+  -   68 [chromium] › tests/e2e/product-upload.spec.ts:234:3 › CSV Product Upload › Cancel upload works
+  ✓   71 [chromium] › tests/e2e/products.spec.ts:41:3 › Products Page › Search by ASIN works (7.5s)
+  ✓   72 [chromium] › tests/e2e/products.spec.ts:53:3 › Products Page › Search by title works (7.5s)
+  ✓   74 [chromium] › tests/e2e/products.spec.ts:79:3 › Products Page › ROI filter works (7.7s)
+  ✓   75 [chromium] › tests/e2e/products.spec.ts:90:3 › Products Page › Clear filters works (7.8s)
+  ✓   73 [chromium] › tests/e2e/products.spec.ts:63:3 › Products Page › Supplier filter works (8.2s)
+  ✘   70 [chromium] › tests/e2e/products.spec.ts:13:3 › Products Page › Page loads, products display (18.0s)
+  ✘   46 [chromium] › tests/e2e/error-handling.spec.ts:45:3 › Error Handling › 500 shows error message (1.5m)
+  -   76 [chromium] › tests/e2e/products.spec.ts:103:3 › Products Page › Product row click navigates to detail
+  -   77 [chromium] › tests/e2e/products.spec.ts:116:3 › Products Page › Checkbox selection works
+  -   78 [chromium] › tests/e2e/products.spec.ts:127:3 › Products Page › Select all works
+  -   80 [chromium] › tests/e2e/products.spec.ts:166:3 › Products Page › Bulk change stage
+  -   79 [chromium] › tests/e2e/products.spec.ts:147:3 › Products Page › Bulk analyze selected products
+  -   81 [chromium] › tests/e2e/products.spec.ts:183:3 › Products Page › Export to CSV
+  -   82 [chromium] › tests/e2e/products.spec.ts:200:3 › Products Page › Add product manually
+  -   83 [chromium] › tests/e2e/products.spec.ts:228:3 › Products Page › MOQ edit inline
+  ✓   87 [chromium] › tests/e2e/settings.spec.ts:22:3 › Settings Page - Profile › Current values display (7.7s)
+  -   85 [chromium] › tests/e2e/products.spec.ts:256:3 › Products Page › External link opens Amazon
+  -   64 [chromium] › tests/e2e/product-upload.spec.ts:89:3 › CSV Product Upload › Import button processes CSV
+  -   88 [chromium] › tests/e2e/settings.spec.ts:30:3 › Settings Page - Profile › Edit name works
+  -   89 [chromium] › tests/e2e/settings.spec.ts:40:3 › Settings Page - Profile › Save profile works
+  -   91 [chromium] › tests/e2e/settings.spec.ts:68:3 › Settings Page - Password › Current password required
+  -   92 [chromium] › tests/e2e/settings.spec.ts:77:3 › Settings Page - Password › New password validation
+  ✓   90 [chromium] › tests/e2e/settings.spec.ts:64:3 › Settings Page - Password › Password tab loads (12.8s)
+  -   94 [chromium] › tests/e2e/settings.spec.ts:107:3 › Settings Page - Password › Change password works
+  -   96 [chromium] › tests/e2e/settings.spec.ts:152:3 › Settings Page - Alerts › Toggle email alerts
+  -   98 [chromium] › tests/e2e/settings.spec.ts:180:3 › Settings Page - Alerts › Save alerts works
+  -   97 [chromium] › tests/e2e/settings.spec.ts:163:3 › Settings Page - Alerts › Set alert thresholds
+  ✓   95 [chromium] › tests/e2e/settings.spec.ts:148:3 › Settings Page - Alerts › Alerts tab loads (12.8s)
+  -  100 [chromium] › tests/e2e/settings.spec.ts:209:3 › Settings Page - Costs › Input validation numbers only
+  -  103 [chromium] › tests/e2e/settings.spec.ts:252:3 › Settings Page - Subscription › Current plan displays
+  -  101 [chromium] › tests/e2e/settings.spec.ts:223:3 › Settings Page - Costs › Save costs works
+Switching user lindsey@letsclink.com to tier: free
+(node:11104) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   84 [chromium] › tests/e2e/products.spec.ts:247:3 › Products Page › Refresh button reloads data (38.0s)
+Switching user lindsey@letsclink.com to tier: free
+(node:11076) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  102 [chromium] › tests/e2e/settings.spec.ts:248:3 › Settings Page - Subscription › Subscription tab loads (12.5s)
+Switching user lindsey@letsclink.com to tier: free
+(node:11038) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  -  104 [chromium] › tests/e2e/settings.spec.ts:262:3 › Settings Page - Subscription › Usage stats display
+Switching user lindsey@letsclink.com to tier: starter
+(node:11056) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  106 [chromium] › tests/e2e/subscriptions.spec.ts:13:3 › Subscription Tier Testing - Free › Correct features accessible on Free tier (6.8s)
+Switching user lindsey@letsclink.com to tier: starter
+  -  105 [chromium] › tests/e2e/settings.spec.ts:272:3 › Settings Page - Subscription › Cancel subscription with confirmation
+Switching user lindsey@letsclink.com to tier: pro
+(node:11209) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘   86 [chromium] › tests/e2e/settings.spec.ts:12:3 › Settings Page - Profile › Profile tab loads (42.5s)
+Switching user lindsey@letsclink.com to tier: pro
+(node:11309) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  107 [chromium] › tests/e2e/subscriptions.spec.ts:24:3 › Subscription Tier Testing - Free › Locked features show upgrade prompt (7.2s)
+Switching user lindsey@letsclink.com to tier: agency
+  ✓  108 [chromium] › tests/e2e/subscriptions.spec.ts:37:3 › Subscription Tier Testing - Free › Usage limits enforced (9.0s)
+Switching user lindsey@letsclink.com to tier: agency
+  ✓  110 [chromium] › tests/e2e/subscriptions.spec.ts:65:3 › Subscription Tier Testing - Starter › Usage limits enforced (8.1s)
+  -   93 [chromium] › tests/e2e/settings.spec.ts:90:3 › Settings Page - Password › Confirm password must match
+  ✓  111 [chromium] › tests/e2e/subscriptions.spec.ts:83:3 › Subscription Tier Testing - Pro › Bulk analyze enabled on Pro tier (8.4s)
+  ✓  112 [chromium] › tests/e2e/subscriptions.spec.ts:92:3 › Subscription Tier Testing - Pro › Usage limits enforced (6.9s)
+  ✓  113 [chromium] › tests/e2e/subscriptions.spec.ts:110:3 › Subscription Tier Testing - Agency › All features accessible on Agency tier (8.9s)
+  ✓  114 [chromium] › tests/e2e/subscriptions.spec.ts:125:3 › Subscription Tier Testing - Agency › Unlimited badges display (9.1s)
+  -  117 [chromium] › tests/e2e/suppliers.spec.ts:31:3 › Suppliers Page › Create supplier with all fields
+  -  116 [chromium] › tests/e2e/suppliers.spec.ts:17:3 › Suppliers Page › Add supplier button opens modal
+  -  118 [chromium] › tests/e2e/suppliers.spec.ts:61:3 › Suppliers Page › Edit supplier opens modal with data
+  -  119 [chromium] › tests/e2e/suppliers.spec.ts:79:3 › Suppliers Page › Update supplier saves changes
+  ✘  115 [chromium] › tests/e2e/suppliers.spec.ts:13:3 › Suppliers Page › Page loads, suppliers display (12.7s)
+  -  120 [chromium] › tests/e2e/suppliers.spec.ts:100:3 › Suppliers Page › Message button works or shows appropriate UI
+  ✓   99 [chromium] › tests/e2e/settings.spec.ts:205:3 › Settings Page - Costs › Costs tab loads (42.8s)
+  -  121 [chromium] › tests/e2e/suppliers.spec.ts:121:3 › Suppliers Page › Orders button works or shows appropriate UI
+  -  122 [chromium] › tests/e2e/suppliers.spec.ts:140:3 › Suppliers Page › Search suppliers works
+  -  126 [chromium] › tests/e2e/telegram.spec.ts:46:3 › Telegram Integration › Channel list displays
+  -  127 [chromium] › tests/e2e/telegram.spec.ts:57:3 › Telegram Integration › Remove channel works
+  -  128 [chromium] › tests/e2e/telegram.spec.ts:67:3 › Telegram Integration › Start/Stop monitoring works
+  -  129 [chromium] › tests/e2e/ui-ux.spec.ts:10:3 › UI/UX › All modals can be closed (X and click outside)
+  -  130 [chromium] › tests/e2e/ui-ux.spec.ts:36:3 › UI/UX › All forms can be cancelled
+  -  131 [chromium] › tests/e2e/ui-ux.spec.ts:56:3 › UI/UX › Loading states show appropriately
+  -  132 [chromium] › tests/e2e/ui-ux.spec.ts:72:3 › UI/UX › Success toasts display
+  ✓  135 [chromium] › tests/e2e/ui-ux.spec.ts:146:3 › UI/UX › No failed network requests that are not handled (7.3s)
+  ✓  134 [chromium] › tests/e2e/ui-ux.spec.ts:122:3 › UI/UX › No console errors on any page (12.1s)
+  -  125 [chromium] › tests/e2e/telegram.spec.ts:33:3 › Telegram Integration › Add channel button works
+  ✓  123 [chromium] › tests/e2e/telegram.spec.ts:19:3 › Telegram Integration › Telegram section loads in settings (42.9s)
+  ✘  109 [chromium] › tests/e2e/subscriptions.spec.ts:55:3 › Subscription Tier Testing - Starter › Correct features accessible on Starter tier (1.5m)
+  ✘  124 [chromium] › tests/e2e/telegram.spec.ts:23:3 › Telegram Integration › Connection status shows correctly (1.5m)
+  ✘  133 [chromium] › tests/e2e/ui-ux.spec.ts:92:3 › UI/UX › Error toasts display (not alert()) (1.5m)
+
+
+  1) [chromium] › tests/e2e/analyze.spec.ts:11:3 › Quick Analyze Modal › Modal opens ───────────────
+
+    TimeoutError: page.goto: Timeout 90000ms exceeded.
+    Call log:
+    [2m  - navigating to "https://habexa-frontend.onrender.com/", waiting until "networkidle"[22m
+
+
+       at ../utils/helpers.ts:9
+
+       7 | export async function login(page: Page, email: string = TEST_CREDENTIALS.email, password: string = TEST_CREDENTIALS.password) {
+       8 |   // Navigate to root first (SPA routing issue - /login returns 404)
+    >  9 |   await page.goto('/', { waitUntil: 'networkidle', timeout: 90000 });
+         |              ^
+      10 |   
+      11 |   // Wait for React to load and render
+      12 |   await page.waitForLoadState('networkidle');
+        at login (/Users/lindseystevens/habexa2.0/frontend/tests/utils/helpers.ts:9:14)
+        at /Users/lindseystevens/habexa2.0/frontend/tests/e2e/analyze.spec.ts:8:11
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/analyze-Quick-Analyze-Modal-Modal-opens-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/analyze-Quick-Analyze-Modal-Modal-opens-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/analyze-Quick-Analyze-Modal-Modal-opens-chromium/error-context.md
+
+  2) [chromium] › tests/e2e/analyze.spec.ts:36:3 › Quick Analyze Modal › ASIN/UPC toggle works ─────
+
+    TimeoutError: page.goto: Timeout 90000ms exceeded.
+    Call log:
+    [2m  - navigating to "https://habexa-frontend.onrender.com/", waiting until "networkidle"[22m
+
+
+       at ../utils/helpers.ts:9
+
+       7 | export async function login(page: Page, email: string = TEST_CREDENTIALS.email, password: string = TEST_CREDENTIALS.password) {
+       8 |   // Navigate to root first (SPA routing issue - /login returns 404)
+    >  9 |   await page.goto('/', { waitUntil: 'networkidle', timeout: 90000 });
+         |              ^
+      10 |   
+      11 |   // Wait for React to load and render
+      12 |   await page.waitForLoadState('networkidle');
+        at login (/Users/lindseystevens/habexa2.0/frontend/tests/utils/helpers.ts:9:14)
+        at /Users/lindseystevens/habexa2.0/frontend/tests/e2e/analyze.spec.ts:8:11
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/analyze-Quick-Analyze-Modal-ASIN-UPC-toggle-works-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/analyze-Quick-Analyze-Modal-ASIN-UPC-toggle-works-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/analyze-Quick-Analyze-Modal-ASIN-UPC-toggle-works-chromium/error-context.md
+
+  3) [chromium] › tests/e2e/analyze.spec.ts:62:3 › Quick Analyze Modal › ASIN input accepts valid ASIN 
+
+    TimeoutError: page.goto: Timeout 90000ms exceeded.
+    Call log:
+    [2m  - navigating to "https://habexa-frontend.onrender.com/", waiting until "networkidle"[22m
+
+
+       at ../utils/helpers.ts:9
+
+       7 | export async function login(page: Page, email: string = TEST_CREDENTIALS.email, password: string = TEST_CREDENTIALS.password) {
+       8 |   // Navigate to root first (SPA routing issue - /login returns 404)
+    >  9 |   await page.goto('/', { waitUntil: 'networkidle', timeout: 90000 });
+         |              ^
+      10 |   
+      11 |   // Wait for React to load and render
+      12 |   await page.waitForLoadState('networkidle');
+        at login (/Users/lindseystevens/habexa2.0/frontend/tests/utils/helpers.ts:9:14)
+        at /Users/lindseystevens/habexa2.0/frontend/tests/e2e/analyze.spec.ts:8:11
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/analyze-Quick-Analyze-Modal-ASIN-input-accepts-valid-ASIN-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/analyze-Quick-Analyze-Modal-ASIN-input-accepts-valid-ASIN-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/analyze-Quick-Analyze-Modal-ASIN-input-accepts-valid-ASIN-chromium/error-context.md
+
+  4) [chromium] › tests/e2e/analyze.spec.ts:81:3 › Quick Analyze Modal › UPC input accepts valid UPC 
+
+    TimeoutError: page.goto: Timeout 90000ms exceeded.
+    Call log:
+    [2m  - navigating to "https://habexa-frontend.onrender.com/", waiting until "networkidle"[22m
+
+
+       at ../utils/helpers.ts:9
+
+       7 | export async function login(page: Page, email: string = TEST_CREDENTIALS.email, password: string = TEST_CREDENTIALS.password) {
+       8 |   // Navigate to root first (SPA routing issue - /login returns 404)
+    >  9 |   await page.goto('/', { waitUntil: 'networkidle', timeout: 90000 });
+         |              ^
+      10 |   
+      11 |   // Wait for React to load and render
+      12 |   await page.waitForLoadState('networkidle');
+        at login (/Users/lindseystevens/habexa2.0/frontend/tests/utils/helpers.ts:9:14)
+        at /Users/lindseystevens/habexa2.0/frontend/tests/e2e/analyze.spec.ts:8:11
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/analyze-Quick-Analyze-Modal-UPC-input-accepts-valid-UPC-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/analyze-Quick-Analyze-Modal-UPC-input-accepts-valid-UPC-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/analyze-Quick-Analyze-Modal-UPC-input-accepts-valid-UPC-chromium/error-context.md
+
+  5) [chromium] › tests/e2e/analyze.spec.ts:148:3 › Quick Analyze Modal › Analyze button submits ───
+
+    TimeoutError: page.goto: Timeout 90000ms exceeded.
+    Call log:
+    [2m  - navigating to "https://habexa-frontend.onrender.com/", waiting until "networkidle"[22m
+
+
+       at ../utils/helpers.ts:9
+
+       7 | export async function login(page: Page, email: string = TEST_CREDENTIALS.email, password: string = TEST_CREDENTIALS.password) {
+       8 |   // Navigate to root first (SPA routing issue - /login returns 404)
+    >  9 |   await page.goto('/', { waitUntil: 'networkidle', timeout: 90000 });
+         |              ^
+      10 |   
+      11 |   // Wait for React to load and render
+      12 |   await page.waitForLoadState('networkidle');
+        at login (/Users/lindseystevens/habexa2.0/frontend/tests/utils/helpers.ts:9:14)
+        at /Users/lindseystevens/habexa2.0/frontend/tests/e2e/analyze.spec.ts:8:11
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/analyze-Quick-Analyze-Modal-Analyze-button-submits-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/analyze-Quick-Analyze-Modal-Analyze-button-submits-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/analyze-Quick-Analyze-Modal-Analyze-button-submits-chromium/error-context.md
+
+  6) [chromium] › tests/e2e/analyze.spec.ts:180:3 › Quick Analyze Modal › Loading state shows during analysis 
+
+    TimeoutError: page.goto: Timeout 90000ms exceeded.
+    Call log:
+    [2m  - navigating to "https://habexa-frontend.onrender.com/", waiting until "networkidle"[22m
+
+
+       at ../utils/helpers.ts:9
+
+       7 | export async function login(page: Page, email: string = TEST_CREDENTIALS.email, password: string = TEST_CREDENTIALS.password) {
+       8 |   // Navigate to root first (SPA routing issue - /login returns 404)
+    >  9 |   await page.goto('/', { waitUntil: 'networkidle', timeout: 90000 });
+         |              ^
+      10 |   
+      11 |   // Wait for React to load and render
+      12 |   await page.waitForLoadState('networkidle');
+        at login (/Users/lindseystevens/habexa2.0/frontend/tests/utils/helpers.ts:9:14)
+        at /Users/lindseystevens/habexa2.0/frontend/tests/e2e/analyze.spec.ts:8:11
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/analyze-Quick-Analyze-Moda-08ad3-state-shows-during-analysis-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/analyze-Quick-Analyze-Moda-08ad3-state-shows-during-analysis-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/analyze-Quick-Analyze-Moda-08ad3-state-shows-during-analysis-chromium/error-context.md
+
+  7) [chromium] › tests/e2e/analyze.spec.ts:208:3 › Quick Analyze Modal › Error handling for invalid ASIN 
+
+    TimeoutError: page.goto: Timeout 90000ms exceeded.
+    Call log:
+    [2m  - navigating to "https://habexa-frontend.onrender.com/", waiting until "networkidle"[22m
+
+
+       at ../utils/helpers.ts:9
+
+       7 | export async function login(page: Page, email: string = TEST_CREDENTIALS.email, password: string = TEST_CREDENTIALS.password) {
+       8 |   // Navigate to root first (SPA routing issue - /login returns 404)
+    >  9 |   await page.goto('/', { waitUntil: 'networkidle', timeout: 90000 });
+         |              ^
+      10 |   
+      11 |   // Wait for React to load and render
+      12 |   await page.waitForLoadState('networkidle');
+        at login (/Users/lindseystevens/habexa2.0/frontend/tests/utils/helpers.ts:9:14)
+        at /Users/lindseystevens/habexa2.0/frontend/tests/e2e/analyze.spec.ts:8:11
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/analyze-Quick-Analyze-Modal-Error-handling-for-invalid-ASIN-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/analyze-Quick-Analyze-Modal-Error-handling-for-invalid-ASIN-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/analyze-Quick-Analyze-Modal-Error-handling-for-invalid-ASIN-chromium/error-context.md
+
+  8) [chromium] › tests/e2e/analyze.spec.ts:278:3 › Analyze Page › Page loads ──────────────────────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=/Analyze|Product/i').first()
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=/Analyze|Product/i').first()[22m
+
+
+      280 |     await page.waitForLoadState('networkidle');
+      281 |     
+    > 282 |     await expect(page.locator('text=/Analyze|Product/i').first()).toBeVisible();
+          |                                                                   ^
+      283 |   });
+      284 |
+      285 |   test('Input ASIN works', async ({ page }) => {
+        at /Users/lindseystevens/habexa2.0/frontend/tests/e2e/analyze.spec.ts:282:67
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/analyze-Analyze-Page-Page-loads-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/analyze-Analyze-Page-Page-loads-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/analyze-Analyze-Page-Page-loads-chromium/error-context.md
+
+  9) [chromium] › tests/e2e/auth.spec.ts:17:3 › Authentication › Login with invalid credentials shows error 
+
+    [31mTest timeout of 120000ms exceeded.[39m
+
+    Error: page.fill: Test timeout of 120000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('input[type="email"]')[22m
+
+
+      18 |     await page.goto('/login');
+      19 |     
+    > 20 |     await page.fill('input[type="email"]', 'invalid@example.com');
+         |                ^
+      21 |     await page.fill('input[type="password"]', 'wrongpassword');
+      22 |     await page.click('button[type="submit"]');
+      23 |     
+        at /Users/lindseystevens/habexa2.0/frontend/tests/e2e/auth.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/auth-Authentication-Login--6cede-lid-credentials-shows-error-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/auth-Authentication-Login--6cede-lid-credentials-shows-error-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/auth-Authentication-Login--6cede-lid-credentials-shows-error-chromium/error-context.md
+
+  10) [chromium] › tests/e2e/auth.spec.ts:31:3 › Authentication › Register new account ─────────────
+
+    [31mTest timeout of 120000ms exceeded.[39m
+
+    Error: page.fill: Test timeout of 120000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('input[placeholder*="Name" i], input[label*="Name" i]')[22m
+
+
+      34 |     await page.goto('/register');
+      35 |     
+    > 36 |     await page.fill('input[placeholder*="Name" i], input[label*="Name" i]', 'Test User');
+         |                ^
+      37 |     await page.fill('input[type="email"]', testEmail);
+      38 |     await page.fill('input[type="password"]', 'Test123!@#');
+      39 |     await page.click('button[type="submit"]');
+        at /Users/lindseystevens/habexa2.0/frontend/tests/e2e/auth.spec.ts:36:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/auth-Authentication-Register-new-account-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/auth-Authentication-Register-new-account-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/auth-Authentication-Register-new-account-chromium/error-context.md
+
+  11) [chromium] › tests/e2e/auth.spec.ts:45:3 › Authentication › Register with existing email shows error 
+
+    [31mTest timeout of 120000ms exceeded.[39m
+
+    Error: page.fill: Test timeout of 120000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('input[placeholder*="Name" i], input[label*="Name" i]')[22m
+
+
+      46 |     await page.goto('/register');
+      47 |     
+    > 48 |     await page.fill('input[placeholder*="Name" i], input[label*="Name" i]', 'Test User');
+         |                ^
+      49 |     await page.fill('input[type="email"]', TEST_CREDENTIALS.email);
+      50 |     await page.fill('input[type="password"]', 'Test123!@#');
+      51 |     await page.click('button[type="submit"]');
+        at /Users/lindseystevens/habexa2.0/frontend/tests/e2e/auth.spec.ts:48:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/auth-Authentication-Register-with-existing-email-shows-error-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/auth-Authentication-Register-with-existing-email-shows-error-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/auth-Authentication-Register-with-existing-email-shows-error-chromium/error-context.md
+
+  12) [chromium] › tests/e2e/auth.spec.ts:95:3 › Authentication › Protected routes redirect to login when not authenticated 
+
+    Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveURL[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Expected pattern: [32m/\/login/[39m
+    Received string:  [31m"https://habexa-frontend.onrender.com/dashboard"[39m
+    Timeout: 5000ms
+
+    Call log:
+    [2m  - Expect "toHaveURL" with timeout 5000ms[22m
+    [2m    9 × unexpected value "https://habexa-frontend.onrender.com/dashboard"[22m
+
+
+      101 |     
+      102 |     // Should redirect to login
+    > 103 |     await expect(page).toHaveURL(/\/login/, { timeout: 5000 });
+          |                        ^
+      104 |   });
+      105 | });
+      106 |
+        at /Users/lindseystevens/habexa2.0/frontend/tests/e2e/auth.spec.ts:103:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/auth-Authentication-Protec-f4510-ogin-when-not-authenticated-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/auth-Authentication-Protec-f4510-ogin-when-not-authenticated-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/auth-Authentication-Protec-f4510-ogin-when-not-authenticated-chromium/error-context.md
+
+  13) [chromium] › tests/e2e/buylist.spec.ts:12:3 › Buy List Page › Page loads, buy list items display 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=/Buy List|empty/i').first()
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=/Buy List|empty/i').first()[22m
+
+
+      11 |
+      12 |   test('Page loads, buy list items display', async ({ page }) => {
+    > 13 |     await expect(page.locator('text=/Buy List|empty/i').first()).toBeVisible();
+         |                                                                  ^
+      14 |   });
+      15 |
+      16 |   test('Quantity adjustment works', async ({ page }) => {
+        at /Users/lindseystevens/habexa2.0/frontend/tests/e2e/buylist.spec.ts:13:66
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/buylist-Buy-List-Page-Page-loads-buy-list-items-display-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/buylist-Buy-List-Page-Page-loads-buy-list-items-display-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/buylist-Buy-List-Page-Page-loads-buy-list-items-display-chromium/error-context.md
+
+  14) [chromium] › tests/e2e/buylist.spec.ts:113:3 › Buy List Page › Empty state displays when no items 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
+
+    Received: [31mfalse[39m
+
+      120 |     
+      121 |     // Either empty state or items should be visible
+    > 122 |     expect(isEmpty || hasItemsResult).toBeTruthy();
+          |                                       ^
+      123 |   });
+      124 |
+      125 |   test('Total cost calculates correctly', async ({ page }) => {
+        at /Users/lindseystevens/habexa2.0/frontend/tests/e2e/buylist.spec.ts:122:39
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/buylist-Buy-List-Page-Empty-state-displays-when-no-items-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/buylist-Buy-List-Page-Empty-state-displays-when-no-items-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/buylist-Buy-List-Page-Empty-state-displays-when-no-items-chromium/error-context.md
+
+  15) [chromium] › tests/e2e/dashboard.spec.ts:37:3 › Dashboard › Stats display correctly ──────────
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBeGreaterThan[2m([22m[32mexpected[39m[2m)[22m
+
+    Expected: > [32m0[39m
+    Received:   [31m0[39m
+
+      47 |     // At least some stats should be visible
+      48 |     const count = await statCards.count();
+    > 49 |     expect(count).toBeGreaterThan(0);
+         |                   ^
+      50 |   });
+      51 |
+      52 |   test('Deal cards render', async ({ page }) => {
+        at /Users/lindseystevens/habexa2.0/frontend/tests/e2e/dashboard.spec.ts:49:19
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/dashboard-Dashboard-Stats-display-correctly-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/dashboard-Dashboard-Stats-display-correctly-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/dashboard-Dashboard-Stats-display-correctly-chromium/error-context.md
+
+  16) [chromium] › tests/e2e/deals.spec.ts:13:3 › Deals Page › Page loads, deals display ───────────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=/Deal|No deals/i').first()
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=/Deal|No deals/i').first()[22m
+
+
+      12 |
+      13 |   test('Page loads, deals display', async ({ page }) => {
+    > 14 |     await expect(page.locator('text=/Deal|No deals/i').first()).toBeVisible();
+         |                                                                 ^
+      15 |   });
+      16 |
+      17 |   test('Tabs filter correctly', async ({ page }) => {
+        at /Users/lindseystevens/habexa2.0/frontend/tests/e2e/deals.spec.ts:14:65
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/deals-Deals-Page-Page-loads-deals-display-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/deals-Deals-Page-Page-loads-deals-display-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/deals-Deals-Page-Page-loads-deals-display-chromium/error-context.md
+
+  17) [chromium] › tests/e2e/deals.spec.ts:42:3 › Deals Page › Analyze All button queues analyses ──
+
+    TimeoutError: page.goto: Timeout 90000ms exceeded.
+    Call log:
+    [2m  - navigating to "https://habexa-frontend.onrender.com/", waiting until "networkidle"[22m
+
+
+       at ../utils/helpers.ts:9
+
+       7 | export async function login(page: Page, email: string = TEST_CREDENTIALS.email, password: string = TEST_CREDENTIALS.password) {
+       8 |   // Navigate to root first (SPA routing issue - /login returns 404)
+    >  9 |   await page.goto('/', { waitUntil: 'networkidle', timeout: 90000 });
+         |              ^
+      10 |   
+      11 |   // Wait for React to load and render
+      12 |   await page.waitForLoadState('networkidle');
+        at login (/Users/lindseystevens/habexa2.0/frontend/tests/utils/helpers.ts:9:14)
+        at /Users/lindseystevens/habexa2.0/frontend/tests/e2e/deals.spec.ts:8:11
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/deals-Deals-Page-Analyze-All-button-queues-analyses-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/deals-Deals-Page-Analyze-All-button-queues-analyses-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/deals-Deals-Page-Analyze-All-button-queues-analyses-chromium/error-context.md
+
+  18) [chromium] › tests/e2e/error-handling.spec.ts:10:3 › Error Handling › 401 redirects to login ─
+
+    Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveURL[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Expected pattern: [32m/\/login/[39m
+    Received string:  [31m"https://habexa-frontend.onrender.com/dashboard"[39m
+    Timeout: 5000ms
+
+    Call log:
+    [2m  - Expect "toHaveURL" with timeout 5000ms[22m
+    [2m    9 × unexpected value "https://habexa-frontend.onrender.com/dashboard"[22m
+
+
+      19 |     
+      20 |     // Should redirect to login
+    > 21 |     await expect(page).toHaveURL(/\/login/, { timeout: 5000 });
+         |                        ^
+      22 |   });
+      23 |
+      24 |   test('403 shows forbidden message', async ({ page }) => {
+        at /Users/lindseystevens/habexa2.0/frontend/tests/e2e/error-handling.spec.ts:21:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/error-handling-Error-Handling-401-redirects-to-login-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/error-handling-Error-Handling-401-redirects-to-login-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/error-handling-Error-Handling-401-redirects-to-login-chromium/error-context.md
+
+  19) [chromium] › tests/e2e/error-handling.spec.ts:45:3 › Error Handling › 500 shows error message 
+
+    TimeoutError: page.goto: Timeout 90000ms exceeded.
+    Call log:
+    [2m  - navigating to "https://habexa-frontend.onrender.com/", waiting until "networkidle"[22m
+
+
+       at ../utils/helpers.ts:9
+
+       7 | export async function login(page: Page, email: string = TEST_CREDENTIALS.email, password: string = TEST_CREDENTIALS.password) {
+       8 |   // Navigate to root first (SPA routing issue - /login returns 404)
+    >  9 |   await page.goto('/', { waitUntil: 'networkidle', timeout: 90000 });
+         |              ^
+      10 |   
+      11 |   // Wait for React to load and render
+      12 |   await page.waitForLoadState('networkidle');
+        at login (/Users/lindseystevens/habexa2.0/frontend/tests/utils/helpers.ts:9:14)
+        at /Users/lindseystevens/habexa2.0/frontend/tests/e2e/error-handling.spec.ts:7:11
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/error-handling-Error-Handling-500-shows-error-message-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/error-handling-Error-Handling-500-shows-error-message-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/error-handling-Error-Handling-500-shows-error-message-chromium/error-context.md
+
+  20) [chromium] › tests/e2e/orders.spec.ts:12:3 › Orders Page › Page loads, orders display ────────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=/Orders|No orders/i').first()
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=/Orders|No orders/i').first()[22m
+
+
+      11 |
+      12 |   test('Page loads, orders display', async ({ page }) => {
+    > 13 |     await expect(page.locator('text=/Orders|No orders/i').first()).toBeVisible();
+         |                                                                    ^
+      14 |   });
+      15 |
+      16 |   test('Create order from buy list', async ({ page }) => {
+        at /Users/lindseystevens/habexa2.0/frontend/tests/e2e/orders.spec.ts:13:68
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/orders-Orders-Page-Page-loads-orders-display-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/orders-Orders-Page-Page-loads-orders-display-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/orders-Orders-Page-Page-loads-orders-display-chromium/error-context.md
+
+  21) [chromium] › tests/e2e/orders.spec.ts:59:3 › Orders Page › Order history displays ────────────
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
+
+    Received: [31mfalse[39m
+
+      63 |     const hasEmptyState = await page.locator('text=/No orders/i').first().isVisible({ timeout: 2000 }).catch(() => false);
+      64 |     
+    > 65 |     expect(hasOrders || hasEmptyState).toBeTruthy();
+         |                                        ^
+      66 |   });
+      67 | });
+      68 |
+        at /Users/lindseystevens/habexa2.0/frontend/tests/e2e/orders.spec.ts:65:40
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/orders-Orders-Page-Order-history-displays-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/orders-Orders-Page-Order-history-displays-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/orders-Orders-Page-Order-history-displays-chromium/error-context.md
+
+  22) [chromium] › tests/e2e/pricing.spec.ts:12:3 › Pricing Page › Page loads ──────────────────────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=/Pricing|Choose Your Plan/i').first()
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=/Pricing|Choose Your Plan/i').first()[22m
+
+
+      11 |
+      12 |   test('Page loads', async ({ page }) => {
+    > 13 |     await expect(page.locator('text=/Pricing|Choose Your Plan/i').first()).toBeVisible();
+         |                                                                            ^
+      14 |   });
+      15 |
+      16 |   test('All tiers display', async ({ page }) => {
+        at /Users/lindseystevens/habexa2.0/frontend/tests/e2e/pricing.spec.ts:13:76
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/pricing-Pricing-Page-Page-loads-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/pricing-Pricing-Page-Page-loads-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/pricing-Pricing-Page-Page-loads-chromium/error-context.md
+
+  23) [chromium] › tests/e2e/products.spec.ts:13:3 › Products Page › Page loads, products display ──
+
+    TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('text=/Products|No products|Loading/i') to be visible[22m
+
+
+      13 |   test('Page loads, products display', async ({ page }) => {
+      14 |     // Wait for products to load
+    > 15 |     await page.waitForSelector('text=/Products|No products|Loading/i', { timeout: 10000 });
+         |                ^
+      16 |     
+      17 |     // Check if products table or empty state is visible
+      18 |     const hasProducts = await page.locator('table, [data-testid="product-row"], .deal-row').first().isVisible({ timeout: 2000 }).catch(() => false);
+        at /Users/lindseystevens/habexa2.0/frontend/tests/e2e/products.spec.ts:15:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/products-Products-Page-Page-loads-products-display-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/products-Products-Page-Page-loads-products-display-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/products-Products-Page-Page-loads-products-display-chromium/error-context.md
+
+  24) [chromium] › tests/e2e/settings.spec.ts:12:3 › Settings Page - Profile › Profile tab loads ───
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=/Profile|Full Name/i').first()
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=/Profile|Full Name/i').first()[22m
+
+
+      17 |     }
+      18 |     
+    > 19 |     await expect(page.locator('text=/Profile|Full Name/i').first()).toBeVisible();
+         |                                                                     ^
+      20 |   });
+      21 |
+      22 |   test('Current values display', async ({ page }) => {
+        at /Users/lindseystevens/habexa2.0/frontend/tests/e2e/settings.spec.ts:19:69
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/settings-Settings-Page---Profile-Profile-tab-loads-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/settings-Settings-Page---Profile-Profile-tab-loads-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/settings-Settings-Page---Profile-Profile-tab-loads-chromium/error-context.md
+
+  25) [chromium] › tests/e2e/subscriptions.spec.ts:55:3 › Subscription Tier Testing - Starter › Correct features accessible on Starter tier 
+
+    TimeoutError: page.goto: Timeout 90000ms exceeded.
+    Call log:
+    [2m  - navigating to "https://habexa-frontend.onrender.com/", waiting until "networkidle"[22m
+
+
+       at ../utils/helpers.ts:9
+
+       7 | export async function login(page: Page, email: string = TEST_CREDENTIALS.email, password: string = TEST_CREDENTIALS.password) {
+       8 |   // Navigate to root first (SPA routing issue - /login returns 404)
+    >  9 |   await page.goto('/', { waitUntil: 'networkidle', timeout: 90000 });
+         |              ^
+      10 |   
+      11 |   // Wait for React to load and render
+      12 |   await page.waitForLoadState('networkidle');
+        at login (/Users/lindseystevens/habexa2.0/frontend/tests/utils/helpers.ts:9:14)
+        at /Users/lindseystevens/habexa2.0/frontend/tests/e2e/subscriptions.spec.ts:52:11
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/subscriptions-Subscription-9a146--accessible-on-Starter-tier-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/subscriptions-Subscription-9a146--accessible-on-Starter-tier-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/subscriptions-Subscription-9a146--accessible-on-Starter-tier-chromium/error-context.md
+
+  26) [chromium] › tests/e2e/suppliers.spec.ts:13:3 › Suppliers Page › Page loads, suppliers display 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=/Suppliers|No suppliers/i').first()
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=/Suppliers|No suppliers/i').first()[22m
+
+
+      12 |
+      13 |   test('Page loads, suppliers display', async ({ page }) => {
+    > 14 |     await expect(page.locator('text=/Suppliers|No suppliers/i').first()).toBeVisible();
+         |                                                                          ^
+      15 |   });
+      16 |
+      17 |   test('Add supplier button opens modal', async ({ page }) => {
+        at /Users/lindseystevens/habexa2.0/frontend/tests/e2e/suppliers.spec.ts:14:74
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/suppliers-Suppliers-Page-Page-loads-suppliers-display-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/suppliers-Suppliers-Page-Page-loads-suppliers-display-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/suppliers-Suppliers-Page-Page-loads-suppliers-display-chromium/error-context.md
+
+  27) [chromium] › tests/e2e/telegram.spec.ts:23:3 › Telegram Integration › Connection status shows correctly 
+
+    TimeoutError: page.goto: Timeout 90000ms exceeded.
+    Call log:
+    [2m  - navigating to "https://habexa-frontend.onrender.com/", waiting until "networkidle"[22m
+
+
+       at ../utils/helpers.ts:9
+
+       7 | export async function login(page: Page, email: string = TEST_CREDENTIALS.email, password: string = TEST_CREDENTIALS.password) {
+       8 |   // Navigate to root first (SPA routing issue - /login returns 404)
+    >  9 |   await page.goto('/', { waitUntil: 'networkidle', timeout: 90000 });
+         |              ^
+      10 |   
+      11 |   // Wait for React to load and render
+      12 |   await page.waitForLoadState('networkidle');
+        at login (/Users/lindseystevens/habexa2.0/frontend/tests/utils/helpers.ts:9:14)
+        at /Users/lindseystevens/habexa2.0/frontend/tests/e2e/telegram.spec.ts:7:11
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/telegram-Telegram-Integrat-e4fd6-tion-status-shows-correctly-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/telegram-Telegram-Integrat-e4fd6-tion-status-shows-correctly-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/telegram-Telegram-Integrat-e4fd6-tion-status-shows-correctly-chromium/error-context.md
+
+  28) [chromium] › tests/e2e/ui-ux.spec.ts:92:3 › UI/UX › Error toasts display (not alert()) ───────
+
+    TimeoutError: page.goto: Timeout 90000ms exceeded.
+    Call log:
+    [2m  - navigating to "https://habexa-frontend.onrender.com/", waiting until "networkidle"[22m
+
+
+       at ../utils/helpers.ts:9
+
+       7 | export async function login(page: Page, email: string = TEST_CREDENTIALS.email, password: string = TEST_CREDENTIALS.password) {
+       8 |   // Navigate to root first (SPA routing issue - /login returns 404)
+    >  9 |   await page.goto('/', { waitUntil: 'networkidle', timeout: 90000 });
+         |              ^
+      10 |   
+      11 |   // Wait for React to load and render
+      12 |   await page.waitForLoadState('networkidle');
+        at login (/Users/lindseystevens/habexa2.0/frontend/tests/utils/helpers.ts:9:14)
+        at /Users/lindseystevens/habexa2.0/frontend/tests/e2e/ui-ux.spec.ts:7:11
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/ui-ux-UI-UX-Error-toasts-display-not-alert--chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/ui-ux-UI-UX-Error-toasts-display-not-alert--chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/ui-ux-UI-UX-Error-toasts-display-not-alert--chromium/error-context.md
+
+  28 failed
+    [chromium] › tests/e2e/analyze.spec.ts:11:3 › Quick Analyze Modal › Modal opens ────────────────
+    [chromium] › tests/e2e/analyze.spec.ts:36:3 › Quick Analyze Modal › ASIN/UPC toggle works ──────
+    [chromium] › tests/e2e/analyze.spec.ts:62:3 › Quick Analyze Modal › ASIN input accepts valid ASIN 
+    [chromium] › tests/e2e/analyze.spec.ts:81:3 › Quick Analyze Modal › UPC input accepts valid UPC 
+    [chromium] › tests/e2e/analyze.spec.ts:148:3 › Quick Analyze Modal › Analyze button submits ────
+    [chromium] › tests/e2e/analyze.spec.ts:180:3 › Quick Analyze Modal › Loading state shows during analysis 
+    [chromium] › tests/e2e/analyze.spec.ts:208:3 › Quick Analyze Modal › Error handling for invalid ASIN 
+    [chromium] › tests/e2e/analyze.spec.ts:278:3 › Analyze Page › Page loads ───────────────────────
+    [chromium] › tests/e2e/auth.spec.ts:17:3 › Authentication › Login with invalid credentials shows error 
+    [chromium] › tests/e2e/auth.spec.ts:31:3 › Authentication › Register new account ───────────────
+    [chromium] › tests/e2e/auth.spec.ts:45:3 › Authentication › Register with existing email shows error 
+    [chromium] › tests/e2e/auth.spec.ts:95:3 › Authentication › Protected routes redirect to login when not authenticated 
+    [chromium] › tests/e2e/buylist.spec.ts:12:3 › Buy List Page › Page loads, buy list items display 
+    [chromium] › tests/e2e/buylist.spec.ts:113:3 › Buy List Page › Empty state displays when no items 
+    [chromium] › tests/e2e/dashboard.spec.ts:37:3 › Dashboard › Stats display correctly ────────────
+    [chromium] › tests/e2e/deals.spec.ts:13:3 › Deals Page › Page loads, deals display ─────────────
+    [chromium] › tests/e2e/deals.spec.ts:42:3 › Deals Page › Analyze All button queues analyses ────
+    [chromium] › tests/e2e/error-handling.spec.ts:10:3 › Error Handling › 401 redirects to login ───
+    [chromium] › tests/e2e/error-handling.spec.ts:45:3 › Error Handling › 500 shows error message ──
+    [chromium] › tests/e2e/orders.spec.ts:12:3 › Orders Page › Page loads, orders display ──────────
+    [chromium] › tests/e2e/orders.spec.ts:59:3 › Orders Page › Order history displays ──────────────
+    [chromium] › tests/e2e/pricing.spec.ts:12:3 › Pricing Page › Page loads ────────────────────────
+    [chromium] › tests/e2e/products.spec.ts:13:3 › Products Page › Page loads, products display ────
+    [chromium] › tests/e2e/settings.spec.ts:12:3 › Settings Page - Profile › Profile tab loads ─────
+    [chromium] › tests/e2e/subscriptions.spec.ts:55:3 › Subscription Tier Testing - Starter › Correct features accessible on Starter tier 
+    [chromium] › tests/e2e/suppliers.spec.ts:13:3 › Suppliers Page › Page loads, suppliers display ─
+    [chromium] › tests/e2e/telegram.spec.ts:23:3 › Telegram Integration › Connection status shows correctly 
+    [chromium] › tests/e2e/ui-ux.spec.ts:92:3 › UI/UX › Error toasts display (not alert()) ─────────
+  74 skipped
+  33 passed (6.8m)
+ ELIFECYCLE  Command failed with exit code 1.

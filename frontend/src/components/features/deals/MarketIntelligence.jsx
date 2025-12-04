@@ -4,6 +4,7 @@ import {
   TrendingUp, TrendingDown, Package, Star, Users, 
   AlertTriangle, ShoppingCart, Award, Zap
 } from 'lucide-react';
+import { habexa } from '../../../theme';
 
 export default function MarketIntelligence({ deal, analysis, spApiOffers, spApiSalesEstimate }) {
   // Real data from SP-API
@@ -29,12 +30,12 @@ export default function MarketIntelligence({ deal, analysis, spApiOffers, spApiS
 
   // Competition Level - Based on REAL seller count from SP-API
   const getCompetitionLevel = () => {
-    if (amazonSells) return { level: 'Very High', color: '#EF4444', score: 95 };
-    if (sellerCount === 0) return { level: 'Unknown', color: '#6B7280', score: 50 };
-    if (sellerCount <= 3) return { level: 'Low', color: '#10B981', score: 20 };
-    if (sellerCount <= 7) return { level: 'Medium', color: '#F59E0B', score: 50 };
-    if (sellerCount <= 15) return { level: 'High', color: '#F97316', score: 75 };
-    return { level: 'Very High', color: '#EF4444', score: 90 };
+    if (amazonSells) return { level: 'Very High', color: habexa.error.main, score: 95 };
+    if (sellerCount === 0) return { level: 'Unknown', color: habexa.gray[400], score: 50 };
+    if (sellerCount <= 3) return { level: 'Low', color: habexa.success.main, score: 20 };
+    if (sellerCount <= 7) return { level: 'Medium', color: habexa.warning.main, score: 50 };
+    if (sellerCount <= 15) return { level: 'High', color: habexa.warning.dark, score: 75 };
+    return { level: 'Very High', color: habexa.error.main, score: 90 };
   };
 
   // Demand Score - Based on BSR and sales estimate
@@ -52,11 +53,11 @@ export default function MarketIntelligence({ deal, analysis, spApiOffers, spApiS
 
   // Sales Velocity
   const getSalesVelocity = () => {
-    if (estimatedMonthlySales >= 300) return { label: 'Very High', color: '#10B981' };
-    if (estimatedMonthlySales >= 100) return { label: 'High', color: '#22C55E' };
-    if (estimatedMonthlySales >= 30) return { label: 'Medium', color: '#F59E0B' };
-    if (estimatedMonthlySales > 0) return { label: 'Low', color: '#EF4444' };
-    return { label: 'Unknown', color: '#6B7280' };
+    if (estimatedMonthlySales >= 300) return { label: 'Very High', color: habexa.success.main };
+    if (estimatedMonthlySales >= 100) return { label: 'High', color: habexa.success.dark };
+    if (estimatedMonthlySales >= 30) return { label: 'Medium', color: habexa.warning.main };
+    if (estimatedMonthlySales > 0) return { label: 'Low', color: habexa.error.main };
+    return { label: 'Unknown', color: habexa.gray[400] };
   };
 
   // Opportunity Score - Combines ROI, demand, and competition
@@ -160,9 +161,9 @@ export default function MarketIntelligence({ deal, analysis, spApiOffers, spApiS
               mt: 1, 
               height: 6, 
               borderRadius: 3,
-              bgcolor: '#1a1a2e',
+              bgcolor: habexa.navy.main,
               '& .MuiLinearProgress-bar': { 
-                bgcolor: demandScore >= 70 ? '#10B981' : demandScore >= 40 ? '#F59E0B' : '#EF4444' 
+                bgcolor: demandScore >= 70 ? habexa.success.main : demandScore >= 40 ? habexa.warning.main : habexa.error.main 
               }
             }} 
           />
@@ -179,9 +180,9 @@ export default function MarketIntelligence({ deal, analysis, spApiOffers, spApiS
               mt: 1, 
               height: 6, 
               borderRadius: 3,
-              bgcolor: '#1a1a2e',
+              bgcolor: habexa.navy.main,
               '& .MuiLinearProgress-bar': { 
-                bgcolor: opportunityScore >= 70 ? '#10B981' : opportunityScore >= 40 ? '#F59E0B' : '#EF4444' 
+                bgcolor: opportunityScore >= 70 ? habexa.success.main : opportunityScore >= 40 ? habexa.warning.main : habexa.error.main 
               }
             }} 
           />
@@ -221,11 +222,11 @@ export default function MarketIntelligence({ deal, analysis, spApiOffers, spApiS
         {/* Est. Monthly Sales */}
         <Box sx={{ 
           p: 2, 
-          bgcolor: '#1a1a2e', 
+          bgcolor: habexa.navy.main, 
           borderRadius: 2,
           textAlign: 'center'
         }}>
-          <Package size={20} color="#8B5CF6" />
+          <Package size={20} color={habexa.purple.light} />
           <Typography variant="caption" display="block" color="text.secondary">
             Est. Monthly Sales
           </Typography>
@@ -238,11 +239,11 @@ export default function MarketIntelligence({ deal, analysis, spApiOffers, spApiS
         {/* Sales Velocity */}
         <Box sx={{ 
           p: 2, 
-          bgcolor: '#1a1a2e', 
+          bgcolor: habexa.navy.main, 
           borderRadius: 2,
           textAlign: 'center'
         }}>
-          <TrendingUp size={20} color="#F59E0B" />
+          <TrendingUp size={20} color={habexa.warning.main} />
           <Typography variant="caption" display="block" color="text.secondary">
             Sales Velocity
           </Typography>
@@ -254,11 +255,11 @@ export default function MarketIntelligence({ deal, analysis, spApiOffers, spApiS
         {/* Seller Count */}
         <Box sx={{ 
           p: 2, 
-          bgcolor: '#1a1a2e', 
+          bgcolor: habexa.navy.main, 
           borderRadius: 2,
           textAlign: 'center'
         }}>
-          <Users size={20} color="#3B82F6" />
+          <Users size={20} color={habexa.info.main} />
           <Typography variant="caption" display="block" color="text.secondary">
             Total Sellers
           </Typography>
@@ -275,11 +276,11 @@ export default function MarketIntelligence({ deal, analysis, spApiOffers, spApiS
         {/* Rating */}
         <Box sx={{ 
           p: 2, 
-          bgcolor: '#1a1a2e', 
+          bgcolor: habexa.navy.main, 
           borderRadius: 2,
           textAlign: 'center'
         }}>
-          <Star size={20} color="#FBBF24" />
+          <Star size={20} color={habexa.warning.main} />
           <Typography variant="caption" display="block" color="text.secondary">
             Rating
           </Typography>
@@ -296,11 +297,11 @@ export default function MarketIntelligence({ deal, analysis, spApiOffers, spApiS
         {/* BSR */}
         <Box sx={{ 
           p: 2, 
-          bgcolor: '#1a1a2e', 
+          bgcolor: habexa.navy.main, 
           borderRadius: 2,
           textAlign: 'center'
         }}>
-          <Award size={20} color="#10B981" />
+          <Award size={20} color={habexa.success.main} />
           <Typography variant="caption" display="block" color="text.secondary">
             BSR
           </Typography>
@@ -315,11 +316,11 @@ export default function MarketIntelligence({ deal, analysis, spApiOffers, spApiS
         {/* Buy Box Price */}
         <Box sx={{ 
           p: 2, 
-          bgcolor: '#1a1a2e', 
+          bgcolor: habexa.navy.main, 
           borderRadius: 2,
           textAlign: 'center'
         }}>
-          <ShoppingCart size={20} color="#EC4899" />
+          <ShoppingCart size={20} color={habexa.purple.main} />
           <Typography variant="caption" display="block" color="text.secondary">
             Buy Box Price
           </Typography>
@@ -338,15 +339,15 @@ export default function MarketIntelligence({ deal, analysis, spApiOffers, spApiS
       {amazonSells && (
         <Box sx={{ 
           p: 2, 
-          bgcolor: '#7F1D1D20', 
-          border: '1px solid #EF4444',
+          bgcolor: habexa.error.light,
+          border: `1px solid ${habexa.error.main}`,
           borderRadius: 2,
           mb: 3,
           display: 'flex',
           alignItems: 'center',
           gap: 2
         }}>
-          <AlertTriangle size={24} color="#EF4444" />
+          <AlertTriangle size={24} color={habexa.error.main} />
           <Box>
             <Typography fontWeight="600" color="error.main">
               ⚠️ Amazon is Selling This Product
@@ -374,21 +375,21 @@ export default function MarketIntelligence({ deal, analysis, spApiOffers, spApiS
                   display: 'flex',
                   alignItems: 'center',
                   gap: 1.5,
-                  bgcolor: insight.type === 'success' ? '#10B98120' :
-                           insight.type === 'warning' ? '#F59E0B20' :
-                           insight.type === 'danger' ? '#EF444420' : '#3B82F620',
+                  bgcolor: insight.type === 'success' ? habexa.success.light :
+                           insight.type === 'warning' ? habexa.warning.light :
+                           insight.type === 'danger' ? habexa.error.light : habexa.info.light,
                   borderLeft: '3px solid',
-                  borderColor: insight.type === 'success' ? '#10B981' :
-                               insight.type === 'warning' ? '#F59E0B' :
-                               insight.type === 'danger' ? '#EF4444' : '#3B82F6'
+                  borderColor: insight.type === 'success' ? habexa.success.main :
+                               insight.type === 'warning' ? habexa.warning.main :
+                               insight.type === 'danger' ? habexa.error.main : habexa.info.main
                 }}
               >
                 <insight.icon 
                   size={18} 
                   color={
-                    insight.type === 'success' ? '#10B981' :
-                    insight.type === 'warning' ? '#F59E0B' :
-                    insight.type === 'danger' ? '#EF4444' : '#3B82F6'
+                    insight.type === 'success' ? habexa.success.main :
+                    insight.type === 'warning' ? habexa.warning.main :
+                    insight.type === 'danger' ? habexa.error.main : habexa.info.main
                   } 
                 />
                 <Typography variant="body2">{insight.text}</Typography>

@@ -11,7 +11,7 @@ import { habexa } from '../../../theme';
 import api from '../../../services/api';
 import { useNavigate } from 'react-router-dom';
 
-const QuickAnalyzeModal = ({ open, onClose, onViewDeal }) => {
+const QuickAnalyzeModal = ({ open, onClose, onViewDeal, onAnalysisComplete }) => {
   const [identifierType, setIdentifierType] = useState('asin'); // 'asin' or 'upc'
   const [asin, setAsin] = useState('');
   const [upc, setUpc] = useState('');
@@ -87,11 +87,18 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal }) => {
                 });
                 showToast('Analysis complete!', 'success');
                 
-                // Trigger refresh of products list if callback exists
+                // Call onAnalysisComplete callback to refresh data without page reload
+                if (onAnalysisComplete) {
+                  onAnalysisComplete({
+                    asin: product.asin,
+                    product_id: response.product_id,
+                    ...product
+                  });
+                }
+                
+                // Also call onViewDeal if provided (for navigation)
                 if (onViewDeal) {
-                  setTimeout(() => {
-                    window.location.reload(); // Simple refresh for now
-                  }, 1000);
+                  // Don't reload - let parent handle navigation
                 }
               } else if (job.status === 'failed') {
                 showToast('Analysis failed. Please try again.', 'error');
@@ -121,6 +128,11 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal }) => {
         // Legacy: if result is returned directly (shouldn't happen)
         setResult(response);
         showToast('Analysis complete!', 'success');
+        
+        // Call onAnalysisComplete callback
+        if (onAnalysisComplete) {
+          onAnalysisComplete(response);
+        }
       }
     } catch (error) {
       showToast(error.message || `Failed to analyze ${identifierType.toUpperCase()}`, 'error');

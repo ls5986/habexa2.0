@@ -2,11 +2,16 @@
 import { createTheme } from '@mui/material/styles';
 
 const habexa = {
-  // Primary Brand Colors
+  // Primary Brand Colors (from logo)
   purple: {
-    main: '#7C3AED',      // Vibrant Purple
+    main: '#7C3AED',      // Vibrant Purple (from logo circle)
     light: '#A78BFA',     // Primary Light
     dark: '#5B21B6',      // Primary Dark
+  },
+  brandBlue: {
+    main: '#1A1A4E',      // Dark Blue/Indigo (from logo text)
+    light: '#2D2D6E',     // Lighter variant
+    dark: '#0F0F2E',      // Darker variant
   },
   navy: {
     main: '#1A1A2E',      // Surface (Card backgrounds)
@@ -29,6 +34,11 @@ const habexa = {
     main: '#EF4444',      // Error Red
     light: 'rgba(239, 68, 68, 0.1)',
     dark: '#DC2626',
+  },
+  info: {
+    main: '#3B82F6',      // Info Blue (used in Products stages)
+    light: 'rgba(59, 130, 246, 0.1)',
+    dark: '#2563EB',
   },
   
   // Neutrals (Dark Mode)

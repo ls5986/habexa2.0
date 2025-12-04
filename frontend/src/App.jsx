@@ -1,13 +1,12 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider } from '@mui/material/styles';
-import { CssBaseline, CircularProgress, Box } from '@mui/material';
+import { CircularProgress, Box } from '@mui/material';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { ToastProvider } from './context/ToastContext';
 import { StripeProvider } from './context/StripeContext';
+import { ThemeProvider } from './context/ThemeContext';
 import ErrorBoundary from './components/ErrorBoundary';
-import theme from './theme';
 import './index.css';
 import AppLayout from './components/layout/AppLayout';
 
@@ -54,8 +53,7 @@ const ProtectedRoute = ({ children }) => {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
+      <ThemeProvider>
         <AuthProvider>
           <NotificationProvider>
             <ToastProvider>
@@ -75,7 +73,6 @@ function App() {
                   <ProtectedRoute>
                     <AppLayout>
                       <Routes>
-                        <Route path="/dashboard" element={<Navigate to="/dashboard" replace />} />
                         <Route path="/dashboard" element={<Suspense fallback={<Loading />}><Dashboard /></Suspense>} />
                         <Route path="/deals" element={<Navigate to="/products" replace />} />
                         <Route path="/deals/:dealId" element={<Suspense fallback={<Loading />}><DealDetail /></Suspense>} />
@@ -87,7 +84,9 @@ function App() {
                         <Route path="/analyze" element={<Suspense fallback={<Loading />}><Analyze /></Suspense>} />
                         <Route path="/settings" element={<Suspense fallback={<Loading />}><Settings /></Suspense>} />
                         <Route path="/pricing" element={<Suspense fallback={<Loading />}><Pricing /></Suspense>} />
-                        <Route path="/debug" element={<Suspense fallback={<Loading />}><Debug /></Suspense>} />
+                        {import.meta.env.DEV && (
+                          <Route path="/debug" element={<Suspense fallback={<Loading />}><Debug /></Suspense>} />
+                        )}
                       </Routes>
                     </AppLayout>
                   </ProtectedRoute>

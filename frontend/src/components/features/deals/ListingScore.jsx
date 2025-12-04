@@ -3,6 +3,7 @@ import {
   Box, Typography, Card, CardContent, Grid, LinearProgress, Chip
 } from '@mui/material';
 import { FileText, CheckCircle, AlertTriangle, Star } from 'lucide-react';
+import { habexa } from '../../../theme';
 
 export default function ListingScore({ analysis, keepaData }) {
   // Calculate listing quality score
@@ -56,9 +57,9 @@ export default function ListingScore({ analysis, keepaData }) {
 
   const score = calculateScore();
   const getScoreColor = () => {
-    if (score >= 80) return '#10B981';
-    if (score >= 60) return '#F59E0B';
-    return '#EF4444';
+    if (score >= 80) return habexa.success.main;
+    if (score >= 60) return habexa.warning.main;
+    return habexa.error.main;
   };
 
   const getScoreLabel = () => {
@@ -73,7 +74,7 @@ export default function ListingScore({ analysis, keepaData }) {
       <Card>
         <CardContent>
           <Box sx={{ textAlign: 'center', py: 6 }}>
-            <FileText size={48} color="#8B8B9B" style={{ marginBottom: 16 }} />
+            <FileText size={48} color={habexa.gray[400]} style={{ marginBottom: 16 }} />
             <Typography variant="h6" gutterBottom>No Analysis Data</Typography>
             <Typography color="text.secondary">
               Analyze the product to see listing quality score.
@@ -107,7 +108,7 @@ export default function ListingScore({ analysis, keepaData }) {
               mt: 2, 
               height: 12, 
               borderRadius: 6,
-              bgcolor: '#252540',
+              bgcolor: habexa.navy.light,
               '& .MuiLinearProgress-bar': { bgcolor: getScoreColor() }
             }}
           />
@@ -124,12 +125,12 @@ export default function ListingScore({ analysis, keepaData }) {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
                 {analysis.image_url ? (
                   <>
-                    <CheckCircle size={16} color="#10B981" />
+                    <CheckCircle size={16} color={habexa.success.main} />
                     <Typography variant="body2">Present</Typography>
                   </>
                 ) : (
                   <>
-                    <AlertTriangle size={16} color="#EF4444" />
+                    <AlertTriangle size={16} color={habexa.error.main} />
                     <Typography variant="body2">Missing</Typography>
                   </>
                 )}
@@ -142,12 +143,12 @@ export default function ListingScore({ analysis, keepaData }) {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
                 {analysis.product_title ? (
                   <>
-                    <CheckCircle size={16} color="#10B981" />
+                    <CheckCircle size={16} color={habexa.success.main} />
                     <Typography variant="body2">Good</Typography>
                   </>
                 ) : (
                   <>
-                    <AlertTriangle size={16} color="#EF4444" />
+                    <AlertTriangle size={16} color={habexa.error.main} />
                     <Typography variant="body2">Missing</Typography>
                   </>
                 )}
@@ -158,7 +159,7 @@ export default function ListingScore({ analysis, keepaData }) {
             <Box>
               <Typography variant="caption" color="text.secondary">Reviews</Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                <Star size={16} color="#F59E0B" />
+                <Star size={16} color={habexa.warning.main} />
                 <Typography variant="body2">
                   {analysis.review_count?.toLocaleString() || 0}
                 </Typography>
@@ -169,7 +170,7 @@ export default function ListingScore({ analysis, keepaData }) {
             <Box>
               <Typography variant="caption" color="text.secondary">Rating</Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                <Star size={16} color="#F59E0B" />
+                <Star size={16} color={habexa.warning.main} />
                 <Typography variant="body2">
                   {analysis.rating?.toFixed(1) || '—'} ⭐
                 </Typography>
@@ -196,12 +197,12 @@ export default function ListingScore({ analysis, keepaData }) {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
                 {analysis.brand ? (
                   <>
-                    <CheckCircle size={16} color="#10B981" />
+                    <CheckCircle size={16} color={habexa.success.main} />
                     <Typography variant="body2">{analysis.brand}</Typography>
                   </>
                 ) : (
                   <>
-                    <AlertTriangle size={16} color="#EF4444" />
+                    <AlertTriangle size={16} color={habexa.error.main} />
                     <Typography variant="body2">Unknown</Typography>
                   </>
                 )}
