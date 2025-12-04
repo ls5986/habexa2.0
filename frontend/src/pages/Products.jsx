@@ -95,7 +95,7 @@ const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq }) 
           <Box sx={{ width: 32, height: 32, bgcolor: habexa.navy.light, borderRadius: 1 }} />
         )}
         <Typography variant="body2" noWrap sx={{ minWidth: 0 }}>
-          {deal.title || 'Pending analysis...'}
+          {deal.title || (deal.roi === undefined && deal.profit === undefined ? 'Pending analysis...' : 'Unknown Product')}
         </Typography>
       </Box>
       
@@ -258,6 +258,24 @@ export default function Products() {
         stages: { ...defaultStages, ...(statsData.stages || {}) },
         total: statsData.total || 0
       });
+      
+      // DEBUG: Log actual data structure
+      console.log('Products loaded:', dealsData.length, 'items');
+      if (dealsData.length > 0) {
+        console.log('First product fields:', Object.keys(dealsData[0]));
+        console.log('First product sample:', {
+          asin: dealsData[0].asin,
+          title: dealsData[0].title,
+          stage: dealsData[0].stage,
+          status: dealsData[0].status,
+          product_status: dealsData[0].product_status,
+          analysis_status: dealsData[0].analysis_status,
+          roi: dealsData[0].roi,
+          profit: dealsData[0].profit,
+          deal_score: dealsData[0].deal_score
+        });
+      }
+      console.log('Stats data:', statsData);
       
       // Log for debugging
       if (dealsData.length === 0 && statsData.total === 0) {

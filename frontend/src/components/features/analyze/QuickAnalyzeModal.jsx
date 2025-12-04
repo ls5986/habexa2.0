@@ -70,35 +70,98 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal, onAnalysisComplete }) =>
               const job = jobRes.data;
               
               if (job.status === 'completed') {
-                // Fetch the product/analysis result
-                const productRes = await api.get(`/products/${response.product_id}`);
-                const product = productRes.data;
-                
-                // Format result for display
-                setResult({
-                  asin: product.asin,
-                  title: product.title,
-                  deal_score: product.deal_score || 'N/A',
-                  net_profit: product.net_profit || 0,
-                  roi: product.roi || 0,
-                  gating_status: product.gating_status || 'unknown',
-                  meets_threshold: product.meets_threshold || false,
-                  is_profitable: (product.net_profit || 0) > 0
-                });
-                showToast('Analysis complete!', 'success');
-                
-                // Call onAnalysisComplete callback to refresh data without page reload
-                if (onAnalysisComplete) {
-                  onAnalysisComplete({
-                    asin: product.asin,
-                    product_id: response.product_id,
-                    ...product
-                  });
+                // FIRST: Check if job has result data directly
+                if (job.result && (job.result.roi !== undefined || job.result.net_profit !== undefined)) {
+                  console.log('Using job result:', job.result);
+                  const resultData = {
+                    asin: job.result.asin || job.metadata?.asin || response.asin,
+                    title: job.result.title || job.result.product_title || 'Unknown',
+                    deal_score: job.result.deal_score ?? 'N/A',
+                    net_profit: job.result.net_profit ?? job.result.profit ?? 0,
+                    roi: job.result.roi ?? 0,
+                    gating_status: job.result.gating_status || 'unknown',
+                    meets_threshold: job.result.meets_threshold ?? false,
+                    is_profitable: (job.result.net_profit || job.result.profit || 0) > 0
+                  };
+                  setResult(resultData);
+                  showToast('Analysis complete!', 'success');
+                  if (onAnalysisComplete) {
+                    onAnalysisComplete({
+                      asin: resultData.asin,
+                      product_id: response.product_id,
+                      ...resultData
+                    });
+                  }
+                  return;
                 }
                 
-                // Also call onViewDeal if provided (for navigation)
-                if (onViewDeal) {
-                  // Don't reload - let parent handle navigation
+                // SECOND: Try fetching from deals endpoint (has analysis data)
+                try {
+                  const asin = job.metadata?.asin || response.asin;
+                  console.log('Fetching from deals endpoint for ASIN:', asin);
+                  const dealRes = await api.get(`/deals?asin=${asin}`);
+                  const deals = Array.isArray(dealRes.data) ? dealRes.data : 
+                                Array.isArray(dealRes.data?.deals) ? dealRes.data.deals : [];
+                  const deal = deals.find(d => d.asin === asin);
+                  
+                  if (deal && (deal.deal_score !== undefined || deal.roi !== undefined)) {
+                    console.log('Using deal data:', deal);
+                    const resultData = {
+                      asin: deal.asin,
+                      title: deal.title || deal.product_title || 'Unknown',
+                      deal_score: deal.deal_score ?? 'N/A',
+                      net_profit: deal.net_profit ?? deal.profit ?? 0,
+                      roi: deal.roi ?? 0,
+                      gating_status: deal.gating_status || 'unknown',
+                      meets_threshold: deal.meets_threshold ?? false,
+                      is_profitable: (deal.net_profit || deal.profit || 0) > 0
+                    };
+                    setResult(resultData);
+                    showToast('Analysis complete!', 'success');
+                    if (onAnalysisComplete) {
+                      onAnalysisComplete({
+                        asin: resultData.asin,
+                        product_id: response.product_id,
+                        ...resultData
+                      });
+                    }
+                    return;
+                  }
+                } catch (dealErr) {
+                  console.warn('Could not fetch from deals endpoint:', dealErr);
+                }
+                
+                // THIRD: Fallback to products endpoint (existing code)
+                try {
+                  console.log('Fetching from products endpoint for product_id:', response.product_id);
+                  const productRes = await api.get(`/products/${response.product_id}`);
+                  const product = productRes.data;
+                  console.log('Using product data:', product);
+                  
+                  // Format result for display
+                  setResult({
+                    asin: product.asin,
+                    title: product.title || 'Unknown',
+                    deal_score: product.deal_score || 'N/A',
+                    net_profit: product.net_profit || product.profit || 0,
+                    roi: product.roi || 0,
+                    gating_status: product.gating_status || 'unknown',
+                    meets_threshold: product.meets_threshold || false,
+                    is_profitable: (product.net_profit || product.profit || 0) > 0
+                  });
+                  showToast('Analysis complete!', 'success');
+                  
+                  // Call onAnalysisComplete callback to refresh data without page reload
+                  if (onAnalysisComplete) {
+                    onAnalysisComplete({
+                      asin: product.asin,
+                      product_id: response.product_id,
+                      ...product
+                    });
+                  }
+                } catch (productErr) {
+                  console.error('Failed to fetch product:', productErr);
+                  showToast('Analysis completed but could not load results. Check Products page.', 'warning');
                 }
               } else if (job.status === 'failed') {
                 showToast('Analysis failed. Please try again.', 'error');
