@@ -214,13 +214,20 @@ return result.data or []
 **Frontend Handling:** ✅ Correctly handles direct array response
 
 ### /deals endpoint:
-**Backend Code:** Need to check the actual endpoint implementation
+**Backend Code:** `backend/app/api/v1/deals.py:306-321`
+```python
+result = {
+    "deals": deals,
+    "total": len(deals),
+    "limit": limit,
+    "offset": offset
+}
+return result
+```
 
-**Expected Format:** Based on `useDeals.js:78`, it expects:
-- `response.data.deals` (nested)
-- OR `response.data` (direct array)
+**Response Format:** Returns `{deals: [...], total: X, limit: Y, offset: Z}` (nested object)
 
-**Frontend Handling:** ✅ `useDeals` hook handles both formats correctly
+**Frontend Handling:** ✅ `useDeals` hook correctly handles `response.data.deals` format
 
 ---
 
