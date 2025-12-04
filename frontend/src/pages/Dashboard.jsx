@@ -13,15 +13,21 @@ const Dashboard = () => {
   const { deals, loading } = useDeals({ limit: 50 });
   const [selectedDeal, setSelectedDeal] = useState(null);
 
+  // Ensure deals is always an array
+  const dealsArray = Array.isArray(deals) ? deals : 
+                     Array.isArray(deals?.deals) ? deals.deals :
+                     Array.isArray(deals?.data) ? deals.data :
+                     [];
+
   // Calculate stats
-  const newDeals = deals.filter(d => d.status === 'pending' || d.status === 'analyzed').length;
-  const profitable = deals.filter(d => d.is_profitable && d.roi >= 20).length;
-  const pending = deals.filter(d => d.status === 'pending').length;
-  const potentialProfit = deals
+  const newDeals = dealsArray.filter(d => d.status === 'pending' || d.status === 'analyzed').length;
+  const profitable = dealsArray.filter(d => d.is_profitable && d.roi >= 20).length;
+  const pending = dealsArray.filter(d => d.status === 'pending').length;
+  const potentialProfit = dealsArray
     .filter(d => d.is_profitable && d.net_profit > 0)
     .reduce((sum, d) => sum + (d.net_profit * (d.moq || 1)), 0);
 
-  const hotDeals = deals
+  const hotDeals = dealsArray
     .filter(d => d.is_profitable && d.roi >= 30)
     .sort((a, b) => (b.roi || 0) - (a.roi || 0))
     .slice(0, 3);

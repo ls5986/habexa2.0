@@ -45,7 +45,16 @@ export const useDeals = (filters = {}) => {
         const cached = getCached(cacheKey);
         if (cached) {
           console.log('✅ [DEALS] Using cached data');
-          setDeals(cached.deals || cached || []);
+          // Ensure cached data is always an array
+          let cachedDeals = [];
+          if (Array.isArray(cached)) {
+            cachedDeals = cached;
+          } else if (Array.isArray(cached?.deals)) {
+            cachedDeals = cached.deals;
+          } else if (Array.isArray(cached?.data)) {
+            cachedDeals = cached.data;
+          }
+          setDeals(cachedDeals);
           setError(null);
           setLoading(false);
           return;
@@ -75,7 +84,16 @@ export const useDeals = (filters = {}) => {
       console.log(`⏱️ [DEALS] API call took ${fetchTime.toFixed(0)}ms`);
       
       // New API returns { deals, total, limit, offset }
-      const dealsData = response.data.deals || response.data || [];
+      // Handle different response formats safely
+      let dealsData = [];
+      if (Array.isArray(response.data)) {
+        dealsData = response.data;
+      } else if (Array.isArray(response.data?.deals)) {
+        dealsData = response.data.deals;
+      } else if (Array.isArray(response.data?.data)) {
+        dealsData = response.data.data;
+      }
+      
       setDeals(dealsData);
       setError(null);
       

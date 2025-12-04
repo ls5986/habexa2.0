@@ -30,10 +30,23 @@ export const NotificationProvider = ({ children }) => {
   const fetchNotifications = async () => {
     try {
       const response = await api.get('/notifications');
-      setNotifications(response.data);
-      setUnreadCount(response.data.filter(n => !n.is_read).length);
+      
+      // Handle different response formats safely
+      let notifications = [];
+      if (Array.isArray(response.data)) {
+        notifications = response.data;
+      } else if (response.data?.notifications && Array.isArray(response.data.notifications)) {
+        notifications = response.data.notifications;
+      } else if (response.data?.data && Array.isArray(response.data.data)) {
+        notifications = response.data.data;
+      }
+      
+      setNotifications(notifications);
+      setUnreadCount(notifications.filter(n => !n.is_read).length);
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
+      setNotifications([]); // Default to empty array on error
+      setUnreadCount(0);
     }
   };
 

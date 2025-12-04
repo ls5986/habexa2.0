@@ -11,12 +11,16 @@ export const useSuppliers = () => {
     try {
       setLoading(true);
       const response = await api.get('/suppliers');
-      // Handle new response format with limit info
-      if (response.data.suppliers) {
-        setSuppliers(response.data.suppliers);
-      } else {
-        setSuppliers(response.data);
+      // Handle different response formats safely
+      let suppliersData = [];
+      if (Array.isArray(response.data)) {
+        suppliersData = response.data;
+      } else if (Array.isArray(response.data?.suppliers)) {
+        suppliersData = response.data.suppliers;
+      } else if (Array.isArray(response.data?.data)) {
+        suppliersData = response.data.data;
       }
+      setSuppliers(suppliersData);
       setError(null);
     } catch (err) {
       setError(err.message);

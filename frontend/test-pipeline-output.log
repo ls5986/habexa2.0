@@ -1,0 +1,35 @@
+
+Running 13 tests using 1 worker
+
+✅ Logged in successfully
+
+📦 STEP 1: Creating supplier...
+(node:94570) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘   1 tests/e2e/full-pipeline.spec.ts:39:3 › Full Pipeline Integration Test › PIPELINE STEP 1: Create a Supplier (13.3s)
+✅ Logged in successfully
+
+📄 STEP 2: Uploading product CSV...
+(node:94707) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘   2 tests/e2e/full-pipeline.spec.ts:71:3 › Full Pipeline Integration Test › PIPELINE STEP 2: Generate and Upload CSV (2.5s)
+✅ Logged in successfully
+
+🔍 STEP 3: Analyzing products...
+(node:94881) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+📌 Using Quick Analyze...
+  ✓   3 tests/e2e/full-pipeline.spec.ts:132:3 › Full Pipeline Integration Test › PIPELINE STEP 3: Analyze Products (3.3s)
+✅ Logged in successfully
+
+📋 STEP 4: Reviewing product and changing stage...
+⚠️ Product not found, skipping stage change
+  ✓   4 tests/e2e/full-pipeline.spec.ts:194:3 › Full Pipeline Integration Test › PIPELINE STEP 4: Review Product & Change Stage (2.5s)
+✅ Logged in successfully
+
+🛒 STEP 5: Adding product to buy list...
+⚠️ Product not found, skipping buy list addition
+  ✓   5 tests/e2e/full-pipeline.spec.ts:236:3 › Full Pipeline Integration Test › PIPELINE STEP 5: Add Product to Buy List (2.5s)
+✅ Logged in successfully
+
+📝 STEP 6: Managing buy list...

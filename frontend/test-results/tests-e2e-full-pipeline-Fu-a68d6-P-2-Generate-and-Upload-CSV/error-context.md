@@ -1,0 +1,53 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - img "Habexa"
+    - generic [ref=e6]:
+      - button "Dashboard" [ref=e7] [cursor=pointer]:
+        - img [ref=e8]
+        - paragraph [ref=e11]: Dashboard
+      - button "Products" [ref=e12] [cursor=pointer]:
+        - img [ref=e13]
+        - paragraph [ref=e17]: Products
+      - button "Suppliers" [ref=e18] [cursor=pointer]:
+        - img [ref=e19]
+        - paragraph [ref=e24]: Suppliers
+      - button "Buy List" [ref=e25] [cursor=pointer]:
+        - img [ref=e26]
+        - paragraph [ref=e30]: Buy List
+      - button "Orders" [ref=e31] [cursor=pointer]:
+        - img [ref=e32]
+        - paragraph [ref=e35]: Orders
+      - button "Analyze" [ref=e36] [cursor=pointer]:
+        - img [ref=e37]
+        - paragraph [ref=e40]: Analyze
+      - button "Pricing" [ref=e41] [cursor=pointer]:
+        - img [ref=e42]
+        - paragraph [ref=e44]: Pricing
+    - button "Settings" [ref=e46] [cursor=pointer]:
+      - img [ref=e47]
+      - paragraph [ref=e50]: Settings
+    - generic [ref=e52]:
+      - text: Current Plan
+      - paragraph [ref=e53]: free Trial
+      - button "Upgrade" [ref=e54] [cursor=pointer]: Upgrade
+    - button [ref=e56] [cursor=pointer]:
+      - img [ref=e57]
+  - generic [ref=e59]:
+    - generic [ref=e60]:
+      - button "Quick Analyze" [ref=e61] [cursor=pointer]:
+        - img [ref=e63]
+        - text: Quick Analyze
+      - button "Switch to light mode" [ref=e65] [cursor=pointer]:
+        - img [ref=e66]
+      - button [ref=e72] [cursor=pointer]:
+        - img [ref=e74]
+      - button "L" [ref=e77] [cursor=pointer]:
+        - generic [ref=e78]: L
+    - main [ref=e79]:
+      - progressbar [ref=e81]:
+        - img [ref=e82]
+```

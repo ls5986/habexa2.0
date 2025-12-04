@@ -234,7 +234,16 @@ export default function Products() {
         api.get('/products/stats')
       ]);
 
-      setDeals(dealsRes.data.deals || dealsRes.data || []);
+      // Handle different response formats safely
+      let dealsData = [];
+      if (Array.isArray(dealsRes.data)) {
+        dealsData = dealsRes.data;
+      } else if (Array.isArray(dealsRes.data?.deals)) {
+        dealsData = dealsRes.data.deals;
+      } else if (Array.isArray(dealsRes.data?.data)) {
+        dealsData = dealsRes.data.data;
+      }
+      setDeals(dealsData);
       setStats(statsRes.data || { stages: {}, total: 0 });
     } catch (err) {
       console.error('Failed to fetch:', err);
@@ -248,7 +257,16 @@ export default function Products() {
   const fetchSuppliers = useCallback(async () => {
     try {
       const res = await api.get('/suppliers');
-      setSuppliers(res.data.suppliers || res.data || []);
+      // Handle different response formats safely
+      let suppliersData = [];
+      if (Array.isArray(res.data)) {
+        suppliersData = res.data;
+      } else if (Array.isArray(res.data?.suppliers)) {
+        suppliersData = res.data.suppliers;
+      } else if (Array.isArray(res.data?.data)) {
+        suppliersData = res.data.data;
+      }
+      setSuppliers(suppliersData);
     } catch (err) {
       console.error('Failed to fetch suppliers:', err);
     }
@@ -272,7 +290,8 @@ export default function Products() {
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelected(deals.map(d => d.deal_id));
+      const dealsArray = Array.isArray(deals) ? deals : [];
+      setSelected(dealsArray.map(d => d.deal_id));
     } else {
       setSelected([]);
     }
