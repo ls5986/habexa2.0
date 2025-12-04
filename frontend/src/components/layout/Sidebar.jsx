@@ -3,7 +3,7 @@ import { Home, Inbox, Users, Package, Search, Settings, ChevronLeft, ChevronRigh
 import { useNavigate, useLocation } from 'react-router-dom';
 import { habexa } from '../../theme';
 import { useNotifications } from '../../context/NotificationContext';
-// import { useSubscription } from '../../hooks/useSubscription';
+import { useFeatureGate } from '../../hooks/useFeatureGate';
 
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/dashboard' },
@@ -80,9 +80,12 @@ const NavItem = ({ icon: Icon, label, path, active, badge, collapsed }) => {
 const Sidebar = ({ collapsed, onToggle }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  // const { subscription } = useSubscription();
-  const subscription = { tier: 'free' }; // Fallback until hook is available
+  const { tier, isSuperAdmin, tierDisplay } = useFeatureGate();
   const isActive = (path) => location.pathname === path;
+  
+  // Determine plan display - check super admin first, then tier
+  const planDisplay = isSuperAdmin ? 'Super Admin' : (tierDisplay || tier || 'Free');
+  const showUpgrade = !isSuperAdmin && (tier === 'free' || !tier);
 
   return (
     <Box
@@ -167,22 +170,24 @@ const Sidebar = ({ collapsed, onToggle }) => {
               Current Plan
             </Typography>
             <Typography variant="body2" fontWeight="600" sx={{ color: '#1a1a2e' }} mb={1}>
-              {subscription?.tier || 'Free'} {subscription?.tier === 'free' ? 'Trial' : ''}
+              {planDisplay}
             </Typography>
-            <Button
-              size="small"
-              variant="contained"
-              fullWidth
-              onClick={() => navigate('/pricing')}
-              sx={{
-                background: `linear-gradient(135deg, ${habexa.purple.main} 0%, ${habexa.purple.dark} 100%)`,
-                '&:hover': {
-                  background: `linear-gradient(135deg, ${habexa.purple.light} 0%, ${habexa.purple.dark} 100%)`,
-                },
-              }}
-            >
-              Upgrade
-            </Button>
+            {showUpgrade && (
+              <Button
+                size="small"
+                variant="contained"
+                fullWidth
+                onClick={() => navigate('/pricing')}
+                sx={{
+                  background: `linear-gradient(135deg, ${habexa.purple.main} 0%, ${habexa.purple.dark} 100%)`,
+                  '&:hover': {
+                    background: `linear-gradient(135deg, ${habexa.purple.light} 0%, ${habexa.purple.dark} 100%)`,
+                  },
+                }}
+              >
+                Upgrade
+              </Button>
+            )}
           </Box>
         </Box>
       )}

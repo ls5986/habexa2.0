@@ -9,8 +9,10 @@ import { habexa } from '../../../theme';
 const UsageWidget = () => {
   const navigate = useNavigate();
   const { subscription } = useStripe();
-  const { tier, getLimit, getUpgradeSuggestion } = useFeatureGate();
+  const { tier, tierDisplay, isSuperAdmin, getLimit, getUpgradeSuggestion } = useFeatureGate();
   
+  // Determine plan display - check super admin first, then tier (same logic as Sidebar)
+  const planDisplay = isSuperAdmin ? 'Super Admin' : (tierDisplay || tier || 'Free');
   const suggestion = getUpgradeSuggestion();
 
   // Get usage data
@@ -36,7 +38,7 @@ const UsageWidget = () => {
               textTransform: 'uppercase'
             }}
           >
-            {tier}
+            {planDisplay}
           </Typography>
         </Box>
 
