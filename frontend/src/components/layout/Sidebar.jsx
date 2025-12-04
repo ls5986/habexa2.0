@@ -97,7 +97,7 @@ const Sidebar = ({ collapsed, onToggle }) => {
       }}
     >
       {/* Logo Section */}
-      <Box sx={{ p: 3, borderBottom: (theme) => `1px solid ${theme.palette.divider}` }}>
+      <Box sx={{ p: 3, borderBottom: '1px solid #e0e0e0' }}>
         {collapsed ? (
           <Box
             sx={{
