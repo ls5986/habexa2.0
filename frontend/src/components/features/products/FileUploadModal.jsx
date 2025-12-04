@@ -232,7 +232,36 @@ export default function FileUploadModal({ open, onClose, onComplete }) {
                 <Select
                   value={selectedSupplier}
                   label="Supplier *"
-                  onChange={(e) => setSelectedSupplier(e.target.value)}
+                  onChange={(e) => {
+                    const supplierId = e.target.value;
+                    console.log('Selected supplier ID:', supplierId);
+                    setSelectedSupplier(supplierId);
+                  }}
+                  renderValue={(selected) => {
+                    if (!selected) return <em style={{ color: '#999' }}>Select supplier...</em>;
+                    const supplier = suppliers.find(s => s.id === selected);
+                    return supplier?.name || 'Unknown';
+                  }}
+                  sx={{
+                    width: '100%',
+                    '& .MuiSelect-select': {
+                      overflow: 'visible',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      paddingRight: '32px',
+                    },
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        maxHeight: 300,
+                        '& .MuiMenuItem-root': {
+                          whiteSpace: 'normal',
+                          wordBreak: 'break-word',
+                        },
+                      },
+                    },
+                  }}
                 >
                   <MenuItem value="">Select supplier...</MenuItem>
                   {suppliers.map(s => (
@@ -365,6 +394,12 @@ export default function FileUploadModal({ open, onClose, onComplete }) {
               onClick={handleUpload}
               disabled={!file || !selectedSupplier || uploading}
               startIcon={uploading ? null : <UploadIcon />}
+              sx={{
+                // Debug: log button state (remove in production)
+                '&:disabled': {
+                  opacity: 0.5,
+                },
+              }}
             >
               {uploading ? (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
