@@ -663,7 +663,7 @@ export default function Products() {
                     )}
                     <Box flex={1}>
                       <Typography variant="body2" fontWeight={600} mb={0.5}>
-                        {deal.title || 'Pending analysis...'}
+                        {deal.title || (deal.roi === undefined && deal.profit === undefined ? 'Pending analysis...' : 'Unknown Product')}
                       </Typography>
                       <Typography variant="caption" fontFamily="monospace" color="text.secondary">
                         {deal.asin}
