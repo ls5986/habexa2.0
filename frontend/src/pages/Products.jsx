@@ -4,12 +4,12 @@ import {
   Box, Typography, Card, Button, Chip, IconButton, Tabs, Tab,
   TextField, InputAdornment, Menu, MenuItem, Checkbox, Select,
   FormControl, InputLabel, CircularProgress, Dialog, DialogTitle,
-  DialogContent, DialogActions, LinearProgress, Tooltip
+  DialogContent, DialogActions, LinearProgress, Tooltip, Alert
 } from '@mui/material';
 import {
   Search, Upload, Plus, Download, RefreshCw, MoreVertical,
   Package, TrendingUp, ShoppingCart, Archive, Clock, Zap,
-  ChevronDown, ExternalLink, Filter, X
+  ChevronDown, ExternalLink, Filter, X, Trash2, AlertTriangle
 } from 'lucide-react';
 import api from '../services/api';
 import FileUploadModal from '../components/features/products/FileUploadModal';
@@ -45,7 +45,7 @@ function useDebounce(value, delay) {
 }
 
 // Memoized Deal Row Component
-const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq }) => {
+const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, onDelete }) => {
   const roi = deal.roi || 0;
   const profit = deal.profit || 0;
   const moq = deal.moq || 1;
@@ -177,15 +177,30 @@ const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq }) 
       />
       
       {/* Actions */}
-      <IconButton
-        size="small"
-        component="a"
-        href={`https://amazon.com/dp/${deal.asin}`}
-        target="_blank"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <ExternalLink size={14} />
-      </IconButton>
+      <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
+        <Tooltip title="View on Amazon">
+          <IconButton
+            size="small"
+            component="a"
+            href={`https://amazon.com/dp/${deal.asin}`}
+            target="_blank"
+          >
+            <ExternalLink size={14} />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Delete product">
+          <IconButton
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(deal);
+            }}
+            sx={{ color: 'error.main' }}
+          >
+            <Trash2 size={14} />
+          </IconButton>
+        </Tooltip>
+      </Box>
     </Box>
   );
 });
@@ -206,6 +221,7 @@ export default function Products() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, deal: null });
   const { hasFeature, promptUpgrade } = useFeatureGate();
   const { showToast } = useToast();
 
@@ -418,6 +434,37 @@ export default function Products() {
     } catch (err) {
       console.error('Failed to update MOQ:', err);
       showToast('Failed to update MOQ: ' + (err.response?.data?.detail || err.message), 'error');
+    }
+  };
+
+  const handleDeleteClick = (deal) => {
+    setDeleteDialog({ open: true, deal, deleting: false });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteDialog.deal) return;
+    
+    setDeleteDialog(prev => ({ ...prev, deleting: true }));
+    
+    try {
+      await api.delete(`/products/deal/${deleteDialog.deal.deal_id}`);
+      showToast(`Product "${deleteDialog.deal.asin}" deleted successfully`, 'success');
+      
+      // Remove from local state
+      setDeals(prev => prev.filter(d => d.deal_id !== deleteDialog.deal.deal_id));
+      
+      // Also remove from selected if selected
+      setSelected(prev => prev.filter(id => id !== deleteDialog.deal.deal_id));
+      
+      // Refresh stats
+      setTimeout(() => fetchData(true), 500);
+      
+      setDeleteDialog({ open: false, deal: null, deleting: false });
+    } catch (err) {
+      console.error('Failed to delete product:', err);
+      const errorMsg = err.response?.data?.detail || err.message || 'Failed to delete product';
+      showToast(errorMsg, 'error');
+      setDeleteDialog(prev => ({ ...prev, deleting: false }));
     }
   };
 
@@ -720,6 +767,79 @@ export default function Products() {
         onClose={() => setShowUploadModal(false)}
         onComplete={handleUploadComplete}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog 
+        open={deleteDialog.open} 
+        onClose={() => !deleteDialog.deleting && setDeleteDialog({ open: false, deal: null, deleting: false })}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <AlertTriangle size={24} style={{ color: habexa.warning.main }} />
+          Delete Product
+        </DialogTitle>
+        <DialogContent>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            This action cannot be undone. All analysis data, pricing history, and related information will be permanently lost.
+          </Alert>
+          {deleteDialog.deal && (
+            <Box>
+              <Typography variant="body1" fontWeight={600} gutterBottom>
+                Are you sure you want to delete this product?
+              </Typography>
+              <Box sx={{ mt: 2, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+                <Typography variant="body2" color="text.secondary">ASIN:</Typography>
+                <Typography variant="body2" fontFamily="monospace" fontWeight={600}>
+                  {deleteDialog.deal.asin}
+                </Typography>
+                {deleteDialog.deal.title && (
+                  <>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                      Product:
+                    </Typography>
+                    <Typography variant="body2">
+                      {deleteDialog.deal.title}
+                    </Typography>
+                  </>
+                )}
+                {(deleteDialog.deal.roi !== undefined || deleteDialog.deal.profit !== undefined) && (
+                  <>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                      Analysis Data:
+                    </Typography>
+                    <Typography variant="body2">
+                      {deleteDialog.deal.roi !== undefined && `ROI: ${deleteDialog.deal.roi?.toFixed(0)}%`}
+                      {deleteDialog.deal.roi !== undefined && deleteDialog.deal.profit !== undefined && ' | '}
+                      {deleteDialog.deal.profit !== undefined && `Profit: $${deleteDialog.deal.profit?.toFixed(2)}`}
+                    </Typography>
+                  </>
+                )}
+              </Box>
+              <Typography variant="body2" color="error.main" sx={{ mt: 2, fontWeight: 600 }}>
+                ⚠️ All analysis data, profit calculations, and product history will be permanently deleted.
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => setDeleteDialog({ open: false, deal: null, deleting: false })}
+            disabled={deleteDialog.deleting}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleDeleteConfirm}
+            variant="contained"
+            color="error"
+            disabled={deleteDialog.deleting}
+            startIcon={deleteDialog.deleting ? <CircularProgress size={16} /> : <Trash2 size={16} />}
+          >
+            {deleteDialog.deleting ? 'Deleting...' : 'Delete Product'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
