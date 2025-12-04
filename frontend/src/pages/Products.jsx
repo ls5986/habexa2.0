@@ -227,11 +227,16 @@ export default function Products() {
       if (debouncedSearch) params.append('search', debouncedSearch);
       if (filters.supplier) params.append('supplier_id', filters.supplier);
       params.append('limit', '100');
+      
+      // Add timestamp to bypass cache if force refresh
+      if (forceRefresh) {
+        params.append('_t', Date.now().toString());
+      }
 
       // Parallel API calls for better performance
       const [dealsRes, statsRes] = await Promise.all([
         api.get(`/products?${params}`),
-        api.get('/products/stats')
+        api.get(`/products/stats${forceRefresh ? `?_t=${Date.now()}` : ''}`)
       ]);
 
       // Handle different response formats safely
@@ -244,14 +249,28 @@ export default function Products() {
         dealsData = dealsRes.data.data;
       }
       setDeals(dealsData);
-      setStats(statsRes.data || { stages: {}, total: 0 });
+      
+      // Ensure stats has all required stage keys
+      const statsData = statsRes.data || { stages: {}, total: 0 };
+      const defaultStages = { new: 0, analyzing: 0, reviewed: 0, top_products: 0, buy_list: 0, ordered: 0 };
+      setStats({
+        ...statsData,
+        stages: { ...defaultStages, ...(statsData.stages || {}) },
+        total: statsData.total || 0
+      });
+      
+      // Log for debugging
+      if (dealsData.length === 0 && statsData.total === 0) {
+        console.warn('No products found - view might be empty or missing');
+      }
     } catch (err) {
       console.error('Failed to fetch:', err);
+      showToast('Failed to load products. Please try refreshing.', 'error');
     } finally {
       setLoading(false);
       fetchInProgress.current = false;
     }
-  }, [activeStage, filters.minRoi, filters.minProfit, debouncedSearch, filters.supplier]);
+  }, [activeStage, filters.minRoi, filters.minProfit, debouncedSearch, filters.supplier, showToast]);
 
   // Fetch suppliers once
   const fetchSuppliers = useCallback(async () => {
