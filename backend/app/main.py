@@ -7,6 +7,7 @@ from app.core.config import settings
 from app.api.v1 import deals, analysis, suppliers, notifications, settings as api_settings, watchlist, orders, billing, telegram, amazon, keepa, debug, market, sp_api, products, brands, jobs, batch, buy_list, auth
 from app.middleware.performance import PerformanceMiddleware
 import logging
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -106,6 +107,6 @@ async def root():
 
 
 @app.get("/health")
-async def health():
-    return {"status": "healthy"}
+async def health_check():
+    return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
 
