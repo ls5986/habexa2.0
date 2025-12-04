@@ -41,8 +41,8 @@ export function useFeatureGate() {
 
     fetchLimits();
     
-    // Refresh every 30 seconds to keep usage up to date
-    const interval = setInterval(fetchLimits, 30000);
+    // Refresh every 60 seconds to keep usage up to date (reduced from 30s to reduce spam)
+    const interval = setInterval(fetchLimits, 60000);
     return () => clearInterval(interval);
   }, []);
 

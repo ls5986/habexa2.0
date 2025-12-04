@@ -100,8 +100,9 @@ const BuyList = () => {
     }
   };
 
-  const totalItems = items.reduce((sum, item) => sum + (item.quantity || item.moq || 1), 0);
-  const totalCost = items.reduce((sum, item) => {
+  const itemsArray = Array.isArray(items) ? items : [];
+  const totalItems = itemsArray.reduce((sum, item) => sum + (item.quantity || item.moq || 1), 0);
+  const totalCost = itemsArray.reduce((sum, item) => {
     const quantity = item.quantity || item.moq || 1;
     const cost = item.buy_cost || 0;
     return sum + (quantity * cost);
