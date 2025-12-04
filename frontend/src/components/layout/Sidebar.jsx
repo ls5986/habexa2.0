@@ -36,7 +36,7 @@ const NavItem = ({ icon: Icon, label, path, active, badge, collapsed }) => {
         cursor: 'pointer',
         width: collapsed ? 'auto' : 'calc(100% - 24px)',
         justifyContent: collapsed ? 'center' : 'flex-start',
-        color: (theme) => active ? theme.palette.text.primary : theme.palette.text.secondary,
+        color: active ? '#ffffff' : '#1a1a2e',
         background: active 
           ? `linear-gradient(135deg, ${habexa.purple.main} 0%, ${habexa.purple.dark} 100%)`
           : 'transparent',
@@ -44,8 +44,8 @@ const NavItem = ({ icon: Icon, label, path, active, badge, collapsed }) => {
         '&:hover': {
           background: active 
             ? `linear-gradient(135deg, ${habexa.purple.main} 0%, ${habexa.purple.dark} 100%)`
-            : `rgba(124, 58, 237, 0.1)`,
-          color: (theme) => theme.palette.text.primary,
+            : '#f5f5f5',
+          color: active ? '#ffffff' : '#1a1a2e',
         },
       }}
     >
@@ -89,8 +89,8 @@ const Sidebar = ({ collapsed, onToggle }) => {
       sx={{
         width: collapsed ? 72 : 260,
         height: '100vh',
-        background: (theme) => `linear-gradient(180deg, ${theme.palette.mode === 'dark' ? habexa.navy.dark : '#FFFFFF'} 0%, ${theme.palette.mode === 'dark' ? habexa.navy.main : '#F9FAFB'} 100%)`,
-        borderRight: (theme) => `1px solid ${theme.palette.divider}`,
+        backgroundColor: '#FFFFFF',
+        borderRight: '1px solid #e0e0e0',
         display: 'flex',
         flexDirection: 'column',
         transition: 'width 0.3s ease',
@@ -154,19 +154,19 @@ const Sidebar = ({ collapsed, onToggle }) => {
 
       {/* Bottom Section - Plan/Settings */}
       {!collapsed && (
-        <Box sx={{ p: 2, borderTop: '1px solid #2D2D3D' }}>
+        <Box sx={{ p: 2, borderTop: '1px solid #e0e0e0' }}>
           <Box
             sx={{
               p: 2,
               borderRadius: 2,
-              background: habexa.purple.light,
-              border: `1px solid ${habexa.purple.main}40`,
+              backgroundColor: '#f5f5f5',
+              border: '1px solid #e0e0e0',
             }}
           >
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{ color: '#666666' }}>
               Current Plan
             </Typography>
-            <Typography variant="body2" fontWeight="600" color="primary.main" mb={1}>
+            <Typography variant="body2" fontWeight="600" sx={{ color: '#1a1a2e' }} mb={1}>
               {subscription?.tier || 'Free'} {subscription?.tier === 'free' ? 'Trial' : ''}
             </Typography>
             <Button
@@ -203,7 +203,7 @@ const Sidebar = ({ collapsed, onToggle }) => {
           sx={{
             border: 'none',
             background: 'transparent',
-            color: habexa.gray[500],
+            color: '#666666',
             cursor: 'pointer',
             p: 1,
             borderRadius: 1,
@@ -211,8 +211,8 @@ const Sidebar = ({ collapsed, onToggle }) => {
             alignItems: 'center',
             justifyContent: 'center',
             '&:hover': {
-              color: (theme) => theme.palette.text.primary,
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              color: '#1a1a2e',
+              backgroundColor: '#f5f5f5',
             },
           }}
         >

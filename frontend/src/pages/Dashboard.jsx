@@ -44,10 +44,10 @@ const Dashboard = () => {
   return (
     <Box>
       <Box mb={4}>
-        <Typography variant="h4" fontWeight={700} mb={1}>
+        <Typography variant="h4" fontWeight={700} mb={1} sx={{ color: '#1a1a2e' }}>
           {greeting()}, {userName}! 👋
         </Typography>
-        <Typography variant="body1" color="text.secondary">
+        <Typography variant="body1" sx={{ color: '#666666' }}>
           Here's your deal flow for today.
         </Typography>
       </Box>

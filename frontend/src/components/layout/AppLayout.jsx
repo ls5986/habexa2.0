@@ -42,7 +42,7 @@ const AppLayout = ({ children }) => {
           sx={{
             flex: 1,
             overflow: 'auto',
-            backgroundColor: habexa.navy.dark,
+            backgroundColor: '#f5f5f5',
             p: 3,
           }}
         >
