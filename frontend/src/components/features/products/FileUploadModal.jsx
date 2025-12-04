@@ -118,6 +118,12 @@ export default function FileUploadModal({ open, onClose, onComplete }) {
   };
 
   const handleUpload = async () => {
+    // Debug logging
+    console.log('handleUpload called');
+    console.log('file:', file);
+    console.log('selectedSupplier:', selectedSupplier);
+    console.log('Button should be enabled:', !!file && !!selectedSupplier);
+    
     if (!file || !selectedSupplier) {
       setError('Please select a supplier and file');
       return;
