@@ -137,13 +137,12 @@ services:
     staticPublishPath: ./frontend/dist
     envVars:
       - key: VITE_API_URL
-        fromService:
-          type: web
-          name: habexa-backend
-          property: host
+        value: https://habexa-backend-w5u5.onrender.com
       - key: VITE_SUPABASE_URL
         sync: false
       - key: VITE_SUPABASE_ANON_KEY
+        sync: false
+      - key: VITE_STRIPE_PUBLISHABLE_KEY
         sync: false
 
   # Celery Worker (Analysis Queue)
