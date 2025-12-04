@@ -209,10 +209,17 @@ class KeepaClient:
         category_tree = product.get("categoryTree", [])
         category = category_tree[-1].get("name") if category_tree else None
         
-        # Get BSR from stats
+        # Get BSR from stats (index 3 in current array)
         bsr = None
         if len(current_stats) > 3 and current_stats[3] and current_stats[3] > 0:
             bsr = current_stats[3]
+        
+        # Get current price from stats (index 1 in current array = Amazon price)
+        # Keepa stats array format: [timestamp, Amazon, New, Used, SalesRank, ...]
+        current_price = None
+        if len(current_stats) > 1 and current_stats[1] and current_stats[1] > 0:
+            # Price is in cents, convert to dollars
+            current_price = current_stats[1] / 100.0
         
         # Get rating
         rating = product.get("rating")
@@ -233,6 +240,8 @@ class KeepaClient:
             "image_url": image_url,
             "bsr": bsr,
             "category": category,
+            "current_price": current_price,  # Add pricing from Keepa
+            "buy_box_price": current_price,  # Alias for compatibility
             "sales_drops_30": stats.get("salesRankDrops30"),
             "sales_drops_90": stats.get("salesRankDrops90"),
             "sales_drops_180": stats.get("salesRankDrops180"),

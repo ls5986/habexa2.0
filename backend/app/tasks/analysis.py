@@ -39,10 +39,21 @@ def analyze_single_product(self, job_id: str, user_id: str, product_id: str, asi
         supplier_id = metadata.get("supplier_id")
         
         # Use batch analyzer even for single product (it's still efficient)
-        results = run_async(batch_analyzer.analyze_products([asin]))
-        result = results.get(asin, {})
+        try:
+            results = run_async(batch_analyzer.analyze_products([asin]))
+            result = results.get(asin, {})
+        except Exception as e:
+            logger.error(f"Batch analyzer failed for {asin}: {e}", exc_info=True)
+            # Set error status and fail job
+            supabase.table("products").update({
+                "status": "error",
+                "updated_at": datetime.utcnow().isoformat()
+            }).eq("id", product_id).execute()
+            job.fail(f"Analysis failed: {str(e)}")
+            raise self.retry(exc=e, countdown=60)
         
-        if result.get("success"):
+        # Check if we got any useful data (even if price unavailable)
+        if result.get("success") or result.get("title") or result.get("brand"):
             # Get or create product_source entry (required for product to show in list)
             if buy_cost:
                 try:
@@ -116,28 +127,41 @@ def analyze_single_product(self, job_id: str, user_id: str, product_id: str, asi
             
             analysis_id = analysis_result.data[0]["id"] if analysis_result.data else None
             
-            # Update product
-            supabase.table("products").update({
+            # Update product - handle both full success and partial success (no price)
+            update_data = {
                 "analysis_id": analysis_id,
                 "title": result.get("title"),
                 "image_url": result.get("image_url"),
                 "brand_name": result.get("brand"),  # Schema has brand_name, not brand
-                "sell_price": result.get("sell_price"),
-                "fees_total": result.get("fees_total"),
                 "bsr": result.get("bsr"),
                 "seller_count": result.get("seller_count"),
-                "status": "analyzed",
                 "updated_at": datetime.utcnow().isoformat()
-            }).eq("id", product_id).execute()
+            }
+            
+            # Only set pricing fields if we have a sell_price
+            if result.get("sell_price"):
+                update_data["sell_price"] = result.get("sell_price")
+                update_data["fees_total"] = result.get("fees_total")
+                update_data["status"] = "analyzed"
+            else:
+                # Partial success - we have catalog data but no pricing
+                # Mark as analyzed so it shows up, but frontend can indicate price unavailable
+                update_data["status"] = "analyzed"
+                update_data["sell_price"] = None
+                logger.warning(f"⚠️ Product {asin} analyzed but no pricing available")
+            
+            supabase.table("products").update(update_data).eq("id", product_id).execute()
             
             job.complete({"analysis_id": analysis_id, "product_id": product_id}, success=1, errors=0)
         else:
+            # Complete failure - no data from any source
+            logger.error(f"❌ Analysis failed for {asin}: No data available from any source")
             supabase.table("products").update({
                 "status": "error",
                 "updated_at": datetime.utcnow().isoformat()
             }).eq("id", product_id).execute()
             
-            job.complete({"error": "No SP-API price available"}, success=0, errors=1, error_list=["No price"])
+            job.complete({"error": "No data available from SP-API or Keepa"}, success=0, errors=1, error_list=["No data"])
         
     except Exception as e:
         logger.error(f"Error analyzing {asin}: {e}", exc_info=True)
