@@ -158,7 +158,7 @@ const DealCard = React.memo(({ deal, onClick }) => {
       }}
     >
       {/* Image */}
-      <Box sx={{ width: 50, height: 50, bgcolor: '#252540', borderRadius: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+      <Box sx={{ width: 50, height: 50, bgcolor: 'background.paper', borderRadius: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
         {analysis?.image_url ? (
           <img src={analysis.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 4 }} />
         ) : (

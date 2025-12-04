@@ -604,7 +604,7 @@ const TelegramConnect = () => {
                   <>
                     <Divider sx={{ my: 2 }} />
                     
-                    <Box sx={{ mb: 2, p: 2, bgcolor: '#252540', borderRadius: 2 }}>
+                    <Box sx={{ mb: 2, p: 2, bgcolor: 'background.paper', borderRadius: 2 }}>
                       <Typography variant="subtitle2" color="primary">
                         Selected: {selectedChannel.name || selectedChannel.title}
                       </Typography>

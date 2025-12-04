@@ -36,7 +36,7 @@ const NavItem = ({ icon: Icon, label, path, active, badge, collapsed }) => {
         cursor: 'pointer',
         width: collapsed ? 'auto' : 'calc(100% - 24px)',
         justifyContent: collapsed ? 'center' : 'flex-start',
-        color: active ? habexa.gray[600] : habexa.gray[500],
+        color: (theme) => active ? theme.palette.text.primary : theme.palette.text.secondary,
         background: active 
           ? `linear-gradient(135deg, ${habexa.purple.main} 0%, ${habexa.purple.dark} 100%)`
           : 'transparent',
@@ -45,7 +45,7 @@ const NavItem = ({ icon: Icon, label, path, active, badge, collapsed }) => {
           background: active 
             ? `linear-gradient(135deg, ${habexa.purple.main} 0%, ${habexa.purple.dark} 100%)`
             : `rgba(124, 58, 237, 0.1)`,
-          color: habexa.gray[600],
+          color: (theme) => theme.palette.text.primary,
         },
       }}
     >
@@ -61,7 +61,7 @@ const NavItem = ({ icon: Icon, label, path, active, badge, collapsed }) => {
               height: 8,
               borderRadius: '50%',
               bgcolor: habexa.error.main,
-              border: `2px solid ${habexa.navy.dark}`,
+              border: (theme) => `2px solid ${theme.palette.background.default}`,
             }}
           />
         </Box>
@@ -89,15 +89,15 @@ const Sidebar = ({ collapsed, onToggle }) => {
       sx={{
         width: collapsed ? 72 : 260,
         height: '100vh',
-        background: `linear-gradient(180deg, ${habexa.navy.dark} 0%, ${habexa.navy.main} 100%)`,
-        borderRight: `1px solid ${habexa.gray[300]}`,
+        background: (theme) => `linear-gradient(180deg, ${theme.palette.mode === 'dark' ? habexa.navy.dark : '#FFFFFF'} 0%, ${theme.palette.mode === 'dark' ? habexa.navy.main : '#F9FAFB'} 100%)`,
+        borderRight: (theme) => `1px solid ${theme.palette.divider}`,
         display: 'flex',
         flexDirection: 'column',
         transition: 'width 0.3s ease',
       }}
     >
       {/* Logo Section */}
-      <Box sx={{ p: 3, borderBottom: `1px solid ${habexa.gray[300]}` }}>
+      <Box sx={{ p: 3, borderBottom: (theme) => `1px solid ${theme.palette.divider}` }}>
         {collapsed ? (
           <Box
             sx={{
@@ -194,7 +194,7 @@ const Sidebar = ({ collapsed, onToggle }) => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          borderTop: `1px solid ${habexa.gray[300]}`,
+          borderTop: (theme) => `1px solid ${theme.palette.divider}`,
         }}
       >
         <Box
@@ -211,7 +211,7 @@ const Sidebar = ({ collapsed, onToggle }) => {
             alignItems: 'center',
             justifyContent: 'center',
             '&:hover': {
-              color: habexa.gray[600],
+              color: (theme) => theme.palette.text.primary,
               backgroundColor: 'rgba(255, 255, 255, 0.1)',
             },
           }}

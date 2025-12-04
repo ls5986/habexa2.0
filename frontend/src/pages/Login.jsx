@@ -34,7 +34,7 @@ const Login = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: habexa.navy.dark,
+        backgroundColor: 'background.default',
       }}
     >
       <Card sx={{ width: '100%', maxWidth: 400 }}>

@@ -205,7 +205,7 @@ const BuyList = () => {
                             sx={{ width: 48, height: 48, borderRadius: 1, objectFit: 'cover' }}
                           />
                         ) : (
-                          <Box sx={{ width: 48, height: 48, bgcolor: '#252540', borderRadius: 1 }} />
+                          <Box sx={{ width: 48, height: 48, bgcolor: 'background.paper', borderRadius: 1 }} />
                         )}
                         <Typography variant="body2" fontWeight={500}>
                           {item.title || 'Unknown Product'}

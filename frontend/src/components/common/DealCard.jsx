@@ -27,7 +27,7 @@ const DealCard = ({ deal, onView, onMessage, onSave, onDismiss }) => {
           sx={{
             width: 120,
             minHeight: 120,
-            bgcolor: '#252540',
+            bgcolor: 'background.paper',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

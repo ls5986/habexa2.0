@@ -15,10 +15,10 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  // Get initial mode from localStorage or default to 'dark'
+  // Get initial mode from localStorage or default to 'light'
   const [mode, setMode] = useState(() => {
     const saved = localStorage.getItem('habexa-theme-mode');
-    return saved === 'light' ? 'light' : 'dark';
+    return saved === 'dark' ? 'dark' : 'light';
   });
 
   // Toggle between light and dark mode
