@@ -213,7 +213,7 @@ export default function Products() {
   const debouncedSearch = useDebounce(filters.search, 500);
 
   // Fetch data with parallel API calls and caching
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (forceRefresh = false) => {
     // Prevent duplicate calls
     if (fetchInProgress.current) return;
     fetchInProgress.current = true;
