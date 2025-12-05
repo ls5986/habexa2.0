@@ -13,6 +13,8 @@ export function useFeatureGate() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    let intervalId = null;
+    
     const fetchLimits = async () => {
       try {
         setIsLoading(true);
@@ -39,15 +41,27 @@ export function useFeatureGate() {
       }
     };
 
+    // Initial fetch
     fetchLimits();
     
-    // Only poll if limits data exists (to avoid multiple simultaneous requests)
-    // Increased to 120 seconds to reduce server load
-    if (limitsData) {
-      const interval = setInterval(fetchLimits, 120000);
-      return () => clearInterval(interval);
-    }
-  }, [limitsData]);
+    // Start polling after initial fetch completes (120 seconds to reduce server load)
+    // Use a ref-like pattern to avoid restarting interval on every render
+    const startPolling = () => {
+      if (!intervalId) {
+        intervalId = setInterval(fetchLimits, 120000);
+      }
+    };
+    
+    // Start polling after a short delay to ensure initial fetch completes
+    const timeoutId = setTimeout(startPolling, 2000);
+    
+    return () => {
+      clearTimeout(timeoutId);
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, []); // Empty deps - only run once on mount
 
   const tier = limitsData?.tier || 'free';
   const isSuperAdmin = limitsData?.is_super_admin || false;
