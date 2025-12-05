@@ -8,6 +8,8 @@ from app.api.v1 import deals, analysis, suppliers, notifications, settings as ap
 from app.middleware.performance import PerformanceMiddleware
 import logging
 from datetime import datetime
+import os
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -105,6 +107,29 @@ app.include_router(debug.router, prefix=f"{settings.API_V1_PREFIX}/debug", tags=
 @app.get("/")
 async def root():
     return {"message": "Habexa API", "version": "1.0.0"}
+
+
+@app.on_event("startup")
+async def startup():
+    """Log Redis connection on startup."""
+    redis_url = os.getenv("REDIS_URL", "not set")
+    # Redact password for security
+    safe_url = re.sub(r'://[^:]+:[^@]+@', '://***:***@', redis_url)
+    print(f"🔧 REDIS_URL: {safe_url}")
+    logger.info(f"REDIS_URL: {safe_url}")
+    
+    # Test Celery connection
+    try:
+        from app.core.celery_app import celery_app
+        # Try to inspect active tasks (this will fail if Redis is not connected)
+        inspect = celery_app.control.inspect()
+        active = inspect.active()
+        if active is not None:
+            logger.info("✅ Celery connected to Redis successfully")
+        else:
+            logger.warning("⚠️ Celery could not connect to Redis - tasks may not execute")
+    except Exception as e:
+        logger.warning(f"⚠️ Celery connection check failed: {e}")
 
 
 @app.get("/health")

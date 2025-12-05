@@ -5,8 +5,18 @@ Centralized background task processing with queue routing.
 from celery import Celery
 from celery.schedules import crontab
 import os
+import re
+import logging
 
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+logger = logging.getLogger(__name__)
+
+# Get Redis URL from environment (with fallbacks)
+REDIS_URL = os.getenv("REDIS_URL") or os.getenv("CELERY_BROKER_URL") or "redis://localhost:6379/0"
+
+# Log the broker URL on startup (redact password for security)
+safe_url = re.sub(r'://[^:]+:[^@]+@', '://***:***@', REDIS_URL)
+print(f"🔧 Celery broker URL: {safe_url}")
+logger.info(f"Celery broker URL: {safe_url}")
 
 celery_app = Celery(
     "habexa",

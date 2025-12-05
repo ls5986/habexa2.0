@@ -145,9 +145,11 @@ services:
       - key: VITE_STRIPE_PUBLISHABLE_KEY
         sync: false
 
-  # Celery Worker (Analysis Queue)
+  # Celery Worker (Analysis + File Processing Queue)
   # REQUIRES: KEEPA_API_KEY + SP-API credentials for batch_analyzer
-  # This worker processes product analysis using batch_analyzer which needs:
+  # This worker processes:
+  # - File uploads (default queue)
+  # - Product analysis (analysis queue)
   # - Keepa API for catalog data (100 ASINs per call)
   # - SP-API for pricing and fees (20 ASINs per call)
   - type: worker
@@ -160,7 +162,7 @@ services:
       pip install -r backend/requirements.txt
     startCommand: |
       cd backend &&
-      python -m celery -A app.core.celery_app worker --loglevel=info --concurrency=4 --pool=prefork --queues=analysis,default
+      celery -A app.core.celery_app worker --loglevel=info --concurrency=2 --queues=analysis,default
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.0
