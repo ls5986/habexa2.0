@@ -34,9 +34,12 @@ export default function FileUploadModal({ open, onClose, onComplete }) {
     }
   }, [open]);
 
-  // Poll for job status - slower polling to reduce API calls
+  // Poll for job status ONLY when modal is open AND job is active
   useEffect(() => {
-    if (!jobId) return;
+    // Don't poll if modal is closed, no jobId, or job is already complete/failed
+    if (!open || !jobId || job?.status === 'completed' || job?.status === 'failed') {
+      return;
+    }
     
     const interval = setInterval(async () => {
       try {
@@ -44,9 +47,7 @@ export default function FileUploadModal({ open, onClose, onComplete }) {
         const jobData = res.data;
         setJob(jobData);
         
-        // Log job status for debugging
-        console.log('Job status:', jobData.status, 'Errors:', jobData.errors?.length || 0);
-        
+        // Stop polling if job is complete or failed
         if (jobData.status === 'completed' || jobData.status === 'failed') {
           clearInterval(interval);
           setUploading(false);
@@ -55,7 +56,6 @@ export default function FileUploadModal({ open, onClose, onComplete }) {
           if (jobData.status === 'failed') {
             const errorMsg = jobData.errors?.[0] || jobData.error || 'Upload failed. Please check the errors.';
             setError(errorMsg);
-            console.error('Job failed:', errorMsg, jobData);
           }
           
           if (jobData.status === 'completed' && onComplete) {
@@ -80,10 +80,10 @@ export default function FileUploadModal({ open, onClose, onComplete }) {
         setUploading(false);
         setError(err.response?.data?.detail || 'Failed to check job status. Please refresh the page.');
       }
-    }, 2000); // Poll every 2 seconds instead of 1
+    }, 3000); // Poll every 3 seconds (reduced from 2)
     
     return () => clearInterval(interval);
-  }, [jobId, onComplete]);
+  }, [open, jobId, job?.status, onComplete]); // Added 'open' and 'job?.status' to dependencies
 
   const fetchSuppliers = async () => {
     try {

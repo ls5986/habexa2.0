@@ -495,12 +495,10 @@ export default function Products() {
   };
 
   const handleUploadComplete = (result) => {
-    // Refresh products list after a short delay to let backend process
-    setTimeout(() => {
-      fetchData();
-    }, 2000);
-    // Could show toast notification here
-    console.log('Upload complete:', result);
+    // Refresh products list after upload completes
+    // Only refresh once, not continuously
+    fetchData(true); // Force refresh with cache bypass
+    showToast(`Upload complete! ${result?.products_created || 0} products created.`, 'success');
   };
 
   const handleExport = async () => {
