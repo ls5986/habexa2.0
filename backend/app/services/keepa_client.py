@@ -278,6 +278,64 @@ class KeepaClient:
         
         return results
     
+    async def get_product(
+        self,
+        asin: str,
+        domain: int = 1,
+        days: int = 90,
+        history: bool = False
+    ) -> Optional[dict]:
+        """
+        Get product data for a single ASIN.
+        Wrapper around get_products_batch for convenience.
+        
+        Args:
+            asin: Amazon ASIN
+            domain: Keepa domain (1 = US)
+            days: Days of history/stats
+            history: Whether to include full price history (CSV)
+            
+        Returns:
+            Product data dict or None if not found
+        """
+        if not self.api_key:
+            logger.warning("Keepa API key not configured")
+            return None
+        
+        results = await self.get_products_batch(
+            asins=[asin],
+            domain=domain,
+            days=days,
+            history=history
+        )
+        
+        return results.get(asin)
+    
+    async def get_token_status(self) -> dict:
+        """Get current Keepa API token balance."""
+        if not self.api_key:
+            return {"tokens_left": 0, "error": "API key not configured"}
+        
+        try:
+            async with httpx.AsyncClient(timeout=10) as client:
+                response = await client.get(
+                    f"{self.base_url}/token",
+                    params={"key": self.api_key}
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    return {
+                        "tokens_left": data.get("tokensLeft", 0),
+                        "refill_rate": data.get("refillRate", 0),
+                        "refill_in": data.get("refillIn", 0)
+                    }
+                else:
+                    return {"tokens_left": 0, "error": f"HTTP {response.status_code}"}
+        except Exception as e:
+            logger.error(f"Error getting Keepa token status: {e}")
+            return {"tokens_left": 0, "error": str(e)}
+    
     def _parse_product(self, product: dict) -> dict:
         """Parse Keepa product response into our format."""
         stats = product.get("stats", {})
@@ -319,6 +377,53 @@ class KeepaClient:
         if isinstance(review_count, list):
             review_count = review_count[0] if review_count else None
         
+        # Parse price history if available
+        price_history = []
+        rank_history = []
+        
+        # Keepa CSV format: [timestamp, Amazon, New, Used, SalesRank, ...]
+        csv = product.get("csv", [])
+        if csv and len(csv) > 0:
+            for entry in csv:
+                if len(entry) >= 5:
+                    timestamp = entry[0]
+                    amazon_price = entry[1] if entry[1] > 0 else None
+                    sales_rank = entry[4] if entry[4] > 0 else None
+                    
+                    if amazon_price:
+                        price_history.append({
+                            "date": timestamp,
+                            "price": amazon_price / 100.0  # Convert cents to dollars
+                        })
+                    
+                    if sales_rank:
+                        rank_history.append({
+                            "date": timestamp,
+                            "rank": sales_rank
+                        })
+        
+        # Get averages from stats
+        averages = {
+            "price_30d": None,
+            "price_90d": None,
+            "rank_30d": None,
+            "rank_90d": None
+        }
+        
+        # Keepa stats format: stats.min[10] = FBA lowest 365d, stats.min[11] = FBM lowest 365d
+        # stats.avg[1] = average Amazon price
+        if stats:
+            avg_prices = stats.get("avg", [])
+            if len(avg_prices) > 1:
+                averages["price_30d"] = avg_prices[1] / 100.0 if avg_prices[1] > 0 else None
+            if len(avg_prices) > 1:
+                averages["price_90d"] = avg_prices[1] / 100.0 if avg_prices[1] > 0 else None
+            
+            avg_ranks = stats.get("avg", [])
+            if len(avg_ranks) > 4:
+                averages["rank_30d"] = avg_ranks[4] if avg_ranks[4] > 0 else None
+                averages["rank_90d"] = avg_ranks[4] if avg_ranks[4] > 0 else None
+        
         return {
             "asin": product.get("asin"),
             "title": product.get("title"),
@@ -326,8 +431,8 @@ class KeepaClient:
             "image_url": image_url,
             "bsr": bsr,
             "category": category,
-            "current_price": current_price,  # Add pricing from Keepa
-            "buy_box_price": current_price,  # Alias for compatibility
+            "current_price": current_price,
+            "buy_box_price": current_price,
             "sales_drops_30": stats.get("salesRankDrops30"),
             "sales_drops_90": stats.get("salesRankDrops90"),
             "sales_drops_180": stats.get("salesRankDrops180"),
@@ -335,6 +440,15 @@ class KeepaClient:
             "amazon_in_stock": product.get("availabilityAmazon", -1) == 0,
             "rating": rating,
             "review_count": review_count,
+            "price_history": price_history,
+            "rank_history": rank_history,
+            "averages": averages,
+            "current": {
+                "price": current_price,
+                "bsr": bsr,
+                "rating": rating,
+                "review_count": review_count
+            }
         }
 
 

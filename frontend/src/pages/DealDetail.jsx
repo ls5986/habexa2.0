@@ -34,6 +34,7 @@ import PriceHistoryChart from '../components/features/deals/PriceHistoryChart';
 import CompetitorAnalysis from '../components/features/deals/CompetitorAnalysis';
 import VariationAnalysis from '../components/features/deals/VariationAnalysis';
 import ListingScore from '../components/features/deals/ListingScore';
+import FavoriteButton from '../components/features/products/FavoriteButton';
 
 export default function DealDetail() {
   const { dealId } = useParams();
@@ -665,9 +666,9 @@ export default function DealDetail() {
                       Sales Rank: #{analysis.bsr?.toLocaleString()}
                     </Typography>
                   )}
-                  {analysis.sales_drops_30 !== undefined && (
+                  {analysis.sales_drops_30 !== undefined && analysis.sales_drops_30 != null && (
                     <Typography variant="body2">
-                      Sales/month (est): {analysis.sales_drops_30} drops in 30d
+                      Sales/month (est): {analysis.sales_drops_30.toLocaleString()} units
                     </Typography>
                   )}
                   {analysis.amazon_was_seller && (
@@ -716,13 +717,10 @@ export default function DealDetail() {
                 >
                   Re-analyze
                 </Button>
-                <Button 
-                  variant="outlined" 
-                  fullWidth
-                  startIcon={<Star size={16} />}
-                >
-                  Save to Favorites
-                </Button>
+                <FavoriteButton 
+                  productId={deal?.id || deal?.product_id}
+                  size="medium"
+                />
               </Box>
             </CardContent>
           </Card>

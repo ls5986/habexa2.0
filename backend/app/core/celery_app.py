@@ -28,6 +28,8 @@ celery_app = Celery(
         "app.tasks.telegram",
         "app.tasks.exports",
         "app.tasks.keepa_analysis",
+        "app.tasks.upload_processing",
+        "app.tasks.asin_lookup",
     ],
     task_always_eager=False  # Don't execute tasks synchronously
 )
@@ -60,6 +62,7 @@ celery_app.conf.update(
         "app.tasks.analysis.*": {"queue": "analysis"},
         "app.tasks.telegram.*": {"queue": "telegram"},
         "app.tasks.file_processing.*": {"queue": "default"},
+        "app.tasks.upload_processing.*": {"queue": "default"},
         "app.tasks.exports.*": {"queue": "default"},
     },
     
@@ -69,11 +72,16 @@ celery_app.conf.update(
         "app.tasks.analysis.batch_analyze_products": {"rate_limit": "1/s"},
     },
     
-    # Periodic tasks (Telegram monitoring)
+    # Periodic tasks
     beat_schedule={
         "check-telegram-channels": {
             "task": "app.tasks.telegram.check_all_channels",
             "schedule": 60.0,  # Every 60 seconds
+        },
+        "process-pending-asins": {
+            "task": "app.tasks.asin_lookup.process_pending_asin_lookups",
+            "schedule": 300.0,  # Every 5 minutes
+            "args": (100,),  # Process 100 products per run
         },
     },
 )

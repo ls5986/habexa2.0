@@ -1,5 +1,5 @@
 import { Box, Typography, Button } from '@mui/material';
-import { Home, Inbox, Users, Package, Search, Settings, ChevronLeft, ChevronRight, CreditCard, ShoppingCart, Receipt } from 'lucide-react';
+import { Home, Inbox, Users, Package, Search, Settings, ChevronLeft, ChevronRight, CreditCard, ShoppingCart, Receipt, FileText, Star } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { habexa } from '../../theme';
 import { useNotifications } from '../../context/NotificationContext';
@@ -8,7 +8,9 @@ import { useFeatureGate } from '../../hooks/useFeatureGate';
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/dashboard' },
   { id: 'products', label: 'Products', icon: Package, path: '/products', badge: true },
+  { id: 'favorites', label: 'Favorites', icon: Star, path: '/favorites' },
   { id: 'suppliers', label: 'Suppliers', icon: Users, path: '/suppliers' },
+  { id: 'jobs', label: 'Upload Jobs', icon: FileText, path: '/jobs' },
   { id: 'buy-list', label: 'Buy List', icon: ShoppingCart, path: '/buy-list' },
   { id: 'orders', label: 'Orders', icon: Receipt, path: '/orders' },
   { id: 'analyze', label: 'Analyze', icon: Search, path: '/analyze' },

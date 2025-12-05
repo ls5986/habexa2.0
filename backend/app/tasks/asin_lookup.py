@@ -1,0 +1,295 @@
+"""
+ASIN Lookup Tasks
+Background processing for UPC to ASIN conversion with caching.
+"""
+from app.core.celery_app import celery_app
+from app.services.supabase_client import supabase
+from app.services.upc_converter import upc_converter
+from app.tasks.base import run_async
+from typing import List, Dict, Optional
+import logging
+from datetime import datetime
+
+logger = logging.getLogger(__name__)
+
+
+# ============================================================================
+# UPC CACHE HELPERS
+# ============================================================================
+
+def get_cached_upcs(upcs: List[str]) -> Dict[str, Optional[str]]:
+    """
+    Get cached UPC to ASIN mappings.
+    
+    Returns:
+        Dictionary mapping UPC to ASIN (or None if not found)
+    """
+    if not upcs:
+        return {}
+    
+    result = supabase.table("upc_asin_cache")\
+        .select("upc, asin, not_found")\
+        .in_("upc", upcs)\
+        .execute()
+    
+    cached = {}
+    if result.data:
+        for row in result.data:
+            if row.get("not_found"):
+                cached[row["upc"]] = None  # Explicitly not found
+            else:
+                cached[row["upc"]] = row.get("asin")
+    
+    return cached
+
+
+def cache_upc_asin(upc: str, asin: Optional[str]):
+    """
+    Cache a UPC to ASIN mapping.
+    
+    Args:
+        upc: UPC code
+        asin: ASIN (or None if not found)
+    """
+    cache_data = {
+        "upc": upc,
+        "asin": asin,
+        "not_found": asin is None,
+        "last_lookup": datetime.utcnow().isoformat()
+    }
+    
+    # Check if exists
+    existing = supabase.table("upc_asin_cache")\
+        .select("upc, lookup_count")\
+        .eq("upc", upc)\
+        .limit(1)\
+        .execute()
+    
+    if existing.data:
+        # Update existing
+        cache_data["lookup_count"] = (existing.data[0].get("lookup_count", 0) or 0) + 1
+        supabase.table("upc_asin_cache")\
+            .update(cache_data)\
+            .eq("upc", upc)\
+            .execute()
+    else:
+        # Insert new
+        cache_data["lookup_count"] = 1
+        cache_data["first_lookup"] = datetime.utcnow().isoformat()
+        supabase.table("upc_asin_cache")\
+            .insert(cache_data)\
+            .execute()
+
+
+# ============================================================================
+# ASIN LOOKUP TASK
+# ============================================================================
+
+@celery_app.task
+def process_pending_asin_lookups(batch_size: int = 100):
+    """
+    Process products that need ASIN lookup.
+    
+    This task:
+    1. Gets products with asin_status='pending_lookup'
+    2. Checks UPC cache first
+    3. Looks up uncached UPCs via SP-API
+    4. Updates products with ASINs
+    5. Caches results
+    
+    Args:
+        batch_size: Number of products to process per run
+    """
+    try:
+        # Get products needing lookup
+        products_result = supabase.table("products")\
+            .select("id, upc, asin_status")\
+            .eq("asin_status", "pending_lookup")\
+            .not_.is_("upc", "null")\
+            .limit(batch_size)\
+            .execute()
+        
+        products = products_result.data or []
+        
+        if not products:
+            logger.info("No products pending ASIN lookup")
+            return {"processed": 0, "found": 0, "not_found": 0}
+        
+        logger.info(f"Processing {len(products)} products for ASIN lookup")
+        
+        # Extract unique UPCs
+        upcs = list(set(p["upc"] for p in products if p.get("upc")))
+        
+        # Check cache first
+        cached = get_cached_upcs(upcs)
+        uncached_upcs = [u for u in upcs if u not in cached]
+        
+        logger.info(f"Found {len(cached)} in cache, {len(uncached_upcs)} need lookup")
+        
+        # Lookup uncached UPCs via SP-API (with rate limiting)
+        lookups = {}
+        if uncached_upcs:
+            try:
+                # Batch lookup (20 at a time)
+                batch_size_api = 20
+                for i in range(0, len(uncached_upcs), batch_size_api):
+                    batch = uncached_upcs[i:i + batch_size_api]
+                    logger.info(f"Looking up batch {i//batch_size_api + 1}: {len(batch)} UPCs")
+                    
+                    # Use run_async to call the async method
+                    batch_results = run_async(upc_converter.upcs_to_asins_batch(batch))
+                    lookups.update(batch_results)
+                    
+                    # Small delay between batches to respect rate limits
+                    if i + batch_size_api < len(uncached_upcs):
+                        import time
+                        time.sleep(1)
+                
+                # Cache all results
+                for upc, asin in lookups.items():
+                    cache_upc_asin(upc, asin)
+                
+                logger.info(f"Looked up {len(lookups)} UPCs, found {sum(1 for a in lookups.values() if a)} ASINs")
+                
+            except Exception as e:
+                logger.error(f"Error during UPC lookup: {e}", exc_info=True)
+                # Continue with cached results only
+        
+        # Combine cached and newly looked up
+        all_results = {**cached, **lookups}
+        
+        # Update products with ASINs
+        found_count = 0
+        not_found_count = 0
+        
+        for product in products:
+            upc = product.get("upc")
+            if not upc:
+                continue
+            
+            asin = all_results.get(upc)
+            
+            if asin:
+                # Found ASIN
+                supabase.table("products")\
+                    .update({
+                        "asin": asin,
+                        "asin_status": "found",
+                        "updated_at": datetime.utcnow().isoformat()
+                    })\
+                    .eq("id", product["id"])\
+                    .execute()
+                found_count += 1
+            else:
+                # Not found
+                supabase.table("products")\
+                    .update({
+                        "asin_status": "not_found",
+                        "updated_at": datetime.utcnow().isoformat()
+                    })\
+                    .eq("id", product["id"])\
+                    .execute()
+                not_found_count += 1
+        
+        result = {
+            "processed": len(products),
+            "found": found_count,
+            "not_found": not_found_count,
+            "cached": len(cached),
+            "looked_up": len(lookups)
+        }
+        
+        logger.info(f"ASIN lookup complete: {result}")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error in process_pending_asin_lookups: {e}", exc_info=True)
+        return {"processed": 0, "error": str(e)}
+
+
+# ============================================================================
+# MANUAL ASIN LOOKUP (for specific products)
+# ============================================================================
+
+@celery_app.task
+def lookup_product_asins(product_ids: List[str]):
+    """
+    Manually trigger ASIN lookup for specific products.
+    
+    Args:
+        product_ids: List of product IDs to lookup
+    """
+    try:
+        # Get products
+        products_result = supabase.table("products")\
+            .select("id, upc, asin_status")\
+            .in_("id", product_ids)\
+            .not_.is_("upc", "null")\
+            .execute()
+        
+        products = products_result.data or []
+        
+        if not products:
+            return {"processed": 0, "message": "No products with UPCs found"}
+        
+        # Extract UPCs
+        upcs = [p["upc"] for p in products if p.get("upc")]
+        
+        # Check cache
+        cached = get_cached_upcs(upcs)
+        uncached_upcs = [u for u in upcs if u not in cached]
+        
+        # Lookup uncached
+        lookups = {}
+        if uncached_upcs:
+            try:
+                batch_results = run_async(upc_converter.upcs_to_asins_batch(uncached_upcs))
+                lookups.update(batch_results)
+                
+                # Cache results
+                for upc, asin in lookups.items():
+                    cache_upc_asin(upc, asin)
+            except Exception as e:
+                logger.error(f"Error during manual UPC lookup: {e}", exc_info=True)
+        
+        # Combine results
+        all_results = {**cached, **lookups}
+        
+        # Update products
+        found_count = 0
+        not_found_count = 0
+        
+        for product in products:
+            upc = product.get("upc")
+            asin = all_results.get(upc)
+            
+            if asin:
+                supabase.table("products")\
+                    .update({
+                        "asin": asin,
+                        "asin_status": "found",
+                        "updated_at": datetime.utcnow().isoformat()
+                    })\
+                    .eq("id", product["id"])\
+                    .execute()
+                found_count += 1
+            else:
+                supabase.table("products")\
+                    .update({
+                        "asin_status": "not_found",
+                        "updated_at": datetime.utcnow().isoformat()
+                    })\
+                    .eq("id", product["id"])\
+                    .execute()
+                not_found_count += 1
+        
+        return {
+            "processed": len(products),
+            "found": found_count,
+            "not_found": not_found_count
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in lookup_product_asins: {e}", exc_info=True)
+        return {"processed": 0, "error": str(e)}
+

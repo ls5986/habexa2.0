@@ -28,6 +28,8 @@ const Debug = lazy(() => import('./pages/Debug'));
 const BuyList = lazy(() => import('./pages/BuyList'));
 const Orders = lazy(() => import('./pages/Orders'));
 const OrderDetails = lazy(() => import('./pages/OrderDetails'));
+const Jobs = lazy(() => import('./pages/Jobs'));
+const Favorites = lazy(() => import('./pages/Favorites'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 const Loading = () => (
@@ -78,12 +80,14 @@ function App() {
                         <Route path="/deals/:dealId" element={<Suspense fallback={<Loading />}><DealDetail /></Suspense>} />
                         <Route path="/suppliers" element={<Suspense fallback={<Loading />}><Suppliers /></Suspense>} />
                         <Route path="/products" element={<Suspense fallback={<Loading />}><Products /></Suspense>} />
+                        <Route path="/jobs" element={<Suspense fallback={<Loading />}><Jobs /></Suspense>} />
                         <Route path="/buy-list" element={<Suspense fallback={<Loading />}><BuyList /></Suspense>} />
                         <Route path="/orders" element={<Suspense fallback={<Loading />}><Orders /></Suspense>} />
                         <Route path="/orders/:id" element={<Suspense fallback={<Loading />}><OrderDetails /></Suspense>} />
                         <Route path="/analyze" element={<Suspense fallback={<Loading />}><Analyze /></Suspense>} />
                         <Route path="/settings" element={<Suspense fallback={<Loading />}><Settings /></Suspense>} />
                         <Route path="/pricing" element={<Suspense fallback={<Loading />}><Pricing /></Suspense>} />
+                        <Route path="/favorites" element={<Suspense fallback={<Loading />}><Favorites /></Suspense>} />
                         {import.meta.env.DEV && (
                           <Route path="/debug" element={<Suspense fallback={<Loading />}><Debug /></Suspense>} />
                         )}

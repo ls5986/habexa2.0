@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.core.config import settings
-from app.api.v1 import deals, analysis, suppliers, notifications, settings as api_settings, watchlist, orders, billing, telegram, amazon, keepa, debug, market, sp_api, products, brands, jobs, batch, buy_list, auth, users
+from app.api.v1 import deals, analysis, suppliers, notifications, settings as api_settings, watchlist, orders, billing, telegram, amazon, keepa, debug, market, sp_api, products, brands, jobs, batch, buy_list, auth, users, upload, favorites
 from app.middleware.performance import PerformanceMiddleware
 import logging
 from datetime import datetime
@@ -96,12 +96,14 @@ app.include_router(orders.router, prefix=f"{settings.API_V1_PREFIX}/orders", tag
 app.include_router(billing.router, prefix=f"{settings.API_V1_PREFIX}/billing", tags=["billing"])
 app.include_router(auth.router, prefix=f"{settings.API_V1_PREFIX}/auth", tags=["auth"])
 app.include_router(users.router, prefix=f"{settings.API_V1_PREFIX}/users", tags=["users"])
+app.include_router(favorites.router, prefix=f"{settings.API_V1_PREFIX}", tags=["favorites"])
 app.include_router(telegram.router, prefix=f"{settings.API_V1_PREFIX}/integrations/telegram", tags=["telegram"])
 app.include_router(amazon.router, prefix=f"{settings.API_V1_PREFIX}", tags=["amazon"])
 app.include_router(keepa.router, prefix=f"{settings.API_V1_PREFIX}", tags=["keepa"])
 app.include_router(market.router, prefix=f"{settings.API_V1_PREFIX}", tags=["market"])
 app.include_router(sp_api.router, prefix=f"{settings.API_V1_PREFIX}", tags=["sp-api"])
 app.include_router(debug.router, prefix=f"{settings.API_V1_PREFIX}/debug", tags=["debug"])
+app.include_router(upload.router, prefix=f"{settings.API_V1_PREFIX}", tags=["upload"])
 
 
 @app.get("/")
