@@ -576,12 +576,12 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                             product_data = {
                                 "user_id": user_id,
                                 "asin": parsed["asin"],
+                                "upc": parsed.get("upc"),
+                                "title": parsed.get("title"),
+                                "brand": parsed.get("brand"),
                                 "status": "pending",
                                 "asin_status": "found"  # ASIN was found via UPC conversion
                             }
-                            # Only include title - brand may not exist in schema
-                            if parsed.get("title"):
-                                product_data["title"] = parsed["title"]
                             new_products.append(product_data)
                     
                     # Deduplicate by ASIN
@@ -613,12 +613,11 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                         "user_id": user_id,
                         "asin": None,  # No ASIN yet
                         "upc": upc,  # Store UPC for manual lookup
+                        "title": parsed.get("title"),
+                        "brand": parsed.get("brand"),
                         "status": "pending",
                         "asin_status": "not_found"  # Mark for manual entry
                     }
-                    # Only include title - brand may not exist in schema
-                    if parsed.get("title"):
-                        product_data["title"] = parsed["title"]
                     new_products_no_asin.append(product_data)
                 
                 if new_products_no_asin:
