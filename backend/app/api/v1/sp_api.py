@@ -4,6 +4,8 @@ SP-API endpoints for product data, pricing, fees, and eligibility.
 from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import Optional
 from app.api.deps import get_current_user
+from app.api.deps_test import get_current_user_optional
+from app.core.config import settings
 from app.services.sp_api_client import sp_api_client
 from app.services.keepa_client import keepa_client
 import logging
@@ -17,7 +19,7 @@ router = APIRouter(prefix="/sp-api", tags=["sp-api"])
 async def get_product_details(
     asin: str,
     marketplace_id: str = Query("ATVPDKIKX0DER", description="US marketplace"),
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_user_optional if settings.TEST_MODE else get_current_user)
 ):
     """
     Get complete product details: title, brand, image, BSR, pricing, sellers.

@@ -6,6 +6,8 @@ from typing import List
 import logging
 
 from app.api.deps import get_current_user
+from app.api.deps_test import get_current_user_optional
+from app.core.config import settings
 from app.services.keepa_client import keepa_client, KeepaError
 
 logger = logging.getLogger(__name__)
@@ -16,7 +18,7 @@ router = APIRouter(prefix="/keepa", tags=["keepa"])
 async def get_keepa_product(
     asin: str,
     days: int = Query(90, ge=30, le=365),
-    current_user=Depends(get_current_user)
+    current_user=Depends(get_current_user_optional if settings.TEST_MODE else get_current_user)
 ):
     """
     Get Keepa price history and stats for a product.
