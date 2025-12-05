@@ -769,7 +769,11 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                 }).eq("id", job_id).execute()
             except:
                 pass
-        raise  # Re-raise to mark task as failed (will be caught by Celery retry or sync caller)
+        # Only retry if this is a Celery task (has self)
+        if self is not None and hasattr(self, 'retry'):
+            raise self.retry(exc=e, countdown=60)
+        else:
+            raise  # Re-raise for sync version
 
 
 def process_file_upload_sync(job_id: str, user_id: str, supplier_id: str, file_contents_b64: str, filename: str):
