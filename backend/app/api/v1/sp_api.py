@@ -93,12 +93,11 @@ async def get_all_offers(
     Get all offers/sellers for a product using SP-API.
     Falls back to Keepa if SP-API not available.
     """
-    user_id = str(current_user.id)
+    # In TEST_MODE, current_user may be None
+    marketplace_id = "ATVPDKIKX0DER"  # Default to US
     
-    try:
-        # Try SP-API competitive pricing first
-        # Get marketplace_id
-        marketplace_id = "ATVPDKIKX0DER"  # Default to US
+    if current_user:
+        user_id = str(current_user.id)
         try:
             from app.services.supabase_client import supabase
             connection_result = supabase.table("amazon_connections")\
@@ -111,6 +110,8 @@ async def get_all_offers(
                 marketplace_id = connection_result.data[0]["marketplace_id"]
         except:
             pass
+    
+    try:
         
         # Get full offers data with seller list
         offers_data = await sp_api_client.get_item_offers(asin, marketplace_id)
@@ -184,8 +185,7 @@ async def get_product_fees(
     Get FBA fees estimate from SP-API.
     Falls back to estimated fees if SP-API not available.
     """
-    user_id = str(current_user.id)
-    
+    # In TEST_MODE, current_user may be None - use default marketplace
     try:
         fees = await sp_api_client.get_fee_estimate(asin, price, marketplace_id)
         
