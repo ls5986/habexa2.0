@@ -195,6 +195,11 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal, onAnalysisComplete }) =>
               }
             } catch (err) {
               console.error('Error polling job:', err);
+              // If job not found (404), stop polling gracefully
+              if (err.response?.status === 404) {
+                showToast('Job not found', 'warning');
+                return;
+              }
               if (attempts < maxAttempts) {
                 attempts++;
                 setTimeout(checkJob, 1000);
