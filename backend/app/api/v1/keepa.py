@@ -28,20 +28,60 @@ async def get_keepa_product(
     """
     
     try:
-        data = await keepa_client.get_product(
-            asin=asin,
-            days=days,
-            history=True
-        )
+        # Check if API key is configured
+        if not keepa_client.api_key:
+            logger.error("KEEPA_API_KEY not configured in environment")
+            return {
+                "asin": asin,
+                "error": "Keepa API key not configured",
+                "stats": {},
+                "price_history": [],
+                "rank_history": [],
+                "current": {},
+                "averages": {}
+            }
+        
+        # Try get_product first, fallback to get_products_batch if method doesn't exist
+        data = None
+        try:
+            if hasattr(keepa_client, 'get_product'):
+                data = await keepa_client.get_product(
+                    asin=asin,
+                    domain=1,  # US marketplace
+                    days=days,
+                    history=True
+                )
+            else:
+                # Fallback to batch method
+                results = await keepa_client.get_products_batch(
+                    asins=[asin],
+                    domain=1,
+                    days=days,
+                    history=True
+                )
+                data = results.get(asin) if results else None
+        except AttributeError:
+            # Method doesn't exist, use batch
+            results = await keepa_client.get_products_batch(
+                asins=[asin],
+                domain=1,
+                days=days,
+                history=True
+            )
+            data = results.get(asin) if results else None
         
         if not data:
-            # Return a more helpful error - could be API key issue, invalid ASIN, or Keepa API error
-            raise HTTPException(
-                404, 
-                f"Keepa data not available for {asin}. This could mean: "
-                "1) ASIN doesn't exist, 2) Keepa API key issue, or 3) Keepa API error. "
-                "Check backend logs for details."
-            )
+            # Return structured empty response instead of error
+            logger.warning(f"Keepa returned no data for {asin}")
+            return {
+                "asin": asin,
+                "error": "No data available from Keepa",
+                "stats": {},
+                "price_history": [],
+                "rank_history": [],
+                "current": {},
+                "averages": {}
+            }
         
         return data
         
@@ -69,19 +109,42 @@ async def get_price_history(
     """
     
     try:
-        data = await keepa_client.get_product(
-            asin=asin,
-            days=days,
-            history=True
-        )
+        # Try get_product first, fallback to get_products_batch if method doesn't exist
+        data = None
+        try:
+            if hasattr(keepa_client, 'get_product'):
+                data = await keepa_client.get_product(
+                    asin=asin,
+                    domain=1,
+                    days=days,
+                    history=True
+                )
+            else:
+                # Fallback to batch method
+                results = await keepa_client.get_products_batch(
+                    asins=[asin],
+                    domain=1,
+                    days=days,
+                    history=True
+                )
+                data = results.get(asin) if results else None
+        except AttributeError:
+            # Method doesn't exist, use batch
+            results = await keepa_client.get_products_batch(
+                asins=[asin],
+                domain=1,
+                days=days,
+                history=True
+            )
+            data = results.get(asin) if results else None
         
         if not data:
             raise HTTPException(404, f"Product not found: {asin}")
         
         return {
             "asin": asin,
-            "price_history": data.get("price_history", {}),
-            "rank_history": data.get("rank_history", {}),
+            "price_history": data.get("price_history", []),
+            "rank_history": data.get("rank_history", []),
             "current": data.get("current", {}),
             "averages": data.get("averages", {}),
         }
@@ -141,7 +204,29 @@ async def get_sales_estimate(
     """
     
     try:
-        data = await keepa_client.get_product(asin=asin, days=180, history=False)
+        # Try get_product first, fallback to get_products_batch if method doesn't exist
+        data = None
+        try:
+            if hasattr(keepa_client, 'get_product'):
+                data = await keepa_client.get_product(asin=asin, domain=1, days=180, history=False)
+            else:
+                # Fallback to batch method
+                results = await keepa_client.get_products_batch(
+                    asins=[asin],
+                    domain=1,
+                    days=180,
+                    history=False
+                )
+                data = results.get(asin) if results else None
+        except AttributeError:
+            # Method doesn't exist, use batch
+            results = await keepa_client.get_products_batch(
+                asins=[asin],
+                domain=1,
+                days=180,
+                history=False
+            )
+            data = results.get(asin) if results else None
         
         if not data:
             raise HTTPException(404, f"Product not found: {asin}")
