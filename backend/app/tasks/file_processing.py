@@ -616,8 +616,7 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                         "status": "pending",
                         "asin_status": "not_found"  # Mark for manual entry
                     }
-                    if parsed.get("brand"):
-                        product_data["brand"] = parsed["brand"]
+                    # Only include title - brand may not exist in schema
                     if parsed.get("title"):
                         product_data["title"] = parsed["title"]
                     new_products_no_asin.append(product_data)
