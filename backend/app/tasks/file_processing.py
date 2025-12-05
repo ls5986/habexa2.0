@@ -607,11 +607,15 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                     if not upc:
                         continue
                     
+                    # Use placeholder ASIN since column is NOT NULL
+                    # Format: PENDING_{UPC} - will be updated when ASIN is found
+                    placeholder_asin = f"PENDING_{upc}"
+                    
                     # Check cache by UPC (we'll need to query by UPC)
                     # For now, create new product - deduplication can happen later
                     product_data = {
                         "user_id": user_id,
-                        "asin": None,  # No ASIN yet
+                        "asin": placeholder_asin,  # Placeholder until real ASIN is found
                         "upc": upc,  # Store UPC for manual lookup
                         "title": parsed.get("title"),
                         "brand": parsed.get("brand"),
