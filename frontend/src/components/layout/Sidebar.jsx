@@ -8,7 +8,7 @@ import { useFeatureGate } from '../../hooks/useFeatureGate';
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/dashboard' },
   { id: 'products', label: 'Products', icon: Package, path: '/products', badge: true },
-  { id: 'favorites', label: 'Favorites', icon: Star, path: '/favorites' },
+  { id: 'favorites', label: 'Favorites', icon: Star, iconImage: '/logos/favorites-icon.png', path: '/favorites' },
   { id: 'suppliers', label: 'Suppliers', icon: Users, path: '/suppliers' },
   { id: 'jobs', label: 'Upload Jobs', icon: FileText, path: '/jobs' },
   { id: 'buy-list', label: 'Buy List', icon: ShoppingCart, path: '/buy-list' },
@@ -17,7 +17,7 @@ const menuItems = [
   { id: 'pricing', label: 'Pricing', icon: CreditCard, path: '/pricing' },
 ];
 
-const NavItem = ({ icon: Icon, label, path, active, badge, collapsed }) => {
+const NavItem = ({ icon: Icon, iconImage, label, path, active, badge, collapsed }) => {
   const navigate = useNavigate();
   const { unreadCount } = useNotifications();
 
@@ -53,7 +53,16 @@ const NavItem = ({ icon: Icon, label, path, active, badge, collapsed }) => {
     >
       {badge && unreadCount > 0 ? (
         <Box sx={{ position: 'relative' }}>
-          <Icon size={20} />
+          {iconImage ? (
+            <Box
+              component="img"
+              src={iconImage}
+              alt={label}
+              sx={{ width: 20, height: 20, objectFit: 'contain' }}
+            />
+          ) : (
+            <Icon size={20} />
+          )}
           <Box
             sx={{
               position: 'absolute',
@@ -67,6 +76,13 @@ const NavItem = ({ icon: Icon, label, path, active, badge, collapsed }) => {
             }}
           />
         </Box>
+      ) : iconImage ? (
+        <Box
+          component="img"
+          src={iconImage}
+          alt={label}
+          sx={{ width: 20, height: 20, objectFit: 'contain' }}
+        />
       ) : (
         <Icon size={20} />
       )}
@@ -137,6 +153,7 @@ const Sidebar = ({ collapsed, onToggle }) => {
           <NavItem
             key={item.id}
             icon={item.icon}
+            iconImage={item.iconImage}
             label={item.label}
             path={item.path}
             active={isActive(item.path)}
