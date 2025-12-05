@@ -176,10 +176,11 @@ async def get_all_offers(
 
 @router.get("/product/{asin}/fees")
 async def get_product_fees(
+    request: Request,
     asin: str,
     price: float = Query(..., description="Sale price"),
     marketplace_id: str = Query("ATVPDKIKX0DER"),
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_user_optional if settings.TEST_MODE else get_current_user)
 ):
     """
     Get FBA fees estimate from SP-API.
@@ -228,40 +229,49 @@ async def get_product_fees(
 
 @router.get("/product/{asin}/eligibility")
 async def get_product_eligibility(
+    request: Request,
     asin: str,
-    current_user = Depends(get_current_user)
+    marketplace_id: str = Query("ATVPDKIKX0DER"),
+    current_user = Depends(get_current_user_optional if settings.TEST_MODE else get_current_user)
 ):
     """
     Check if seller can sell this product (restrictions/gating).
     Requires user to be connected to Amazon seller account.
     Returns NOT_CONNECTED if user hasn't connected their account.
+    In TEST_MODE without user, returns UNKNOWN status.
     """
-    user_id = str(current_user.id)
+    marketplace_id = marketplace_id or "ATVPDKIKX0DER"
     
+    # If user is authenticated, check their connection
+    if current_user:
+        try:
+            # Check if user is connected to Amazon first
+            from app.services.supabase_client import supabase
+            user_id = str(current_user.id)
+            connection_result = supabase.table("amazon_connections")\
+                .select("is_connected, marketplace_id")\
+                .eq("user_id", user_id)\
+                .eq("is_connected", True)\
+                .limit(1)\
+                .execute()
+            
+            if not connection_result.data or not connection_result.data[0].get("is_connected"):
+                # User not connected - return not-connected status (don't call API)
+                return {
+                    "asin": asin,
+                    "canSell": None,
+                    "status": "NOT_CONNECTED",
+                    "reasons": ["Amazon seller account not connected. Please connect your account in Settings."],
+                    "source": "not-connected"
+                }
+            
+            # Get marketplace_id from connection
+            marketplace_id = connection_result.data[0].get("marketplace_id") or "ATVPDKIKX0DER"
+        except Exception as e:
+            logger.warning(f"Error checking user connection: {e}")
+    
+    # In TEST_MODE or with connected user, check eligibility
     try:
-        # Check if user is connected to Amazon first
-        from app.services.supabase_client import supabase
-        connection_result = supabase.table("amazon_connections")\
-            .select("is_connected, marketplace_id")\
-            .eq("user_id", user_id)\
-            .eq("is_connected", True)\
-            .limit(1)\
-            .execute()
-        
-        if not connection_result.data or not connection_result.data[0].get("is_connected"):
-            # User not connected - return not-connected status (don't call API)
-            return {
-                "asin": asin,
-                "canSell": None,
-                "status": "NOT_CONNECTED",
-                "reasons": ["Amazon seller account not connected. Please connect your account in Settings."],
-                "source": "not-connected"
-            }
-        
-        # Get marketplace_id from connection
-        marketplace_id = connection_result.data[0].get("marketplace_id") or "ATVPDKIKX0DER"
-        
-        # Now call eligibility check with CORRECT parameters (asin, marketplace_id)
         eligibility = await sp_api_client.check_eligibility(asin, marketplace_id)
         
         if eligibility:
@@ -296,20 +306,20 @@ async def get_product_eligibility(
 
 @router.get("/product/{asin}/sales-estimate")
 async def get_sales_estimate(
+    request: Request,
     asin: str,
     marketplace_id: str = Query("ATVPDKIKX0DER"),
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_user_optional if settings.TEST_MODE else get_current_user)
 ):
     """
     Get sales rank and estimate monthly sales.
     Uses SP-API if available, falls back to Keepa.
     """
-    user_id = str(current_user.id)
+    # In TEST_MODE, current_user may be None - use default marketplace
+    marketplace_id = marketplace_id or "ATVPDKIKX0DER"  # Default to US
     
-    try:
-        # Try SP-API first
-        # Get marketplace_id
-        marketplace_id = "ATVPDKIKX0DER"  # Default to US
+    if current_user:
+        user_id = str(current_user.id)
         try:
             from app.services.supabase_client import supabase
             connection_result = supabase.table("amazon_connections")\
@@ -322,6 +332,8 @@ async def get_sales_estimate(
                 marketplace_id = connection_result.data[0]["marketplace_id"]
         except:
             pass
+    
+    try:
         
         try:
             pricing = await sp_api_client.get_competitive_pricing(asin, marketplace_id)
