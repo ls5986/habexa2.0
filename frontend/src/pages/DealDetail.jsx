@@ -77,7 +77,9 @@ export default function DealDetail() {
       
       if (asin) {
         // Fetch SP-API data and Keepa in parallel
-        const [offersRes, feesRes, eligibilityRes, salesRes, keepaRes] = await Promise.allSettled([
+        // IMPORTANT: Call /sp-api/product/{asin} FIRST to get catalog data (title, brand, image)
+        const [productRes, offersRes, feesRes, eligibilityRes, salesRes, keepaRes] = await Promise.allSettled([
+          api.get(`/sp-api/product/${asin}`).catch(() => null), // Catalog data (title, brand, image)
           api.get(`/sp-api/product/${asin}/offers`).catch(() => null),
           sellPrice > 0 ? api.get(`/sp-api/product/${asin}/fees?price=${sellPrice}`).catch(() => null) : Promise.resolve(null),
           api.get(`/sp-api/product/${asin}/eligibility`).catch(() => null),
@@ -85,7 +87,21 @@ export default function DealDetail() {
           api.get(`/keepa/product/${asin}?days=90`).catch(() => null)
         ]);
         
+        // Extract catalog data and update deal if missing
+        const productData = productRes.status === 'fulfilled' && productRes.value?.data ? productRes.value.data : null;
+        if (productData && (productData.title || productData.image_url || productData.brand)) {
+          // Update deal with catalog data if missing
+          setDeal(prev => ({
+            ...prev,
+            title: prev?.title || productData.title,
+            brand: prev?.brand || productData.brand,
+            image_url: prev?.image_url || productData.image_url,
+            sales_rank: prev?.sales_rank || productData.sales_rank
+          }));
+        }
+        
         setSpData({
+          product: productData, // Store catalog data
           offers: offersRes.status === 'fulfilled' && offersRes.value?.data ? offersRes.value.data : null,
           fees: feesRes.status === 'fulfilled' && feesRes.value?.data ? feesRes.value.data : null,
           eligibility: eligibilityRes.status === 'fulfilled' && eligibilityRes.value?.data ? eligibilityRes.value.data : null,
@@ -93,7 +109,26 @@ export default function DealDetail() {
         });
         
         if (keepaRes.status === 'fulfilled' && keepaRes.value?.data) {
-          setKeepaData(keepaRes.value.data);
+          const keepaResponse = keepaRes.value.data;
+          // Check if Keepa returned an error (our fallback returns structured empty response)
+          if (keepaResponse.error) {
+            console.warn('Keepa API error:', keepaResponse.error);
+            // Still set data so UI can handle gracefully
+            setKeepaData(keepaResponse);
+          } else {
+            setKeepaData(keepaResponse);
+          }
+        } else {
+          // Keepa request failed - set empty structure
+          setKeepaData({
+            asin: asin,
+            error: "Keepa API request failed",
+            stats: {},
+            price_history: [],
+            rank_history: [],
+            current: {},
+            averages: {}
+          });
         }
       }
     } catch (err) {
@@ -224,15 +259,27 @@ export default function DealDetail() {
                 justifyContent: 'center',
                 overflow: 'hidden'
               }}>
-                {analysis?.image_url ? (
+                {deal?.image_url || analysis?.image_url || spData.product?.image_url ? (
                   <img 
-                    src={analysis.image_url} 
-                    alt={analysis.product_title || deal.asin}
+                    src={deal?.image_url || analysis?.image_url || spData.product?.image_url} 
+                    alt={deal?.title || analysis?.product_title || spData.product?.title || deal.asin}
                     style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      const fallback = e.target.nextSibling;
+                      if (fallback) fallback.style.display = 'flex';
+                    }}
                   />
-                ) : (
+                ) : null}
+                <Box sx={{ 
+                  display: (deal?.image_url || analysis?.image_url || spData.product?.image_url) ? 'none' : 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '100%',
+                  height: '100%'
+                }}>
                   <Package size={64} color="#666666" />
-                )}
+                </Box>
               </Box>
 
               {/* ASIN & Links */}
@@ -257,7 +304,7 @@ export default function DealDetail() {
 
               {/* Title */}
               <Typography variant="body2" sx={{ mb: 2, lineHeight: 1.4 }}>
-                {analysis?.product_title || deal.product_title || 'Unknown Product'}
+                {deal?.title || spData.product?.title || analysis?.product_title || deal.product_title || 'Unknown Product'}
               </Typography>
 
               {/* Eligibility Badge */}
@@ -287,8 +334,8 @@ export default function DealDetail() {
 
               {/* Brand & Category */}
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
-                {analysis?.brand && (
-                  <Chip label={analysis.brand} size="small" variant="outlined" />
+                {(deal?.brand || spData.product?.brand || analysis?.brand) && (
+                  <Chip label={deal?.brand || spData.product?.brand || analysis?.brand} size="small" variant="outlined" />
                 )}
                 {analysis?.category && (
                   <Chip label={analysis.category} size="small" variant="outlined" />
@@ -773,7 +820,19 @@ export default function DealDetail() {
 
             {/* Price History Tab */}
             {activeTab === 2 && (
-              <PriceHistoryChart asin={deal.asin} buyCost={deal.buy_cost} />
+              <Box>
+                {keepaData?.error ? (
+                  <Alert severity="warning" sx={{ mb: 2 }}>
+                    <Typography variant="body2">
+                      Keepa data not available: {keepaData.error}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                      This may be due to a missing Keepa API key or the product not being tracked by Keepa.
+                    </Typography>
+                  </Alert>
+                ) : null}
+                <PriceHistoryChart asin={deal.asin} buyCost={deal.buy_cost} keepaData={keepaData} />
+              </Box>
             )}
 
             {/* Competitors Tab */}

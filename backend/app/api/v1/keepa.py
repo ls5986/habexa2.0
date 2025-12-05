@@ -3,10 +3,12 @@ Keepa API endpoints for price history and product data.
 """
 from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List
+import logging
 
 from app.api.deps import get_current_user
 from app.services.keepa_client import keepa_client, KeepaError
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 

@@ -54,21 +54,28 @@ const formatDate = (dateString) => {
 const PriceHistoryChart = ({ 
   asin, 
   buyCost,
+  keepaData: propKeepaData, // Accept keepaData from parent to avoid duplicate API calls
   onDataLoaded 
 }) => {
   const [chartType, setChartType] = useState('price');
   const [period, setPeriod] = useState(90);
-  const [data, setData] = useState(null);
+  const [data, setData] = useState(propKeepaData || null);
   
   const { getProduct, loading, error } = useKeepa();
 
   const loadingRef = useRef(false);
 
   useEffect(() => {
-    if (asin && !loadingRef.current) {
+    // If parent provided keepaData, use it; otherwise fetch
+    if (propKeepaData) {
+      setData(propKeepaData);
+      if (onDataLoaded) {
+        onDataLoaded(propKeepaData);
+      }
+    } else if (asin && !loadingRef.current) {
       loadData();
     }
-  }, [asin, period]);
+  }, [asin, period, propKeepaData]);
 
   const loadData = async () => {
     if (loadingRef.current) return; // Prevent duplicate calls
@@ -85,8 +92,10 @@ const PriceHistoryChart = ({
       // Silently handle 404s - Keepa data just isn't available for this ASIN
       if (err.response?.status === 404) {
         console.log(`Keepa data not available for ${asin} (this is normal)`);
+        setData({ error: 'Keepa data not available', asin });
       } else {
         console.error('Failed to load Keepa data:', err);
+        setData({ error: err.message || 'Failed to load Keepa data', asin });
       }
     } finally {
       loadingRef.current = false;
@@ -220,11 +229,29 @@ const PriceHistoryChart = ({
     );
   };
 
-  if (error) {
+  // Handle error states
+  if (error || (data && data.error)) {
     return (
-      <Alert severity="error" sx={{ mb: 2 }}>
-        {error}
-      </Alert>
+      <Card>
+        <CardContent>
+          <Alert severity="warning">
+            <Typography variant="body2" fontWeight={600} gutterBottom>
+              Keepa Data Not Available
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {data?.error || error || 'Unable to load price history data'}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+              This may be due to:
+              <ul style={{ marginTop: 8, marginBottom: 0, paddingLeft: 20 }}>
+                <li>Missing Keepa API key configuration</li>
+                <li>Product not tracked by Keepa</li>
+                <li>Temporary API service issue</li>
+              </ul>
+            </Typography>
+          </Alert>
+        </CardContent>
+      </Card>
     );
   }
 
