@@ -39,6 +39,14 @@ class JobManager:
             "updated_at": now
         }).eq("id", self.job_id).execute()
     
+    def set_status(self, status: str):
+        """Update job status only."""
+        from datetime import datetime
+        supabase.table("jobs").update({
+            "status": status,
+            "updated_at": datetime.utcnow().isoformat()
+        }).eq("id", self.job_id).execute()
+    
     def update_progress(self, processed: int, total: int, success: int = 0, errors: int = 0, error_list: list = None, status: str = None):
         """Update job progress."""
         from datetime import datetime
