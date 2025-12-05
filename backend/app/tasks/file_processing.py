@@ -748,6 +748,9 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                     batch_analyze_products.delay(analysis_job_id, user_id, product_ids)
                     
                     logger.info(f"Auto-queued analysis for {len(product_ids)} products from upload {job_id}")
+            except Exception as analysis_error:
+                # Don't fail the upload job if auto-analysis fails
+                logger.warning(f"Failed to auto-analyze uploaded products: {analysis_error}")
         
     except Exception as e:
         logger.error(f"❌ BACKGROUND TASK CRASHED for job {job_id}: {e}", exc_info=True)
@@ -778,28 +781,6 @@ def process_file_upload_sync(job_id: str, user_id: str, supplier_id: str, file_c
     except Exception as e:
         logger.error(f"process_file_upload_sync failed for job {job_id}: {e}", exc_info=True)
         raise
-                # Don't fail the upload job if auto-analysis fails
-                logger.warning(f"Failed to auto-analyze uploaded products: {analysis_error}")
-        
-    except Exception as e:
-        logger.error(f"❌ BACKGROUND TASK CRASHED for job {job_id}: {e}", exc_info=True)
-        logger.error(f"Traceback: {traceback.format_exc()}")
-        try:
-            job.fail(f"Task execution failed: {str(e)}")
-        except:
-            # If job update fails, try direct Supabase update
-            try:
-                supabase.table("jobs").update({
-                    "status": "failed",
-                    "errors": [f"Task execution failed: {str(e)}"]
-                }).eq("id", job_id).execute()
-            except:
-                pass
-        # Only retry if this is a Celery task (has self)
-        if hasattr(self, 'retry'):
-            raise self.retry(exc=e, countdown=60)
-        else:
-            raise  # Re-raise for sync version
 
 
 def process_file_upload_sync(job_id: str, user_id: str, supplier_id: str, file_contents_b64: str, filename: str):
