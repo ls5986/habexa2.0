@@ -209,12 +209,24 @@ services:
       # Keepa API (REQUIRED for analysis - used by batch_analyzer for catalog data)
       - key: KEEPA_API_KEY
         sync: false
-      # Redis
+      # OpenAI (for file processing if needed)
+      - key: OPENAI_API_KEY
+        sync: false
+        required: false
+      # Redis (REQUIRED for Celery broker/backend)
       - key: REDIS_URL
         fromService:
           type: redis
           name: habexa-redis
           property: connectionString
+      # Backend URL (for any callbacks)
+      - key: BACKEND_URL
+        fromService:
+          type: web
+          name: habexa-backend
+          property: host
+      - key: FRONTEND_URL
+        value: https://habexa-frontend.onrender.com
 
   # Celery Worker (Telegram Queue)
   # REQUIRES: OPENAI_API_KEY for message extraction, TELEGRAM_API_ID/HASH for channel access
