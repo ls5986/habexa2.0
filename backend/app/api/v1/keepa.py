@@ -9,7 +9,7 @@ from app.api.deps import get_current_user
 from app.services.keepa_client import keepa_client, KeepaError
 
 logger = logging.getLogger(__name__)
-router = APIRouter()
+router = APIRouter(prefix="/keepa", tags=["keepa"])
 
 
 @router.get("/product/{asin}")

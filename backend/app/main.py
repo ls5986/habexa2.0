@@ -99,7 +99,7 @@ app.include_router(users.router, prefix=f"{settings.API_V1_PREFIX}/users", tags=
 app.include_router(favorites.router, prefix=f"{settings.API_V1_PREFIX}", tags=["favorites"])
 app.include_router(telegram.router, prefix=f"{settings.API_V1_PREFIX}/integrations/telegram", tags=["telegram"])
 app.include_router(amazon.router, prefix=f"{settings.API_V1_PREFIX}", tags=["amazon"])
-app.include_router(keepa.router, prefix=f"{settings.API_V1_PREFIX}", tags=["keepa"])
+app.include_router(keepa.router, prefix=f"{settings.API_V1_PREFIX}", tags=["keepa"])  # Router already has /keepa prefix
 app.include_router(market.router, prefix=f"{settings.API_V1_PREFIX}", tags=["market"])
 app.include_router(sp_api.router, prefix=f"{settings.API_V1_PREFIX}", tags=["sp-api"])
 app.include_router(debug.router, prefix=f"{settings.API_V1_PREFIX}/debug", tags=["debug"])
