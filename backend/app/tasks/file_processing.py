@@ -481,21 +481,29 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                                         "brand": supplier_data.get("brand")
                                     })
                                 else:
-                                    # For standard format, need to re-fetch the row
-                                    # Find the original row in the batch
-                                    original_row = None
-                                    for orig_row in batch:
-                                        if parse_upc(orig_row) == upc:
-                                            original_row = orig_row
-                                            break
-                                    
-                                    if original_row:
+                                    # For standard format, use stored row data
+                                    if supplier_data:
                                         parsed_rows.append({
                                             "asin": asin_result,
-                                            "buy_cost": parse_cost(original_row),
-                                            "moq": parse_moq(original_row),
-                                            "notes": parse_notes(original_row)
+                                            "buy_cost": supplier_data.get("buy_cost"),
+                                            "moq": supplier_data.get("moq", 1),
+                                            "notes": supplier_data.get("notes")
                                         })
+                                    else:
+                                        # Fallback: try to find original row
+                                        original_row = None
+                                        for orig_row in batch:
+                                            if parse_upc(orig_row) == upc:
+                                                original_row = orig_row
+                                                break
+                                        
+                                        if original_row:
+                                            parsed_rows.append({
+                                                "asin": asin_result,
+                                                "buy_cost": parse_cost(original_row),
+                                                "moq": parse_moq(original_row),
+                                                "notes": parse_notes(original_row)
+                                            })
                                 asins.append(asin_result)
                             else:
                                 # UPC conversion failed - but we still want to save the product
@@ -517,6 +525,10 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                                         "title": supplier_data.get("title"),
                                         "asin_status": "not_found"  # Mark for manual entry
                                     })
+                                    logger.info(f"✅ Row {row_num}: UPC {upc} conversion failed, but product will be saved with asin_status='not_found'")
+                                else:
+                                    # No supplier_data - this shouldn't happen for KEHE format, but handle it
+                                    logger.warning(f"⚠️ Row {row_num}: UPC {upc} conversion failed but no supplier_data available")
                                 
                                 if row_num:
                                     error_list.append(f"Row {row_num}: Could not convert UPC {upc} to ASIN - product saved for manual entry")
