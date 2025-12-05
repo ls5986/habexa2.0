@@ -4,7 +4,7 @@ import {
   Card, CardContent, Chip, Grid, Alert, Table, TableBody, TableRow, TableCell
 } from '@mui/material';
 import {
-  CheckCircle, Warning, Clock, TrendingUp, Package, Search, DollarSign, BarChart2
+  CheckCircle, AlertTriangle, Clock, TrendingUp, Package, Search, DollarSign, BarChart2
 } from 'lucide-react';
 import { habexa } from '../../../theme';
 
@@ -60,7 +60,7 @@ export default function PipelineProgressTracker({ job, parsedData, conversionDat
       case 'active':
         return <Clock size={20} color={habexa.warning.main} />;
       case 'error':
-        return <Warning size={20} color={habexa.error.main} />;
+        return <AlertTriangle size={20} color={habexa.error.main} />;
       default:
         return <Clock size={20} color={habexa.gray[400]} />;
     }
