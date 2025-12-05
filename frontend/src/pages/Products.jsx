@@ -332,6 +332,7 @@ export default function Products() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, deal: null });
+  const [manualPriceDialog, setManualPriceDialog] = useState({ open: false, deal: null, analysis: null });
   const { hasFeature, promptUpgrade } = useFeatureGate();
   const { showToast } = useToast();
 
