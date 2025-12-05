@@ -443,15 +443,26 @@ async def upload_file(
     ALL products in file will be tied to the selected supplier.
     Returns job_id immediately, processes in background.
     """
+    logger.info("=" * 80)
+    logger.info("📤 UPLOAD ENDPOINT HIT")
+    logger.info("=" * 80)
+    
     try:
         user_id = str(current_user.id)
         filename = file.filename or "unknown"
         
+        logger.info(f"📋 Upload Parameters:")
+        logger.info(f"   User ID: {user_id}")
+        logger.info(f"   Supplier ID: {supplier_id}")
+        logger.info(f"   Filename: {filename}")
+        
         # Validate file type
         if not filename.lower().endswith(('.csv', '.xlsx', '.xls')):
+            logger.error(f"❌ Invalid file type: {filename}")
             raise HTTPException(400, "File must be .csv, .xlsx, or .xls")
         
         # Validate supplier belongs to user
+        logger.info(f"🔍 Validating supplier {supplier_id} for user {user_id}...")
         supplier = supabase.table("suppliers")\
             .select("id, name")\
             .eq("id", supplier_id)\
@@ -460,16 +471,24 @@ async def upload_file(
             .execute()
         
         if not supplier.data:
+            logger.error(f"❌ Invalid supplier: {supplier_id} not found for user {user_id}")
             raise HTTPException(400, "Invalid supplier")
         
+        logger.info(f"✅ Supplier validated: {supplier.data[0]['name']}")
+        
         # Read and encode file contents
+        logger.info(f"📖 Reading file content...")
         contents = await file.read()
+        logger.info(f"   File size: {len(contents)} bytes")
+        
         contents_b64 = base64.b64encode(contents).decode()
+        logger.info(f"   Base64 encoded size: {len(contents_b64)} characters")
         
         # Create job record
         job_id = str(uuid.uuid4())
         job_type = "file_upload"
         
+        logger.info(f"💾 Creating job record: {job_id}")
         try:
             supabase.table("jobs").insert({
                 "id": job_id,
@@ -482,8 +501,9 @@ async def upload_file(
                     "supplier_name": supplier.data[0]["name"]
                 }
             }).execute()
+            logger.info(f"✅ Job record created: {job_id}")
         except Exception as db_error:
-            logger.error(f"Failed to create job record: {db_error}")
+            logger.error(f"❌ Failed to create job record: {db_error}")
             # Check if jobs table exists
             error_str = str(db_error)
             if "could not find the table" in error_str.lower() or "PGRST205" in error_str:
@@ -512,25 +532,62 @@ async def upload_file(
                 except:
                     pass
         
-        # Try Celery first, fallback to BackgroundTasks
+        # CRITICAL: Try Celery first, fallback to BackgroundTasks
+        logger.info("=" * 80)
+        logger.info("📤 QUEUING CELERY TASK")
+        logger.info("=" * 80)
+        logger.info(f"   Job ID: {job_id}")
+        logger.info(f"   User ID: {user_id}")
+        logger.info(f"   Supplier ID: {supplier_id}")
+        logger.info(f"   Filename: {filename}")
+        logger.info(f"   Content length (base64): {len(contents_b64)}")
+        
         try:
-            logger.info(f"Attempting to queue Celery task for job {job_id}...")
-            task_result = process_file_upload.delay(job_id, user_id, supplier_id, contents_b64, filename)
-            logger.info(f"✅ Celery task queued successfully. Task ID: {task_result.id}")
+            # Import the task
+            from app.tasks.file_processing import process_file_upload
+            
+            logger.info(f"🔍 Checking Celery task signature...")
+            logger.info(f"   Task: {process_file_upload}")
+            logger.info(f"   Task name: {process_file_upload.name}")
+            
+            # Call .delay() with correct parameters
+            logger.info(f"🚀 Calling process_file_upload.delay()...")
+            logger.info(f"   Parameters: job_id={job_id}, user_id={user_id}, supplier_id={supplier_id}, filename={filename}")
+            
+            task_result = process_file_upload.delay(
+                job_id=job_id,
+                user_id=user_id,
+                supplier_id=supplier_id,
+                file_contents_b64=contents_b64,
+                filename=filename
+            )
+            
+            logger.info("=" * 80)
+            logger.info(f"✅ CELERY TASK QUEUED SUCCESSFULLY")
+            logger.info("=" * 80)
+            logger.info(f"   Task ID: {task_result.id}")
+            logger.info(f"   Task State: {task_result.state}")
+            logger.info(f"   Task Ready: {task_result.ready()}")
+            
         except Exception as celery_error:
-            logger.warning(f"⚠️ Celery task queue failed: {celery_error}")
-            logger.warning("Falling back to FastAPI BackgroundTasks (Celery worker may not be running)...")
+            logger.error("=" * 80)
+            logger.error(f"❌ CELERY TASK FAILED TO QUEUE")
+            logger.error("=" * 80)
+            logger.error(f"   Error Type: {type(celery_error).__name__}")
+            logger.error(f"   Error Message: {str(celery_error)}")
+            logger.error(f"   Full Traceback:")
+            import traceback
+            logger.error(traceback.format_exc())
             
-            # Fallback: Use FastAPI BackgroundTasks (passed as dependency)
+            logger.warning("⚠️ Falling back to FastAPI BackgroundTasks (Celery worker may not be running)...")
+            
+            # Fallback: Use FastAPI BackgroundTasks
             background_tasks.add_task(run_file_processing)
             logger.info(f"✅ Added to BackgroundTasks for job {job_id}")
-            
-            # Note: BackgroundTasks will execute after the response is returned
-            # We need to return the background_tasks object, but FastAPI handles this automatically
-            # when BackgroundTasks is a dependency. For now, we'll call it directly.
-            # Add to BackgroundTasks (passed as dependency)
-            background_tasks.add_task(run_file_processing)
-            logger.info(f"✅ Added to BackgroundTasks for job {job_id}")
+        
+        logger.info("=" * 80)
+        logger.info(f"✅ UPLOAD ENDPOINT COMPLETE - Returning response")
+        logger.info("=" * 80)
         
         return {
             "job_id": job_id,
@@ -540,7 +597,12 @@ async def upload_file(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Upload endpoint error: {e}", exc_info=True)
+        logger.error("=" * 80)
+        logger.error(f"❌ UPLOAD ENDPOINT ERROR")
+        logger.error("=" * 80)
+        logger.error(f"   Error: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         raise HTTPException(500, f"Upload failed: {str(e)}")
 
 @router.post("/upload-csv")
