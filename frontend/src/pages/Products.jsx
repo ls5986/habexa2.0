@@ -47,7 +47,7 @@ function useDebounce(value, delay) {
 }
 
 // Memoized Deal Row Component
-const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, onDelete, onSetAsin, onOpenManualPrice }) => {
+const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, onDelete, onSetAsin, onOpenManualPrice, analysis }) => {
   const roi = deal.roi || 0;
   const profit = deal.profit || 0;
   const moq = deal.moq || 1;
@@ -56,6 +56,11 @@ const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, on
   const totalProfit = moq * profit;
   const asinStatus = deal.asin_status || 'found';
   const needsAsin = asinStatus === 'not_found' || !deal.asin;
+  
+  // Pricing status from analysis
+  const analysisData = analysis || {};
+  const pricingStatus = analysisData.pricing_status || 'complete';
+  const needsReview = analysisData.needs_review || pricingStatus === 'no_pricing';
 
   const [editingMoq, setEditingMoq] = useState(false);
   const [tempMoq, setTempMoq] = useState(moq);
@@ -253,7 +258,7 @@ const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, on
       {/* Pricing Status & Stage */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
         {needsReview && (
-          <Tooltip title={`Reason: ${analysis.pricing_status_reason || 'No pricing data'}`}>
+          <Tooltip title={`Reason: ${analysisData.pricing_status_reason || 'No pricing data'}`}>
             <Chip
               label={pricingStatus === 'manual' ? 'Manual' : 'No Pricing'}
               color={pricingStatus === 'manual' ? 'info' : 'warning'}
@@ -261,7 +266,7 @@ const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, on
               onClick={(e) => {
                 e.stopPropagation();
                 if (pricingStatus === 'no_pricing' && onOpenManualPrice) {
-                  onOpenManualPrice(deal, analysis);
+                  onOpenManualPrice(deal, analysisData);
                 }
               }}
               sx={{
