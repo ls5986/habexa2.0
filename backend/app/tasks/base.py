@@ -39,7 +39,7 @@ class JobManager:
             "updated_at": now
         }).eq("id", self.job_id).execute()
     
-    def update_progress(self, processed: int, total: int, success: int = 0, errors: int = 0, error_list: list = None):
+    def update_progress(self, processed: int, total: int, success: int = 0, errors: int = 0, error_list: list = None, status: str = None):
         """Update job progress."""
         from datetime import datetime
         progress = int((processed / total) * 100) if total > 0 else 0
@@ -52,6 +52,10 @@ class JobManager:
             "error_count": errors,
             "updated_at": datetime.utcnow().isoformat()
         }
+        
+        # Allow updating status along with progress
+        if status:
+            update_data["status"] = status
         
         if error_list:
             # Keep last 100 errors

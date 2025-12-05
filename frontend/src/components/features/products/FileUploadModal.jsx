@@ -41,15 +41,27 @@ export default function FileUploadModal({ open, onClose, onComplete }) {
     const interval = setInterval(async () => {
       try {
         const res = await api.get(`/jobs/${jobId}`);
-        setJob(res.data);
+        const jobData = res.data;
+        setJob(jobData);
         
-        if (res.data.status === 'completed' || res.data.status === 'failed') {
+        // Log job status for debugging
+        console.log('Job status:', jobData.status, 'Errors:', jobData.errors?.length || 0);
+        
+        if (jobData.status === 'completed' || jobData.status === 'failed') {
           clearInterval(interval);
           setUploading(false);
-          if (res.data.status === 'completed' && onComplete) {
+          
+          // Show error if job failed
+          if (jobData.status === 'failed') {
+            const errorMsg = jobData.errors?.[0] || jobData.error || 'Upload failed. Please check the errors.';
+            setError(errorMsg);
+            console.error('Job failed:', errorMsg, jobData);
+          }
+          
+          if (jobData.status === 'completed' && onComplete) {
             // Small delay before calling onComplete to prevent race conditions
             setTimeout(() => {
-              onComplete(res.data.result);
+              onComplete(jobData.result);
             }, 500);
           }
         }
@@ -60,11 +72,13 @@ export default function FileUploadModal({ open, onClose, onComplete }) {
           clearInterval(interval);
           setUploading(false);
           setJob(null);
+          setError('Job not found. The upload may have been cancelled or deleted.');
           return;
         }
         // On other errors, stop polling to prevent infinite loops
         clearInterval(interval);
         setUploading(false);
+        setError(err.response?.data?.detail || 'Failed to check job status. Please refresh the page.');
       }
     }, 2000); // Poll every 2 seconds instead of 1
     
