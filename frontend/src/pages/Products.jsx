@@ -867,6 +867,7 @@ export default function Products() {
                 onDelete={handleDeleteClick}
                 onSetAsin={handleSetAsin}
                 onOpenManualPrice={(deal, analysis) => setManualPriceDialog({ open: true, deal, analysis })}
+                analysis={deal.analysis}
               />
             ))}
           </Box>
