@@ -477,19 +477,38 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                 # Process UPCs in batches
                 all_upcs = [upc for upc, _, _ in upcs_to_convert]
                 
+                logger.info(f"🔄 Starting batch UPC conversion for {len(all_upcs)} UPCs in {(len(all_upcs) + BATCH_SIZE - 1) // BATCH_SIZE} batches...")
+                logger.info(f"   First 10 UPCs: {all_upcs[:10]}")
+                
                 for batch_start in range(0, len(all_upcs), BATCH_SIZE):
                     batch_upcs = all_upcs[batch_start:batch_start + BATCH_SIZE]
+                    batch_num = batch_start // BATCH_SIZE + 1
                     
                     try:
                         # Batch convert up to 20 UPCs at once
-                        logger.info(f"🔄 Batch converting {len(batch_upcs)} UPCs (batch {batch_start // BATCH_SIZE + 1})...")
+                        logger.info(f"🔄 Batch {batch_num}: Converting {len(batch_upcs)} UPCs...")
+                        logger.info(f"   UPCs: {batch_upcs}")
+                        
                         upc_to_asin_results = run_async(
                             upc_converter.upcs_to_asins_batch(batch_upcs)
                         )
                         
+                        logger.info(f"📦 Batch {batch_num} conversion result:")
+                        logger.info(f"   Result type: {type(upc_to_asin_results)}")
+                        if isinstance(upc_to_asin_results, dict):
+                            logger.info(f"   Result keys: {list(upc_to_asin_results.keys())[:5]}...")
+                            logger.info(f"   Result values: {list(upc_to_asin_results.values())[:5]}...")
+                            found = sum(1 for v in upc_to_asin_results.values() if v)
+                            logger.info(f"   Found: {found}/{len(batch_upcs)}")
+                        
                         # Process results
                         for upc in batch_upcs:
                             asin_result = upc_to_asin_results.get(upc)
+                            
+                            if asin_result:
+                                logger.info(f"   ✅ UPC {upc} → ASIN {asin_result}")
+                            else:
+                                logger.warning(f"   ❌ UPC {upc} → No ASIN found")
                             
                             if asin_result:
                                 upc_to_asin_cache[upc] = asin_result

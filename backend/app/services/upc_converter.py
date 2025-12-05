@@ -175,14 +175,34 @@ class UPCConverter:
         
         # Batch convert using SP-API catalog search
         try:
+            logger.info(f"🔍 Calling SP-API catalog search for {len(normalized_upcs)} UPCs...")
+            logger.info(f"   Normalized UPCs: {normalized_upcs}")
+            
             result = await sp_api_client.search_catalog_items(
                 identifiers=normalized_upcs,
                 identifiers_type="UPC",
                 marketplace_id=marketplace_id
             )
             
+            logger.info(f"📦 SP-API response received:")
+            logger.info(f"   Response type: {type(result)}")
+            if isinstance(result, dict):
+                logger.info(f"   Response keys: {list(result.keys())}")
+                items = result.get("items") or []
+                summaries = result.get("summaries") or []
+                logger.info(f"   Items count: {len(items)}")
+                logger.info(f"   Summaries count: {len(summaries)}")
+                
+                # Log first item structure for debugging
+                if items:
+                    import json
+                    first_item = items[0]
+                    logger.info(f"   First item keys: {list(first_item.keys())}")
+                    logger.info(f"   First item ASIN: {first_item.get('asin')}")
+                    logger.info(f"   First item identifiers: {first_item.get('identifiers')}")
+            
             if not result:
-                logger.warning(f"No response from SP-API for batch UPC conversion")
+                logger.warning(f"❌ No response from SP-API for batch UPC conversion")
                 return {upc: None for upc in upcs_limited}
             
             # Parse results - build mapping of UPC -> ASIN
@@ -192,6 +212,9 @@ class UPCConverter:
             # Items are typically returned in the same order as input identifiers
             items = result.get("items") or []
             summaries = result.get("summaries") or []
+            
+            logger.info(f"📊 Parsing SP-API response:")
+            logger.info(f"   Items: {len(items)}, Summaries: {len(summaries)}")
             
             # Use items if available, otherwise summaries
             catalog_items = items if items else summaries
@@ -212,11 +235,16 @@ class UPCConverter:
                 )
                 
                 if asin:
+                    logger.info(f"   ✅ Item {idx} (UPC {upc_key}): Found ASIN {asin}")
                     upc_to_asin[upc_key] = asin
                     # Also map original UPC format
                     original_upc = upc_to_original.get(upc_key)
                     if original_upc and original_upc != upc_key:
                         upc_to_asin[original_upc] = asin
+                else:
+                    logger.warning(f"   ❌ Item {idx} (UPC {upc_key}): No ASIN found in item")
+                    logger.warning(f"      Item keys: {list(item.keys())}")
+                    logger.warning(f"      Item identifiers: {item.get('identifiers')}")
             
             # Build result dictionary - map all input UPCs to ASINs (or None)
             results = {}
@@ -228,6 +256,9 @@ class UPCConverter:
                 # Try normalized first, then original
                 asin = upc_to_asin.get(upc_clean) or upc_to_asin.get(upc)
                 results[upc] = asin
+                
+                if not asin:
+                    logger.warning(f"   ⚠️ UPC {upc} (normalized: {upc_clean}) not found in results")
             
             success_count = sum(1 for asin in results.values() if asin)
             logger.info(f"✅ Batch UPC conversion: {success_count}/{len(upcs_limited)} successful")
