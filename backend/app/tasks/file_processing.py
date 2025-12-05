@@ -323,7 +323,7 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
         
         # Parse file
         job.start()
-        job.update_progress(0, 0, status="parsing")
+        job.update_progress(0, 0, success=0, errors=0, error_list=None, status="parsing")
         
         if filename.lower().endswith('.csv'):
             rows, headers = parse_csv(contents)
@@ -343,7 +343,7 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
         if is_kehe:
             logger.info(f"Detected KEHE supplier format for file {filename}")
         
-        job.update_progress(0, total, status="processing")
+        job.update_progress(0, total, success=0, errors=0, error_list=None, status="processing")
         
         # Caches
         product_cache = {}  # asin -> product_id
