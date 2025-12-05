@@ -315,6 +315,8 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
     Process CSV/Excel file upload.
     Supports hardcoded KEHE supplier format with UPC → ASIN conversion.
     file_contents_b64: Base64 encoded file contents (for serialization)
+    
+    Can be called with self=None for synchronous execution (BackgroundTasks fallback).
     """
     # ============================================================
     # CRITICAL LOGGING - TASK START
@@ -334,6 +336,7 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
     logger.info(f"Supplier ID: {supplier_id}")
     logger.info(f"Filename: {filename}")
     logger.info(f"Content length (b64): {len(file_contents_b64) if file_contents_b64 else 'None'}")
+    logger.info(f"Celery mode: {self is not None}")
     logger.info("=" * 60)
     
     job = JobManager(job_id)
