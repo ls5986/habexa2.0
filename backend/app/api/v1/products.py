@@ -435,6 +435,7 @@ async def add_deal(req: AddProductRequest, current_user = Depends(get_current_us
 async def upload_file(
     file: UploadFile = File(...),
     supplier_id: str = Form(...),  # REQUIRED - which supplier is this from
+    background_tasks: BackgroundTasks = BackgroundTasks(),
     current_user = Depends(get_current_user)
 ):
     """
