@@ -327,6 +327,45 @@ def batch_analyze_products(self, job_id: str, user_id: str, product_ids: List[st
             job.complete({"message": "No product IDs provided"}, 0, 0)
             return {"success": 0, "error": 0}
         
+        # Filter out products with PENDING_ ASINs (these are placeholders for products without ASINs)
+        # These should not be analyzed until a real ASIN is found
+        logger.info(f"🔍 Fetching {len(product_ids)} products for analysis...")
+        
+        for batch_start in range(0, len(product_ids), BATCH_FETCH_SIZE):
+            batch_ids = product_ids[batch_start:batch_start + BATCH_FETCH_SIZE]
+            result = supabase.table("products")\
+                .select("id, asin, asin_status, upc")\
+                .in_("id", batch_ids)\
+                .execute()
+            
+            for product in (result.data or []):
+                asin = product.get("asin")
+                asin_status = product.get("asin_status", "found")
+                
+                # Skip products with PENDING_ ASINs - these are placeholders
+                if asin and asin.startswith("PENDING_"):
+                    logger.warning(f"⏭️ Skipping product {product.get('id')} with PENDING_ ASIN: {asin} (UPC: {product.get('upc')})")
+                    logger.warning(f"   This product needs manual ASIN entry. Use the 'Add ASIN' feature in the UI.")
+                    continue
+                
+                # Skip products with asin_status = 'not_found' or 'pending'
+                if asin_status in ['not_found', 'pending']:
+                    logger.warning(f"⏭️ Skipping product {product.get('id')} with asin_status='{asin_status}' (ASIN: {asin})")
+                    logger.warning(f"   This product needs manual ASIN entry. Use the 'Add ASIN' feature in the UI.")
+                    continue
+                
+                # Only analyze products with real ASINs
+                if asin and len(asin) == 10 and not asin.startswith("PENDING_"):
+                    products.append(product)
+                else:
+                    logger.warning(f"⏭️ Skipping product {product.get('id')} with invalid ASIN: {asin}")
+        
+        logger.info(f"✅ Filtered to {len(products)} products with valid ASINs (skipped {len(product_ids) - len(products)} with PENDING_/invalid ASINs)")
+        
+        if not products:
+            job.complete({"message": "No products with valid ASINs to analyze"}, 0, 0)
+            return {"success": 0, "error": 0}
+        
         for i in range(0, len(product_ids), BATCH_FETCH_SIZE):
             batch_ids = product_ids[i:i + BATCH_FETCH_SIZE]
             try:
