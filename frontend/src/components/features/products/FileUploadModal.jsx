@@ -55,7 +55,14 @@ export default function FileUploadModal({ open, onClose, onComplete }) {
         }
       } catch (err) {
         console.error('Error polling job:', err);
-        // On error, stop polling to prevent infinite loops
+        // If job not found (404), stop polling gracefully
+        if (err.response?.status === 404) {
+          clearInterval(interval);
+          setUploading(false);
+          setJob(null);
+          return;
+        }
+        // On other errors, stop polling to prevent infinite loops
         clearInterval(interval);
         setUploading(false);
       }

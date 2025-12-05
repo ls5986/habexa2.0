@@ -65,6 +65,38 @@ async def get_job(job_id: str, current_user = Depends(get_current_user)):
     return result.data[0]
 
 
+@router.delete("/{job_id}")
+async def delete_job(job_id: str, current_user = Depends(get_current_user)):
+    """Delete a job (only if completed, failed, or cancelled)."""
+    user_id = str(current_user.id)
+    
+    # First verify job exists and belongs to user
+    job_check = supabase.table("jobs")\
+        .select("id, status")\
+        .eq("id", job_id)\
+        .eq("user_id", user_id)\
+        .limit(1)\
+        .execute()
+    
+    if not job_check.data:
+        raise HTTPException(404, "Job not found")
+    
+    job = job_check.data[0]
+    
+    # Only allow deletion of completed/failed/cancelled jobs
+    if job["status"] in ["pending", "processing"]:
+        raise HTTPException(400, f"Cannot delete job with status '{job['status']}'. Cancel it first.")
+    
+    # Delete the job
+    supabase.table("jobs")\
+        .delete()\
+        .eq("id", job_id)\
+        .eq("user_id", user_id)\
+        .execute()
+    
+    return {"message": "Job deleted", "job_id": job_id}
+
+
 @router.post("/{job_id}/cancel")
 async def cancel_job(job_id: str, current_user = Depends(get_current_user)):
     """Cancel a job."""
