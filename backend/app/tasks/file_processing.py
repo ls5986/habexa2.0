@@ -579,8 +579,7 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                                 "status": "pending",
                                 "asin_status": "found"  # ASIN was found via UPC conversion
                             }
-                            if parsed.get("brand"):
-                                product_data["brand"] = parsed["brand"]
+                            # Only include title - brand may not exist in schema
                             if parsed.get("title"):
                                 product_data["title"] = parsed["title"]
                             new_products.append(product_data)
