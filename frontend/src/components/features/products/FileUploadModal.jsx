@@ -150,10 +150,14 @@ export default function FileUploadModal({ open, onClose, onComplete }) {
       });
       
       setJobId(res.data.job_id);
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Upload failed');
-      setUploading(false);
-    }
+      } catch (err) {
+        console.error('Upload error:', err);
+        const errorMessage = err.response?.data?.detail || err.message || 'Upload failed. Please try again.';
+        setError(errorMessage);
+        setUploading(false);
+        // Clear jobId if upload failed
+        setJobId(null);
+      }
   };
 
   const supplierName = suppliers.find(s => s.id === selectedSupplier)?.name || '';
@@ -171,31 +175,46 @@ export default function FileUploadModal({ open, onClose, onComplete }) {
         {/* COMPLETED STATE */}
         {job?.status === 'completed' && (
           <Box>
-            <Alert severity="success" sx={{ mb: 2 }}>
-              <AlertTitle>Upload Complete</AlertTitle>
+            <Alert 
+              severity={job.error_count > 0 && job.success_count === 0 ? "error" : job.error_count > 0 ? "warning" : "success"} 
+              sx={{ mb: 2 }}
+            >
+              <AlertTitle>
+                {job.error_count > 0 && job.success_count === 0 
+                  ? "Upload Completed with Errors" 
+                  : job.error_count > 0 
+                  ? "Upload Completed with Some Errors" 
+                  : "Upload Complete"}
+              </AlertTitle>
               <Typography variant="body2" sx={{ mt: 1 }}>
-                Supplier: <strong>{job.result?.supplier_name}</strong>
+                Supplier: <strong>{job.metadata?.supplier_name || job.result?.supplier_name || 'Unknown'}</strong>
               </Typography>
               <Typography variant="body2">
-                Products created: <strong>{job.result?.products_created || 0}</strong>
+                Products created: <strong>{job.result?.products_created || job.success_count || 0}</strong>
               </Typography>
               <Typography variant="body2">
-                Deals processed: <strong>{job.result?.deals_processed || 0}</strong>
+                Deals processed: <strong>{job.result?.deals_processed || job.success_count || 0}</strong>
               </Typography>
-              {job.result?.errors?.length > 0 && (
+              {(job.error_count > 0 || job.errors?.length > 0 || job.result?.errors?.length > 0) && (
                 <Box sx={{ mt: 2 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    {job.error_count || job.errors?.length || job.result?.errors?.length} row(s) had errors
+                  </Typography>
                   <Button
                     size="small"
                     onClick={() => setShowErrors(!showErrors)}
                     endIcon={showErrors ? <ExpandLess /> : <ExpandMore />}
                   >
-                    {job.result.errors.length} errors
+                    {showErrors ? 'Hide' : 'Show'} Errors
                   </Button>
                   <Collapse in={showErrors}>
                     <List dense sx={{ maxHeight: 200, overflow: 'auto', mt: 1 }}>
-                      {job.result.errors.map((e, i) => (
+                      {(job.errors || job.result?.errors || []).map((e, i) => (
                         <ListItem key={i}>
-                          <ListItemText primary={e} primaryTypographyProps={{ variant: 'caption' }} />
+                          <ListItemText 
+                            primary={e} 
+                            primaryTypographyProps={{ variant: 'caption' }} 
+                          />
                         </ListItem>
                       ))}
                     </List>
