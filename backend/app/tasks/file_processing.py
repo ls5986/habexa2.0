@@ -6,6 +6,7 @@ import csv
 import io
 import re
 import base64
+import traceback
 from typing import Optional, List, Dict, Tuple
 from app.core.celery_app import celery_app
 from app.services.supabase_client import supabase
@@ -315,11 +316,33 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
     Supports hardcoded KEHE supplier format with UPC → ASIN conversion.
     file_contents_b64: Base64 encoded file contents (for serialization)
     """
+    # ============================================================
+    # CRITICAL LOGGING - TASK START
+    # ============================================================
+    print("=" * 60)
+    print("BACKGROUND TASK EXECUTING")
+    print(f"Job ID: {job_id}")
+    print(f"User ID: {user_id}")
+    print(f"Supplier ID: {supplier_id}")
+    print(f"Filename: {filename}")
+    print(f"Content length (b64): {len(file_contents_b64) if file_contents_b64 else 'None'}")
+    print("=" * 60)
+    logger.info("=" * 60)
+    logger.info("BACKGROUND TASK EXECUTING - process_file_upload")
+    logger.info(f"Job ID: {job_id}")
+    logger.info(f"User ID: {user_id}")
+    logger.info(f"Supplier ID: {supplier_id}")
+    logger.info(f"Filename: {filename}")
+    logger.info(f"Content length (b64): {len(file_contents_b64) if file_contents_b64 else 'None'}")
+    logger.info("=" * 60)
+    
     job = JobManager(job_id)
     
     try:
         # Decode file contents
+        logger.info(f"Decoding base64 file contents for job {job_id}...")
         contents = base64.b64decode(file_contents_b64)
+        logger.info(f"Decoded file contents: {len(contents)} bytes")
         
         # Parse file
         job.start()
@@ -725,12 +748,72 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                     batch_analyze_products.delay(analysis_job_id, user_id, product_ids)
                     
                     logger.info(f"Auto-queued analysis for {len(product_ids)} products from upload {job_id}")
+        
+    except Exception as e:
+        logger.error(f"❌ BACKGROUND TASK CRASHED for job {job_id}: {e}", exc_info=True)
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        try:
+            job.fail(f"Task execution failed: {str(e)}")
+        except:
+            # If job update fails, try direct Supabase update
+            try:
+                supabase.table("jobs").update({
+                    "status": "failed",
+                    "errors": [f"Task execution failed: {str(e)}"]
+                }).eq("id", job_id).execute()
+            except:
+                pass
+        raise  # Re-raise to mark task as failed
+
+
+def process_file_upload_sync(job_id: str, user_id: str, supplier_id: str, file_contents_b64: str, filename: str):
+    """
+    Synchronous wrapper for process_file_upload.
+    Can be called directly without Celery (for BackgroundTasks fallback).
+    """
+    import traceback
+    logger.info(f"Running process_file_upload_sync for job {job_id}")
+    try:
+        # Call the actual processing logic (extract from Celery task)
+        # We'll call the same function but without Celery binding
+        process_file_upload(None, job_id, user_id, supplier_id, file_contents_b64, filename)
+    except Exception as e:
+        logger.error(f"process_file_upload_sync failed for job {job_id}: {e}", exc_info=True)
+        raise
             except Exception as analysis_error:
                 # Don't fail the upload job if auto-analysis fails
                 logger.warning(f"Failed to auto-analyze uploaded products: {analysis_error}")
         
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        job.fail(str(e))
-        raise self.retry(exc=e, countdown=60)
+        logger.error(f"❌ BACKGROUND TASK CRASHED for job {job_id}: {e}", exc_info=True)
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        try:
+            job.fail(f"Task execution failed: {str(e)}")
+        except:
+            # If job update fails, try direct Supabase update
+            try:
+                supabase.table("jobs").update({
+                    "status": "failed",
+                    "errors": [f"Task execution failed: {str(e)}"]
+                }).eq("id", job_id).execute()
+            except:
+                pass
+        # Only retry if this is a Celery task (has self)
+        if hasattr(self, 'retry'):
+            raise self.retry(exc=e, countdown=60)
+        else:
+            raise  # Re-raise for sync version
+
+
+def process_file_upload_sync(job_id: str, user_id: str, supplier_id: str, file_contents_b64: str, filename: str):
+    """
+    Synchronous wrapper for process_file_upload.
+    Can be called directly without Celery (for BackgroundTasks fallback).
+    """
+    logger.info(f"Running process_file_upload_sync for job {job_id}")
+    try:
+        # Call the actual processing logic (pass None as self since it's not a Celery task)
+        process_file_upload(None, job_id, user_id, supplier_id, file_contents_b64, filename)
+    except Exception as e:
+        logger.error(f"process_file_upload_sync failed for job {job_id}: {e}", exc_info=True)
+        raise
