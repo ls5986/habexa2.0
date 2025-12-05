@@ -12,7 +12,7 @@ export default function CompetitorAnalysis({ asin, spOffers }) {
 
   if (loading) {
     return (
-      <Card>
+      <Card sx={{ bgcolor: '#ffffff' }}>
         <CardContent>
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
             <CircularProgress />
@@ -24,10 +24,10 @@ export default function CompetitorAnalysis({ asin, spOffers }) {
 
   if (!spOffers) {
     return (
-      <Card>
+      <Card sx={{ bgcolor: '#ffffff' }}>
         <CardContent>
           <Box sx={{ textAlign: 'center', py: 6 }}>
-            <Users size={48} color={habexa.gray[400]} style={{ marginBottom: 16 }} />
+            <Users size={48} color="#666666" style={{ marginBottom: 16 }} />
             <Typography variant="h6" gutterBottom>No Competitor Data</Typography>
             <Typography color="text.secondary">
               Competitor analysis requires SP-API access. Connect your Amazon Seller account to see live seller data.
@@ -39,7 +39,7 @@ export default function CompetitorAnalysis({ asin, spOffers }) {
   }
 
   return (
-    <Card>
+    <Card sx={{ bgcolor: '#ffffff' }}>
       <CardContent>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
           <Users size={20} />
@@ -52,17 +52,29 @@ export default function CompetitorAnalysis({ asin, spOffers }) {
         {/* Summary */}
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={6} sm={3}>
-            <Box sx={{ textAlign: 'center', p: 2, bgcolor: habexa.navy.main, borderRadius: 2 }}>
-              <Typography variant="caption" color="text.secondary">Buy Box Price</Typography>
-              <Typography variant="h5" fontWeight="700" color="warning.main">
+            <Box sx={{ 
+              textAlign: 'center', 
+              p: 2, 
+              bgcolor: '#ffffff',
+              border: '2px solid #7c3aed',
+              borderRadius: 1
+            }}>
+              <Typography variant="caption" sx={{ color: '#666666', fontSize: '0.75rem' }}>Buy Box Price</Typography>
+              <Typography variant="h5" fontWeight="700" color="#1a1a2e" sx={{ fontSize: '1.25rem' }}>
                 ${spOffers.buy_box_price?.toFixed(2) || '—'}
               </Typography>
             </Box>
           </Grid>
           <Grid item xs={6} sm={3}>
-            <Box sx={{ textAlign: 'center', p: 2, bgcolor: habexa.navy.main, borderRadius: 2 }}>
-              <Typography variant="caption" color="text.secondary">Sales Rank</Typography>
-              <Typography variant="h5" fontWeight="700">
+            <Box sx={{ 
+              textAlign: 'center', 
+              p: 2, 
+              bgcolor: '#ffffff',
+              border: '2px solid #7c3aed',
+              borderRadius: 1
+            }}>
+              <Typography variant="caption" sx={{ color: '#666666', fontSize: '0.75rem' }}>Sales Rank</Typography>
+              <Typography variant="h5" fontWeight="700" color="#1a1a2e" sx={{ fontSize: '1.25rem' }}>
                 #{spOffers.sales_rank?.toLocaleString() || '—'}
               </Typography>
             </Box>

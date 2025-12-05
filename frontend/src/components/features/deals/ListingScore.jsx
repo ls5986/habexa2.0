@@ -71,10 +71,10 @@ export default function ListingScore({ analysis, keepaData }) {
 
   if (!analysis) {
     return (
-      <Card>
+      <Card sx={{ bgcolor: '#ffffff' }}>
         <CardContent>
           <Box sx={{ textAlign: 'center', py: 6 }}>
-            <FileText size={48} color={habexa.gray[400]} style={{ marginBottom: 16 }} />
+            <FileText size={48} color="#666666" style={{ marginBottom: 16 }} />
             <Typography variant="h6" gutterBottom>No Analysis Data</Typography>
             <Typography color="text.secondary">
               Analyze the product to see listing quality score.
@@ -86,7 +86,7 @@ export default function ListingScore({ analysis, keepaData }) {
   }
 
   return (
-    <Card>
+    <Card sx={{ bgcolor: '#ffffff' }}>
       <CardContent>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
           <FileText size={20} />
@@ -108,7 +108,7 @@ export default function ListingScore({ analysis, keepaData }) {
               mt: 2, 
               height: 12, 
               borderRadius: 6,
-              bgcolor: habexa.navy.light,
+              bgcolor: '#e0e0e0',
               '& .MuiLinearProgress-bar': { bgcolor: getScoreColor() }
             }}
           />

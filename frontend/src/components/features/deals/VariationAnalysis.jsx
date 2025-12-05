@@ -37,7 +37,7 @@ export default function VariationAnalysis({ asin, keepaData }) {
 
   if (loading) {
     return (
-      <Card>
+      <Card sx={{ bgcolor: '#ffffff' }}>
         <CardContent>
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
             <CircularProgress />
@@ -48,7 +48,7 @@ export default function VariationAnalysis({ asin, keepaData }) {
   }
 
   return (
-    <Card>
+    <Card sx={{ bgcolor: '#ffffff' }}>
       <CardContent>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
           <Layers size={20} />
@@ -63,7 +63,7 @@ export default function VariationAnalysis({ asin, keepaData }) {
 
         {!error && variations.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 6 }}>
-            <Layers size={48} color={habexa.gray[400]} style={{ marginBottom: 16 }} />
+            <Layers size={48} color="#666666" style={{ marginBottom: 16 }} />
             <Typography variant="h6" gutterBottom>No Variations Found</Typography>
             <Typography color="text.secondary">
               This product doesn't have variations, or variation data is not available.
@@ -73,16 +73,20 @@ export default function VariationAnalysis({ asin, keepaData }) {
           <Grid container spacing={2}>
             {variations.map((variation, i) => (
               <Grid item xs={12} sm={6} md={4} key={i}>
-                <Card sx={{ bgcolor: habexa.navy.main }}>
+                <Card sx={{ 
+                  bgcolor: '#ffffff',
+                  border: '2px solid #7c3aed',
+                  borderRadius: 1
+                }}>
                   <CardContent>
-                    <Typography variant="body2" fontWeight="600" gutterBottom>
+                    <Typography variant="body2" fontWeight="600" gutterBottom sx={{ color: '#1a1a2e' }}>
                       {variation.title || `Variation ${i + 1}`}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary" display="block">
+                    <Typography variant="caption" sx={{ color: '#666666' }} display="block">
                       ASIN: {variation.asin}
                     </Typography>
                     {variation.price && (
-                      <Typography variant="body2" sx={{ mt: 1 }}>
+                      <Typography variant="body2" sx={{ mt: 1, color: '#1a1a2e' }}>
                         ${variation.price.toFixed(2)}
                       </Typography>
                     )}

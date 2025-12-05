@@ -73,23 +73,29 @@ export default function ProfitCalculator({
   }, [buyCost, quantity, customSellPrice, prepCost, shippingCost, miscCost, referralFee, fbaFee]);
 
   const StatBox = ({ label, value, prefix = '', suffix = '', color, tooltip }) => (
-    <Box sx={{ textAlign: 'center', p: 2, bgcolor: habexa.navy.main, borderRadius: 2 }}>
+    <Box sx={{ 
+      textAlign: 'center', 
+      p: 2, 
+      bgcolor: '#ffffff',
+      border: '2px solid #7c3aed',
+      borderRadius: 1
+    }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
-        <Typography variant="caption" color="text.secondary">{label}</Typography>
+        <Typography variant="caption" sx={{ color: '#666666', fontSize: '0.75rem' }}>{label}</Typography>
         {tooltip && (
           <Tooltip title={tooltip}>
-            <Info size={12} color={habexa.gray[400]} />
+            <Info size={12} color="#666666" />
           </Tooltip>
         )}
       </Box>
-      <Typography variant="h5" fontWeight="700" color={color || habexa.gray[600]}>
+      <Typography variant="h5" fontWeight="700" color={color || '#1a1a2e'} sx={{ fontSize: '1.25rem' }}>
         {prefix}{value}{suffix}
       </Typography>
     </Box>
   );
 
   return (
-    <Card sx={{ mt: 3 }}>
+    <Card sx={{ mt: 3, bgcolor: '#ffffff' }}>
       <CardContent>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
           <Calculator size={20} />
@@ -118,9 +124,17 @@ export default function ProfitCalculator({
                 }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    bgcolor: habexa.navy.light,
-                    '& fieldset': { borderColor: habexa.gray[300] },
-                  }
+                    bgcolor: '#ffffff',
+                    '& fieldset': { borderColor: '#e0e0e0' },
+                    '&:hover fieldset': { borderColor: '#7c3aed' },
+                    '&.Mui-focused fieldset': { borderColor: '#7c3aed' },
+                  },
+                  '& .MuiInputBase-input': { 
+                    color: '#1a1a2e',
+                  },
+                  '& .MuiInputLabel-root': { 
+                    color: '#666666',
+                  },
                 }}
               />
               <TextField
@@ -134,9 +148,17 @@ export default function ProfitCalculator({
                 }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    bgcolor: habexa.navy.light,
-                    '& fieldset': { borderColor: habexa.gray[300] },
-                  }
+                    bgcolor: '#ffffff',
+                    '& fieldset': { borderColor: '#e0e0e0' },
+                    '&:hover fieldset': { borderColor: '#7c3aed' },
+                    '&.Mui-focused fieldset': { borderColor: '#7c3aed' },
+                  },
+                  '& .MuiInputBase-input': { 
+                    color: '#1a1a2e',
+                  },
+                  '& .MuiInputLabel-root': { 
+                    color: '#666666',
+                  },
                 }}
               />
               <TextField
@@ -150,9 +172,17 @@ export default function ProfitCalculator({
                 }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    bgcolor: habexa.navy.light,
-                    '& fieldset': { borderColor: habexa.gray[300] },
-                  }
+                    bgcolor: '#ffffff',
+                    '& fieldset': { borderColor: '#e0e0e0' },
+                    '&:hover fieldset': { borderColor: '#7c3aed' },
+                    '&.Mui-focused fieldset': { borderColor: '#7c3aed' },
+                  },
+                  '& .MuiInputBase-input': { 
+                    color: '#1a1a2e',
+                  },
+                  '& .MuiInputLabel-root': { 
+                    color: '#666666',
+                  },
                 }}
               />
               <TextField
@@ -166,9 +196,17 @@ export default function ProfitCalculator({
                 }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    bgcolor: habexa.navy.light,
-                    '& fieldset': { borderColor: habexa.gray[300] },
-                  }
+                    bgcolor: '#ffffff',
+                    '& fieldset': { borderColor: '#e0e0e0' },
+                    '&:hover fieldset': { borderColor: '#7c3aed' },
+                    '&.Mui-focused fieldset': { borderColor: '#7c3aed' },
+                  },
+                  '& .MuiInputBase-input': { 
+                    color: '#1a1a2e',
+                  },
+                  '& .MuiInputLabel-root': { 
+                    color: '#666666',
+                  },
                 }}
               />
             </Box>
@@ -188,23 +226,37 @@ export default function ProfitCalculator({
               }}
               sx={{ mb: 3,
                 '& .MuiOutlinedInput-root': {
-                  bgcolor: habexa.navy.light,
-                  '& fieldset': { borderColor: habexa.gray[300] },
-                }
+                  bgcolor: '#ffffff',
+                  '& fieldset': { borderColor: '#e0e0e0' },
+                  '&:hover fieldset': { borderColor: '#7c3aed' },
+                  '&.Mui-focused fieldset': { borderColor: '#7c3aed' },
+                },
+                '& .MuiInputBase-input': { 
+                  color: '#1a1a2e',
+                },
+                '& .MuiInputLabel-root': { 
+                  color: '#666666',
+                },
               }}
             />
 
             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
               QUANTITY (MOQ)
             </Typography>
-            <Box sx={{ px: 1 }}>
+            <Box sx={{ 
+              px: 1, 
+              py: 2, 
+              bgcolor: '#ffffff', 
+              border: '1px solid #e0e0e0', 
+              borderRadius: 1 
+            }}>
               <Slider
                 value={quantity}
                 onChange={(e, v) => setQuantity(v)}
                 min={1}
                 max={500}
                 valueLabelDisplay="on"
-                sx={{ mt: 2 }}
+                sx={{ mt: 2, color: '#7c3aed' }}
               />
             </Box>
             <TextField
@@ -218,9 +270,14 @@ export default function ProfitCalculator({
               }}
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  bgcolor: habexa.navy.light,
-                  '& fieldset': { borderColor: habexa.gray[300] },
-                }
+                  bgcolor: '#ffffff',
+                  '& fieldset': { borderColor: '#e0e0e0' },
+                  '&:hover fieldset': { borderColor: '#7c3aed' },
+                  '&.Mui-focused fieldset': { borderColor: '#7c3aed' },
+                },
+                '& .MuiInputBase-input': { 
+                  color: '#1a1a2e',
+                },
               }}
             />
           </Grid>

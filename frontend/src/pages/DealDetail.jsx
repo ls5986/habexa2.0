@@ -158,7 +158,7 @@ export default function DealDetail() {
   ];
 
   return (
-    <Box sx={{ p: 3, maxWidth: 1400, mx: 'auto' }}>
+    <Box sx={{ p: 3, maxWidth: 1400, mx: 'auto', bgcolor: '#f5f5f5', minHeight: '100vh' }}>
       {/* Header Row */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Button 
@@ -193,13 +193,14 @@ export default function DealDetail() {
       <Grid container spacing={3}>
         {/* Left Column - Product Info (Fixed) */}
         <Grid item xs={12} md={4}>
-          <Card sx={{ position: 'sticky', top: 20 }}>
+          <Card sx={{ position: 'sticky', top: 20, bgcolor: '#ffffff' }}>
             <CardContent>
               {/* Product Image */}
               <Box sx={{ 
                 width: '100%', 
                 aspectRatio: '1', 
-                bgcolor: habexa.navy.main, 
+                bgcolor: '#f5f5f5',
+                border: '1px solid #e0e0e0',
                 borderRadius: 2, 
                 mb: 2,
                 display: 'flex',
@@ -214,7 +215,7 @@ export default function DealDetail() {
                     style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                   />
                 ) : (
-                  <Package size={64} color={habexa.gray[400]} />
+                  <Package size={64} color="#666666" />
                 )}
               </Box>
 
