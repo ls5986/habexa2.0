@@ -192,6 +192,92 @@ class KeepaClient:
         logger.info(f"✅ Keepa total: {len(results)}/{len(asins)} products")
         return results
     
+    async def get_products_raw(
+        self,
+        asins: List[str],
+        domain: int = 1,
+        days: int = 365
+    ) -> Dict[str, dict]:
+        """
+        Get raw Keepa product data without parsing.
+        Used for 365-day stats extraction (stats.365, offers array).
+        
+        Unlike get_products_batch, this returns the raw Keepa API response
+        so we can extract fba_lowest_365d, fbm_lowest_365d, FBA/FBM seller counts, etc.
+        
+        Args:
+            asins: List of ASINs to fetch
+            domain: Keepa domain (1 = US)
+            days: Stats period (365 for yearly analysis)
+        
+        Returns:
+            Dict mapping ASIN to raw Keepa product data
+        """
+        if not asins:
+            return {}
+        
+        if not self.api_key:
+            logger.warning("Keepa API key not configured")
+            return {}
+        
+        results = {}
+        batch_size = 100  # Keepa allows up to 100 ASINs per request
+        
+        for i in range(0, len(asins), batch_size):
+            batch = asins[i:i + batch_size]
+            
+            try:
+                async with httpx.AsyncClient(timeout=60) as client:
+                    response = await client.get(
+                        f"{self.base_url}/product",
+                        params={
+                            "key": self.api_key,
+                            "domain": domain,
+                            "asin": ",".join(batch),
+                            "stats": days,    # Get stats for X days (includes stats.365)
+                            "history": 0,     # Don't need full CSV history (saves tokens)
+                            "offers": 20,     # Get offers for FBA/FBM seller counts
+                            "rating": 1,      # Include rating/reviews
+                        }
+                    )
+                    response.raise_for_status()
+                    data = response.json()
+                    
+                    # Check for errors
+                    if "error" in data:
+                        logger.error(f"Keepa API error: {data['error']}")
+                        continue
+                    
+                    # Check tokens remaining
+                    tokens_left = data.get("tokensLeft", 0)
+                    logger.info(f"🎟️ Keepa tokens remaining: {tokens_left}")
+                    
+                    # If low on tokens, wait
+                    if tokens_left < 10:
+                        logger.warning(f"⚠️ Low Keepa tokens: {tokens_left}, waiting 60s")
+                        await asyncio.sleep(60)
+                    
+                    # Store raw product data
+                    for product in data.get("products", []):
+                        asin = product.get("asin")
+                        if asin:
+                            results[asin] = product  # Raw, unparsed data
+                    
+                    logger.info(f"✅ Keepa raw: fetched {len(batch)} products, got {len(data.get('products', []))} results")
+                        
+            except httpx.TimeoutException:
+                logger.error(f"Keepa timeout for batch starting at {i}")
+            except httpx.HTTPStatusError as e:
+                logger.error(f"Keepa HTTP error: {e.response.status_code}")
+            except Exception as e:
+                logger.error(f"Keepa raw fetch error: {e}")
+            
+            # Rate limiting - Keepa allows ~1 request per second
+            if i + batch_size < len(asins):
+                await asyncio.sleep(1)
+        
+        return results
+    
     def _parse_product(self, product: dict) -> dict:
         """Parse Keepa product response into our format."""
         stats = product.get("stats", {})

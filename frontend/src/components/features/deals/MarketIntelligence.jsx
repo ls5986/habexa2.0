@@ -161,9 +161,9 @@ export default function MarketIntelligence({ deal, analysis, spApiOffers, spApiS
               mt: 1, 
               height: 6, 
               borderRadius: 3,
-              bgcolor: habexa.navy.main,
+              bgcolor: '#e0e0e0',
               '& .MuiLinearProgress-bar': { 
-                bgcolor: demandScore >= 70 ? habexa.success.main : demandScore >= 40 ? habexa.warning.main : habexa.error.main 
+                bgcolor: demandScore >= 70 ? '#10b981' : demandScore >= 40 ? '#f59e0b' : '#ef4444' 
               }
             }} 
           />
@@ -180,9 +180,9 @@ export default function MarketIntelligence({ deal, analysis, spApiOffers, spApiS
               mt: 1, 
               height: 6, 
               borderRadius: 3,
-              bgcolor: habexa.navy.main,
+              bgcolor: '#e0e0e0',
               '& .MuiLinearProgress-bar': { 
-                bgcolor: opportunityScore >= 70 ? habexa.success.main : opportunityScore >= 40 ? habexa.warning.main : habexa.error.main 
+                bgcolor: opportunityScore >= 70 ? '#10b981' : opportunityScore >= 40 ? '#f59e0b' : '#ef4444' 
               }
             }} 
           />
@@ -222,32 +222,34 @@ export default function MarketIntelligence({ deal, analysis, spApiOffers, spApiS
         {/* Est. Monthly Sales */}
         <Box sx={{ 
           p: 2, 
-          bgcolor: habexa.navy.main, 
-          borderRadius: 2,
+          bgcolor: '#ffffff',
+          border: '2px solid #7c3aed',
+          borderRadius: 1,
           textAlign: 'center'
         }}>
-          <Package size={20} color={habexa.purple.light} />
-          <Typography variant="caption" display="block" color="text.secondary">
+          <Package size={20} color="#7c3aed" />
+          <Typography variant="caption" display="block" sx={{ color: '#666666', fontSize: '0.75rem' }}>
             Est. Monthly Sales
           </Typography>
-          <Typography variant="h6" fontWeight="600">
+          <Typography variant="h6" fontWeight="600" sx={{ color: '#1a1a2e' }}>
             {estimatedMonthlySales > 0 ? estimatedMonthlySales.toLocaleString() : 'N/A'}
           </Typography>
-          <Typography variant="caption" color="text.secondary">units/month</Typography>
+          <Typography variant="caption" sx={{ color: '#666666' }}>units/month</Typography>
         </Box>
 
         {/* Sales Velocity */}
         <Box sx={{ 
           p: 2, 
-          bgcolor: habexa.navy.main, 
-          borderRadius: 2,
+          bgcolor: '#ffffff',
+          border: '2px solid #7c3aed',
+          borderRadius: 1,
           textAlign: 'center'
         }}>
-          <TrendingUp size={20} color={habexa.warning.main} />
-          <Typography variant="caption" display="block" color="text.secondary">
+          <TrendingUp size={20} color="#7c3aed" />
+          <Typography variant="caption" display="block" sx={{ color: '#666666', fontSize: '0.75rem' }}>
             Sales Velocity
           </Typography>
-          <Typography variant="h6" fontWeight="600" color={salesVelocity.color}>
+          <Typography variant="h6" fontWeight="600" sx={{ color: salesVelocity.color }}>
             {salesVelocity.label}
           </Typography>
         </Box>
@@ -255,19 +257,20 @@ export default function MarketIntelligence({ deal, analysis, spApiOffers, spApiS
         {/* Seller Count */}
         <Box sx={{ 
           p: 2, 
-          bgcolor: habexa.navy.main, 
-          borderRadius: 2,
+          bgcolor: '#ffffff',
+          border: '2px solid #7c3aed',
+          borderRadius: 1,
           textAlign: 'center'
         }}>
-          <Users size={20} color={habexa.info.main} />
-          <Typography variant="caption" display="block" color="text.secondary">
+          <Users size={20} color="#7c3aed" />
+          <Typography variant="caption" display="block" sx={{ color: '#666666', fontSize: '0.75rem' }}>
             Total Sellers
           </Typography>
-          <Typography variant="h6" fontWeight="600">
+          <Typography variant="h6" fontWeight="600" sx={{ color: '#1a1a2e' }}>
             {sellerCount > 0 ? sellerCount : 'N/A'}
           </Typography>
           {sellerCount > 0 && (
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{ color: '#666666' }}>
               {fbaCount} FBA / {fbmCount} FBM
             </Typography>
           )}
@@ -276,19 +279,20 @@ export default function MarketIntelligence({ deal, analysis, spApiOffers, spApiS
         {/* Rating */}
         <Box sx={{ 
           p: 2, 
-          bgcolor: habexa.navy.main, 
-          borderRadius: 2,
+          bgcolor: '#ffffff',
+          border: '2px solid #7c3aed',
+          borderRadius: 1,
           textAlign: 'center'
         }}>
-          <Star size={20} color={habexa.warning.main} />
-          <Typography variant="caption" display="block" color="text.secondary">
+          <Star size={20} color="#7c3aed" />
+          <Typography variant="caption" display="block" sx={{ color: '#666666', fontSize: '0.75rem' }}>
             Rating
           </Typography>
-          <Typography variant="h6" fontWeight="600">
+          <Typography variant="h6" fontWeight="600" sx={{ color: '#1a1a2e' }}>
             {rating > 0 ? `${rating.toFixed(1)} ⭐` : 'N/A'}
           </Typography>
           {reviewCount > 0 && (
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{ color: '#666666' }}>
               {reviewCount.toLocaleString()} reviews
             </Typography>
           )}
@@ -297,18 +301,19 @@ export default function MarketIntelligence({ deal, analysis, spApiOffers, spApiS
         {/* BSR */}
         <Box sx={{ 
           p: 2, 
-          bgcolor: habexa.navy.main, 
-          borderRadius: 2,
+          bgcolor: '#ffffff',
+          border: '2px solid #7c3aed',
+          borderRadius: 1,
           textAlign: 'center'
         }}>
-          <Award size={20} color={habexa.success.main} />
-          <Typography variant="caption" display="block" color="text.secondary">
+          <Award size={20} color="#7c3aed" />
+          <Typography variant="caption" display="block" sx={{ color: '#666666', fontSize: '0.75rem' }}>
             BSR
           </Typography>
-          <Typography variant="h6" fontWeight="600">
+          <Typography variant="h6" fontWeight="600" sx={{ color: '#1a1a2e' }}>
             {salesRank ? `#${salesRank.toLocaleString()}` : 'N/A'}
           </Typography>
-          <Typography variant="caption" color="text.secondary" noWrap>
+          <Typography variant="caption" sx={{ color: '#666666' }} noWrap>
             {category}
           </Typography>
         </Box>
@@ -316,19 +321,20 @@ export default function MarketIntelligence({ deal, analysis, spApiOffers, spApiS
         {/* Buy Box Price */}
         <Box sx={{ 
           p: 2, 
-          bgcolor: habexa.navy.main, 
-          borderRadius: 2,
+          bgcolor: '#ffffff',
+          border: '2px solid #7c3aed',
+          borderRadius: 1,
           textAlign: 'center'
         }}>
-          <ShoppingCart size={20} color={habexa.purple.main} />
-          <Typography variant="caption" display="block" color="text.secondary">
+          <ShoppingCart size={20} color="#7c3aed" />
+          <Typography variant="caption" display="block" sx={{ color: '#666666', fontSize: '0.75rem' }}>
             Buy Box Price
           </Typography>
-          <Typography variant="h6" fontWeight="600">
+          <Typography variant="h6" fontWeight="600" sx={{ color: '#1a1a2e' }}>
             {buyBoxPrice ? `$${buyBoxPrice.toFixed(2)}` : 'N/A'}
           </Typography>
           {priceRange.min && priceRange.max && (
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{ color: '#666666' }}>
               ${priceRange.min.toFixed(2)} - ${priceRange.max.toFixed(2)}
             </Typography>
           )}

@@ -24,6 +24,10 @@ class BatchAnalyzer:
     async def analyze_products(
         self,
         asins: List[str],
+        buy_costs: Dict[str, float] = None,
+        promo_costs: Dict[str, float] = None,
+        source_data: Dict[str, dict] = None,  # For shipping overrides
+        user_settings: dict = None,           # User's default rates
         marketplace_id: str = "ATVPDKIKX0DER"
     ) -> Dict[str, dict]:
         """Analyze products using batch API calls."""
@@ -67,12 +71,15 @@ class BatchAnalyzer:
         # ==========================================
         logger.info("💰 Fetching pricing from SP-API...")
         
+        # Store all pricing responses for later analysis
+        all_pricing_data = {}
         sp_api_success = False
         for i in range(0, len(asins), SP_API_BATCH_SIZE):
             batch = asins[i:i + SP_API_BATCH_SIZE]
             
             try:
                 pricing_data = await sp_api_client.get_competitive_pricing_batch(batch, marketplace_id)
+                all_pricing_data.update(pricing_data)  # Store for later
                 
                 for asin, data in pricing_data.items():
                     if data.get("buy_box_price") and asin in results:
@@ -105,6 +112,56 @@ class BatchAnalyzer:
                 logger.info(f"✅ Keepa pricing fallback: {keepa_fallback_count} products got pricing")
         
         # ==========================================
+        # STEP 2C: FLAG PRODUCTS WITHOUT PRICING
+        # ==========================================
+        # After both SP-API and Keepa attempts, flag products still without pricing
+        asins_still_no_price = [asin for asin in asins if not results[asin].get("sell_price") or results[asin].get("sell_price") <= 0]
+        if asins_still_no_price:
+            logger.warning(f"⚠️ {len(asins_still_no_price)} products have no pricing data available")
+            
+            for asin in asins_still_no_price:
+                # Determine reason for missing pricing
+                pricing_reason = self._determine_pricing_reason(asin, all_pricing_data.get(asin, {}))
+                
+                # Set pricing status flags
+                results[asin].update({
+                    "pricing_status": "no_pricing",
+                    "pricing_status_reason": pricing_reason,
+                    "needs_review": True,
+                    "sell_price": None,
+                    "fees_total": None,
+                    "net_profit": None,
+                    "roi": None,
+                    "analysis_stage": "needs_review",
+                    "passed_stage2": False,  # Can't pass without pricing
+                })
+                
+                # Still include Keepa catalog data if available (helps user understand the product)
+                if asin in keepa_data:
+                    keepa_product = keepa_data[asin]
+                    from app.services.keepa_data_extractor import extract_all_keepa_data
+                    keepa_info = extract_all_keepa_data(keepa_product)
+                    
+                    results[asin].update({
+                        "title": keepa_info.get("title") or keepa_product.get("title"),
+                        "brand": keepa_info.get("brand") or keepa_product.get("brand"),
+                        "category": keepa_info.get("category") or keepa_product.get("category"),
+                        "bsr": keepa_info.get("bsr") or keepa_product.get("bsr"),
+                        "fba_seller_count": keepa_info.get("fba_seller_count"),
+                        "fbm_seller_count": keepa_info.get("fbm_seller_count"),
+                        "review_count": keepa_info.get("review_count"),
+                        "rating": keepa_info.get("rating"),
+                        # 365-day data (might help understand why no pricing)
+                        "fba_lowest_365d": keepa_info.get("fba_lowest_365d"),
+                        "fbm_lowest_365d": keepa_info.get("fbm_lowest_365d"),
+                        "amazon_was_seller": keepa_info.get("amazon_was_seller"),
+                    })
+                    
+                    logger.info(f"⚠️ {asin}: Catalog data available but no pricing - reason: {pricing_reason}")
+                else:
+                    logger.warning(f"⚠️ {asin}: No pricing AND no catalog data")
+        
+        # ==========================================
         # STEP 3: SP-API FEES - Batch of 20
         # ==========================================
         logger.info("📊 Fetching fees from SP-API...")
@@ -128,6 +185,173 @@ class BatchAnalyzer:
                         results[asin]["fees_fba"] = data.get("fba_fulfillment_fee")
             except Exception as e:
                 logger.warning(f"SP-API fees batch failed for batch {i//SP_API_BATCH_SIZE + 1}: {e}")
+        
+        # ========== STAGE 2: PROFIT CALCULATION & FILTERING (WITH SHIPPING) ==========
+        if buy_costs:
+            from app.services.cost_calculator import (
+                calculate_inbound_shipping,
+                calculate_prep_cost,
+                calculate_landed_cost,
+                calculate_net_profit,
+                calculate_roi
+            )
+            
+            # Get user's default rates
+            inbound_rate = (user_settings or {}).get("inbound_rate_per_lb", 0.35)
+            default_prep = (user_settings or {}).get("default_prep_cost", 0.10)
+            
+            logger.info(f"Stage 2: Calculating profitability for {len(asins)} products (with shipping)")
+            
+            for asin in asins:
+                buy_cost = buy_costs.get(asin, 0)
+                sell_price = results[asin].get("sell_price") or results[asin].get("current_price") or 0
+                fees_total = results[asin].get("fees_total") or 0
+                weight_lb = results[asin].get("item_weight_lb")  # From Keepa (Stage 1)
+                
+                if buy_cost > 0 and sell_price > 0:
+                    # Get per-product overrides
+                    source = (source_data or {}).get(asin, {})
+                    supplier_ships_direct = source.get("supplier_ships_direct", False)
+                    rate_override = source.get("inbound_rate_override")
+                    prep_override = source.get("prep_cost_override")
+                    
+                    # Calculate shipping
+                    inbound_shipping = calculate_inbound_shipping(
+                        weight_lb=weight_lb,
+                        user_rate=inbound_rate,
+                        supplier_ships_direct=supplier_ships_direct,
+                        rate_override=rate_override
+                    )
+                    
+                    prep_cost = calculate_prep_cost(
+                        user_default=default_prep,
+                        override=prep_override
+                    )
+                    
+                    # Calculate landed cost (buy + shipping + prep)
+                    landed_cost = calculate_landed_cost(buy_cost, inbound_shipping, prep_cost)
+                    
+                    # Calculate profit WITH shipping
+                    net_profit = calculate_net_profit(sell_price, fees_total, landed_cost)
+                    roi = calculate_roi(net_profit, landed_cost)
+                    profit_margin = round((net_profit / sell_price) * 100, 2) if sell_price > 0 else 0
+                    
+                    # Update results
+                    results[asin].update({
+                        "buy_cost": buy_cost,
+                        "inbound_shipping": inbound_shipping,
+                        "prep_cost": prep_cost,
+                        "total_landed_cost": landed_cost,
+                        "net_profit": net_profit,
+                        "roi": roi,
+                        "profit_margin": profit_margin,
+                        "stage2_roi": roi,
+                        "passed_stage2": roi >= 30 and net_profit >= 3,
+                        "analysis_stage": "stage2_complete",
+                    })
+                    
+                    # PROMO calculation (also with shipping)
+                    promo_buy_cost = (promo_costs or {}).get(asin)
+                    if promo_buy_cost and promo_buy_cost > 0:
+                        promo_landed = calculate_landed_cost(promo_buy_cost, inbound_shipping, prep_cost)
+                        promo_profit = calculate_net_profit(sell_price, fees_total, promo_landed)
+                        promo_roi = calculate_roi(promo_profit, promo_landed)
+                        
+                        results[asin].update({
+                            "promo_buy_cost": promo_buy_cost,
+                            "promo_landed_cost": promo_landed,
+                            "promo_net_profit": promo_profit,
+                            "promo_roi": promo_roi,
+                        })
+                elif sell_price <= 0 or not sell_price:
+                    # No valid pricing - already handled in STEP 2C
+                    pass
+                else:
+                    # Has pricing but buy_cost missing or invalid
+                    results[asin]["passed_stage2"] = False
+                    results[asin]["analysis_stage"] = "stage2_no_data"
+            
+            passed_count = sum(1 for a in asins if results[a].get("passed_stage2"))
+            logger.info(f"Stage 2: {passed_count}/{len(asins)} passed ROI filter (ROI >= 30%, profit >= $3)")
+        # ========== END STAGE 2 ==========
+        
+        # ========== STAGE 3: KEEPA DEEP ANALYSIS (only for Stage 2 winners) ==========
+        passed_stage2_asins = [a for a in asins if results[a].get("passed_stage2")]
+        
+        if passed_stage2_asins and buy_costs:
+            logger.info(f"Stage 3: Fetching Keepa data for {len(passed_stage2_asins)} products")
+            
+            try:
+                # Fetch raw Keepa data with stats for 365-day data
+                keepa_deep = await keepa_client.get_products_raw(
+                    passed_stage2_asins,
+                    domain=1,
+                    days=365  # Get 365-day stats
+                )
+                
+                from app.services.keepa_data_extractor import extract_all_keepa_data, calculate_worst_case_profit
+                
+                for asin in passed_stage2_asins:
+                    if asin in keepa_deep:
+                        keepa_product_raw = keepa_deep[asin]
+                        # TODO: keepa_client.get_products_batch returns parsed data, but extract_all_keepa_data
+                        # needs raw Keepa API response with stats.365, offers array, etc.
+                        # For now, extract_all_keepa_data will return empty dict if data format doesn't match.
+                        # Future: Modify keepa_client to also return raw data, or make direct Keepa API call here.
+                        keepa_data = extract_all_keepa_data(keepa_product_raw)
+                        
+                        # Update results with Keepa data
+                        results[asin].update({
+                            "fba_lowest_365d": keepa_data.get("fba_lowest_365d"),
+                            "fba_lowest_date": keepa_data.get("fba_lowest_date"),
+                            "fbm_lowest_365d": keepa_data.get("fbm_lowest_365d"),
+                            "fbm_lowest_date": keepa_data.get("fbm_lowest_date"),
+                            "lowest_was_fba": keepa_data.get("lowest_was_fba"),
+                            "amazon_was_seller": keepa_data.get("amazon_was_seller"),
+                            "fba_seller_count": keepa_data.get("fba_seller_count"),
+                            "fbm_seller_count": keepa_data.get("fbm_seller_count"),
+                            "sales_drops_30": keepa_data.get("sales_drops_30"),
+                            "sales_drops_90": keepa_data.get("sales_drops_90"),
+                            "sales_drops_180": keepa_data.get("sales_drops_180"),
+                            "analysis_stage": "stage3_complete",
+                        })
+                        
+                        # Calculate worst case profit (with shipping)
+                        buy_cost = buy_costs.get(asin, 0)
+                        landed_cost = results[asin].get("total_landed_cost", buy_cost)
+                        fba_lowest = keepa_data.get("fba_lowest_365d")
+                        
+                        if fba_lowest and fba_lowest > 0:
+                            # Estimate fees at worst price
+                            sell_price = results[asin].get("sell_price", 0)
+                            fees_total = results[asin].get("fees_total", 0)
+                            fee_ratio = fees_total / sell_price if sell_price > 0 else 0.30
+                            worst_fees = fba_lowest * fee_ratio
+                            worst_profit = fba_lowest - worst_fees - landed_cost
+                            
+                            results[asin].update({
+                                "worst_case_price": round(fba_lowest, 2),
+                                "worst_case_fees": round(worst_fees, 2),
+                                "worst_case_profit": round(worst_profit, 2),
+                                "still_profitable_at_worst": worst_profit > 0,
+                            })
+                        
+                        # Also update with weight/dimensions from Keepa
+                        results[asin].update({
+                            "item_weight_lb": keepa_data.get("item_weight_lb"),
+                            "item_length_in": keepa_data.get("item_length_in"),
+                            "item_width_in": keepa_data.get("item_width_in"),
+                            "item_height_in": keepa_data.get("item_height_in"),
+                            "size_tier": keepa_data.get("size_tier"),
+                        })
+                
+                logger.info(f"Stage 3: Keepa data extracted for {len(passed_stage2_asins)} products")
+                
+            except Exception as e:
+                logger.error(f"Stage 3 Keepa error: {e}", exc_info=True)
+                for asin in passed_stage2_asins:
+                    results[asin]["stage3_error"] = str(e)
+        # ========== END STAGE 3 ==========
         
         # ==========================================
         # STEP 4: Mark success - More lenient criteria
@@ -159,6 +383,32 @@ class BatchAnalyzer:
         logger.info(f"✅ Analysis complete: {success_count}/{len(asins)} successful")
         
         return results
+    
+    def _determine_pricing_reason(self, asin: str, pricing_response: dict) -> str:
+        """Determine why pricing is missing."""
+        if not pricing_response:
+            return "no_response"
+        
+        # Check for specific error codes or indicators
+        errors = pricing_response.get("errors", [])
+        if errors:
+            error_code = errors[0].get("code", "")
+            if "InvalidASIN" in error_code:
+                return "invalid_asin"
+            if "Restricted" in error_code or "Gated" in error_code:
+                return "gated"
+            return f"error_{error_code}"
+        
+        # Check offer counts
+        offer_count = pricing_response.get("offer_count", 0)
+        if offer_count == 0:
+            return "no_active_offers"
+        
+        # Check if buy_box_price is None but offers exist
+        if pricing_response.get("buy_box_price") is None and offer_count > 0:
+            return "no_buy_box"
+        
+        return "unknown"
 
 
 batch_analyzer = BatchAnalyzer()

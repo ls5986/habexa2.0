@@ -1,6 +1,6 @@
-import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Box, Typography, CircularProgress, Card, CardContent, Chip, FormControl, InputLabel, Select, MenuItem, Alert, ToggleButtonGroup, ToggleButton } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Box, Typography, CircularProgress, Card, CardContent, Chip, FormControl, InputLabel, Select, MenuItem, Alert, ToggleButtonGroup, ToggleButton, Checkbox, FormControlLabel, InputAdornment } from '@mui/material';
 import { X, Zap, TrendingUp } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAnalysis } from '../../../hooks/useAnalysis';
 import { useSuppliers } from '../../../hooks/useSuppliers';
 import { useToast } from '../../../context/ToastContext';
@@ -17,9 +17,20 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal, onAnalysisComplete }) =>
   const [upc, setUpc] = useState('');
   const [quantity, setQuantity] = useState(1); // Pack quantity for UPC
   const [buyCost, setBuyCost] = useState('');
+  const [isPack, setIsPack] = useState(false);
+  const [packSize, setPackSize] = useState(1);
+  const [wholesaleCost, setWholesaleCost] = useState('');
   const [moq, setMoq] = useState(1);
   const [supplierId, setSupplierId] = useState('');
   const [result, setResult] = useState(null);
+  
+  // Calculate per-unit buy cost
+  const calculatedBuyCost = useMemo(() => {
+    if (isPack && packSize > 0 && wholesaleCost) {
+      return (parseFloat(wholesaleCost) / packSize).toFixed(4);
+    }
+    return buyCost;
+  }, [isPack, packSize, wholesaleCost, buyCost]);
   const { analyzeSingle, loading } = useAnalysis();
   const { suppliers } = useSuppliers();
   const { showToast } = useToast();
@@ -33,8 +44,14 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal, onAnalysisComplete }) =>
   const handleSubmit = async (e) => {
     e.preventDefault();
     const identifier = identifierType === 'asin' ? asin : upc;
-    if (!identifier || !buyCost) {
-      showToast(`Please enter ${identifierType.toUpperCase()} and buy cost`, 'error');
+    
+    // Calculate final per-unit cost
+    const finalBuyCost = isPack 
+      ? parseFloat(wholesaleCost) / packSize 
+      : parseFloat(buyCost);
+    
+    if (!identifier || !finalBuyCost || finalBuyCost <= 0) {
+      showToast(`Please enter ${identifierType.toUpperCase()} and a valid cost`, 'error');
       return;
     }
 
@@ -48,11 +65,15 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal, onAnalysisComplete }) =>
       // For UPC, we need to convert to ASIN first, but the backend can handle it
       const response = await analyzeSingle(
         identifier, 
-        parseFloat(buyCost), 
+        finalBuyCost,  // Per-unit cost
         moq, 
         supplierId || null,
         identifierType,
-        identifierType === 'upc' ? quantity : 1
+        identifierType === 'upc' ? quantity : 1,
+        {
+          pack_size: isPack ? packSize : 1,
+          wholesale_cost: isPack ? parseFloat(wholesaleCost) : null,
+        }
       );
       
       // Response contains job_id - poll for completion
@@ -207,6 +228,9 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal, onAnalysisComplete }) =>
     setUpc('');
     setQuantity(1);
     setBuyCost('');
+    setIsPack(false);
+    setPackSize(1);
+    setWholesaleCost('');
     setMoq(1);
     setSupplierId('');
     setResult(null);
@@ -225,6 +249,9 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal, onAnalysisComplete }) =>
     setUpc('');
     setQuantity(1);
     setBuyCost('');
+    setIsPack(false);
+    setPackSize(1);
+    setWholesaleCost('');
     setMoq(1);
     setSupplierId('');
     setResult(null);
@@ -392,28 +419,93 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal, onAnalysisComplete }) =>
                 </Box>
               )}
 
-              <Box display="flex" gap={2}>
+              {/* Pack Size Toggle */}
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={isPack}
+                    onChange={(e) => {
+                      setIsPack(e.target.checked);
+                      if (!e.target.checked) {
+                        setPackSize(1);
+                        setWholesaleCost('');
+                      }
+                    }}
+                    disabled={loading}
+                  />
+                }
+                label="This is a case/pack (multiple units)"
+                sx={{ mb: 2, display: 'block' }}
+              />
+
+              {isPack ? (
+                <Box sx={{ p: 2, bgcolor: 'grey.100', borderRadius: 1, mb: 2 }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Case Pricing
+                  </Typography>
+                  <Box display="flex" gap={2}>
+                    <TextField
+                      label="Pack Size"
+                      type="number"
+                      value={packSize}
+                      onChange={(e) => setPackSize(Math.max(1, parseInt(e.target.value) || 1))}
+                      disabled={loading}
+                      sx={{ width: 140 }}
+                      helperText="Units per case"
+                      inputProps={{ min: 1 }}
+                    />
+                    <TextField
+                      label="Case Cost"
+                      type="number"
+                      step="0.01"
+                      value={wholesaleCost}
+                      onChange={(e) => setWholesaleCost(e.target.value)}
+                      disabled={loading}
+                      fullWidth
+                      InputProps={{
+                        startAdornment: <InputAdornment position="start">$</InputAdornment>
+                      }}
+                      helperText="Cost for entire case"
+                    />
+                  </Box>
+                  {wholesaleCost && packSize > 0 && (
+                    <Alert severity="success" sx={{ mt: 2 }}>
+                      <Typography variant="body2">
+                        <strong>${(parseFloat(wholesaleCost) / packSize).toFixed(4)}</strong> per unit
+                        &nbsp;({packSize} units @ ${parseFloat(wholesaleCost).toFixed(2)}/case)
+                      </Typography>
+                    </Alert>
+                  )}
+                </Box>
+              ) : (
                 <TextField
-                  label="Your Cost"
+                  label="Unit Cost"
                   type="number"
+                  step="0.01"
                   value={buyCost}
                   onChange={(e) => setBuyCost(e.target.value)}
                   required
-                  InputProps={{ startAdornment: '$' }}
                   fullWidth
                   disabled={loading}
-                  helperText={identifierType === 'upc' ? `Cost per pack of ${quantity}` : 'Cost per unit'}
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start">$</InputAdornment>
+                  }}
+                  helperText="Cost per single unit"
+                  sx={{ mb: 2 }}
                 />
-                <TextField
-                  label="MOQ"
-                  type="number"
-                  value={moq}
-                  onChange={(e) => setMoq(parseInt(e.target.value) || 1)}
-                  fullWidth
-                  disabled={loading}
-                  helperText="Minimum order quantity"
-                />
-              </Box>
+              )}
+
+              <TextField
+                label="MOQ"
+                type="number"
+                value={moq}
+                onChange={(e) => setMoq(Math.max(1, parseInt(e.target.value) || 1))}
+                fullWidth
+                disabled={loading}
+                helperText={isPack ? "Minimum cases to order" : "Minimum units to order"}
+                inputProps={{ min: 1 }}
+                sx={{ mb: 2 }}
+              />
 
               <FormControl fullWidth>
                 <InputLabel>Supplier (Optional)</InputLabel>
@@ -436,7 +528,7 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal, onAnalysisComplete }) =>
                 type="submit"
                 variant="contained"
                 fullWidth
-                disabled={loading || !(identifierType === 'asin' ? asin : upc) || !buyCost || limitReached}
+                disabled={loading || !(identifierType === 'asin' ? asin : upc) || (!buyCost && !wholesaleCost) || limitReached}
                 startIcon={loading ? <CircularProgress size={16} /> : <Zap size={16} />}
                 sx={{
                   backgroundColor: habexa.purple.main,

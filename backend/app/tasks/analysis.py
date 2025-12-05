@@ -8,6 +8,50 @@ from typing import List, Dict
 from celery import chord
 from app.core.celery_app import celery_app
 from app.services.supabase_client import supabase
+
+
+async def get_user_cost_settings(user_id: str) -> dict:
+    """
+    Get user's cost settings (shipping rates, prep costs).
+    Tries user_cost_settings table first, falls back to user_settings.
+    """
+    try:
+        # Try new user_cost_settings table first
+        result = supabase.table("user_cost_settings")\
+            .select("*")\
+            .eq("user_id", user_id)\
+            .single()\
+            .execute()
+        
+        if result.data:
+            return {
+                "inbound_rate_per_lb": result.data.get("inbound_rate_per_lb", 0.35),
+                "default_prep_cost": result.data.get("default_prep_cost", 0.10),
+            }
+    except Exception:
+        pass
+    
+    try:
+        # Fall back to user_settings table
+        result = supabase.table("user_settings")\
+            .select("default_inbound_shipping, default_prep_cost")\
+            .eq("user_id", user_id)\
+            .single()\
+            .execute()
+        
+        if result.data:
+            return {
+                "inbound_rate_per_lb": result.data.get("default_inbound_shipping", 0.35),
+                "default_prep_cost": result.data.get("default_prep_cost", 0.10),
+            }
+    except Exception:
+        pass
+    
+    # Return defaults if nothing found
+    return {
+        "inbound_rate_per_lb": 0.35,
+        "default_prep_cost": 0.10,
+    }
 from app.services.batch_analyzer import batch_analyzer
 from app.tasks.base import JobManager, run_async
 from app.tasks.progress import AtomicJobProgress
@@ -40,7 +84,34 @@ def analyze_single_product(self, job_id: str, user_id: str, product_id: str, asi
         
         # Use batch analyzer even for single product (it's still efficient)
         try:
-            results = run_async(batch_analyzer.analyze_products([asin]))
+            # Build buy_costs, promo_costs, and source_data dicts from metadata
+            buy_costs = {}
+            promo_costs = {}
+            source_data = {}
+            if buy_cost:
+                buy_costs[asin] = buy_cost
+            # Check for promo_buy_cost in metadata
+            promo_buy_cost = metadata.get("promo_buy_cost")
+            if promo_buy_cost:
+                promo_costs[asin] = float(promo_buy_cost)
+            
+            # Get source data from metadata
+            source_data[asin] = {
+                "supplier_ships_direct": metadata.get("supplier_ships_direct", False),
+                "inbound_rate_override": metadata.get("inbound_rate_override"),
+                "prep_cost_override": metadata.get("prep_cost_override"),
+            }
+            
+            # Get user cost settings
+            user_settings = run_async(get_user_cost_settings(user_id))
+            
+            results = run_async(batch_analyzer.analyze_products(
+                [asin],
+                buy_costs=buy_costs,
+                promo_costs=promo_costs,
+                source_data=source_data,
+                user_settings=user_settings
+            ))
             result = results.get(asin, {})
         except Exception as e:
             logger.error(f"Batch analyzer failed for {asin}: {e}", exc_info=True)
@@ -103,27 +174,91 @@ def analyze_single_product(self, job_id: str, user_id: str, product_id: str, asi
                 except Exception as e:
                     logger.warning(f"Could not get supplier_id for product {product_id}: {e}")
             
-            # Save analysis
-            analysis_result = supabase.table("analyses").upsert({
+            # Save analysis - include ALL fields
+            analysis_data = {
                 "user_id": user_id,
                 "asin": asin,
                 "supplier_id": supplier_id,  # Can be NULL
                 "analysis_data": {},  # Required JSONB field
+                
+                # Pricing status
+                "pricing_status": result.get("pricing_status", "complete"),
+                "pricing_status_reason": result.get("pricing_status_reason"),
+                "needs_review": result.get("needs_review", False),
+                "manual_sell_price": result.get("manual_sell_price"),
+                
+                # Pricing
                 "sell_price": result.get("sell_price"),
+                "buy_cost": result.get("buy_cost"),
+                
+                # Fee breakdown
+                "referral_fee": result.get("referral_fee"),
+                "referral_fee_percent": result.get("referral_fee_percent"),
+                "fba_fee": result.get("fees_fba") or result.get("fba_fee"),
+                "variable_closing_fee": result.get("variable_closing_fee"),
                 "fees_total": result.get("fees_total"),
-                "fees_referral": result.get("fees_referral"),
-                "fees_fba": result.get("fees_fba"),
-                "seller_count": result.get("seller_count"),
-                "price_source": result.get("price_source", "sp-api"),
-                "title": result.get("title"),
-                "brand": result.get("brand"),
-                "image_url": result.get("image_url"),
-                # Note: bsr is stored in products table, not analyses
+                
+                # Shipping & landed cost
+                "inbound_shipping": result.get("inbound_shipping"),
+                "prep_cost": result.get("prep_cost"),
+                "total_landed_cost": result.get("total_landed_cost"),
+                
+                # Profit
+                "net_profit": result.get("net_profit"),
+                "roi": result.get("roi"),
+                "profit_margin": result.get("profit_margin"),
+                
+                # Promo
+                "promo_buy_cost": result.get("promo_buy_cost"),
+                "promo_landed_cost": result.get("promo_landed_cost"),
+                "promo_net_profit": result.get("promo_net_profit"),
+                "promo_roi": result.get("promo_roi"),
+                
+                # Worst case
+                "worst_case_price": result.get("worst_case_price"),
+                "worst_case_fees": result.get("worst_case_fees"),
+                "worst_case_profit": result.get("worst_case_profit"),
+                "still_profitable_at_worst": result.get("still_profitable_at_worst"),
+                
+                # Dimensions
+                "item_weight_lb": result.get("item_weight_lb"),
+                "item_length_in": result.get("item_length_in"),
+                "item_width_in": result.get("item_width_in"),
+                "item_height_in": result.get("item_height_in"),
+                "size_tier": result.get("size_tier"),
+                
+                # Competition & product
                 "category": result.get("category"),
+                "bsr": result.get("bsr") or result.get("current_sales_rank"),
+                "fba_seller_count": result.get("fba_seller_count"),
+                "fbm_seller_count": result.get("fbm_seller_count"),
+                "total_seller_count": result.get("seller_count") or result.get("total_seller_count"),
+                "variation_count": result.get("variation_count"),
+                "review_count": result.get("review_count"),
+                "rating": result.get("rating"),
+                
+                # 365-day
+                "fba_lowest_365d": result.get("fba_lowest_365d"),
+                "fba_lowest_date": result.get("fba_lowest_date"),
+                "fbm_lowest_365d": result.get("fbm_lowest_365d"),
+                "amazon_was_seller": result.get("amazon_was_seller"),
+                "lowest_was_fba": result.get("lowest_was_fba"),
+                
+                # Stage
+                "analysis_stage": result.get("analysis_stage"),
+                "passed_stage2": result.get("passed_stage2"),
+                
+                # Legacy fields (for compatibility)
+                "price_source": result.get("price_source", "sp-api"),
                 "sales_drops_30": result.get("sales_drops_30"),
                 "sales_drops_90": result.get("sales_drops_90"),
                 "sales_drops_180": result.get("sales_drops_180"),
-            }, on_conflict="user_id,supplier_id,asin").execute()
+            }
+            
+            analysis_result = supabase.table("analyses").upsert(
+                analysis_data,
+                on_conflict="user_id,supplier_id,asin"
+            ).execute()
             
             analysis_id = analysis_result.data[0]["id"] if analysis_result.data else None
             
@@ -258,6 +393,52 @@ def batch_analyze_products(self, job_id: str, user_id: str, product_ids: List[st
             
             logger.info(f"📦 Processing batch {batch_num}/{total_batches} ({len(batch)} products)")
             
+            # Build buy_costs, promo_costs, and source_data dicts from product_sources
+            buy_costs = {}
+            promo_costs = {}
+            source_data = {}
+            try:
+                product_ids_batch = [p["id"] for p in batch]
+                sources_result = supabase.table("product_sources")\
+                    .select("product_id, buy_cost, promo_buy_cost, supplier_ships_direct, inbound_rate_override, prep_cost_override")\
+                    .in_("product_id", product_ids_batch)\
+                    .execute()
+                
+                # Create mapping: product_id -> buy_cost, promo_buy_cost, and shipping overrides
+                product_id_to_buy_cost = {}
+                product_id_to_promo_cost = {}
+                product_id_to_source = {}
+                for source in (sources_result.data or []):
+                    pid = source.get("product_id")
+                    cost = source.get("buy_cost")
+                    promo_cost = source.get("promo_buy_cost")
+                    if pid and cost:
+                        product_id_to_buy_cost[pid] = float(cost)
+                    if pid and promo_cost:
+                        product_id_to_promo_cost[pid] = float(promo_cost)
+                    if pid:
+                        product_id_to_source[pid] = {
+                            "supplier_ships_direct": source.get("supplier_ships_direct", False),
+                            "inbound_rate_override": source.get("inbound_rate_override"),
+                            "prep_cost_override": source.get("prep_cost_override"),
+                        }
+                
+                # Map to ASINs
+                for product in batch:
+                    asin = product["asin"]
+                    product_id = product["id"]
+                    if product_id in product_id_to_buy_cost:
+                        buy_costs[asin] = product_id_to_buy_cost[product_id]
+                    if product_id in product_id_to_promo_cost:
+                        promo_costs[asin] = product_id_to_promo_cost[product_id]
+                    if product_id in product_id_to_source:
+                        source_data[asin] = product_id_to_source[product_id]
+            except Exception as e:
+                logger.warning(f"Could not fetch buy_costs for batch: {e}")
+            
+            # Get user cost settings
+            user_settings = run_async(get_user_cost_settings(user_id))
+            
             # =====================================================
             # USE BATCH ANALYZER - This uses:
             # - Keepa batch (100 ASINs) for catalog
@@ -265,7 +446,14 @@ def batch_analyze_products(self, job_id: str, user_id: str, product_ids: List[st
             # - SP-API batch (20 items) for fees
             # NO individual SP-API catalog or offers calls!
             # =====================================================
-            results = run_async(batch_analyzer.analyze_products(batch_asins, marketplace_id))
+            results = run_async(batch_analyzer.analyze_products(
+                batch_asins,
+                buy_costs=buy_costs,
+                promo_costs=promo_costs,
+                source_data=source_data,
+                user_settings=user_settings,
+                marketplace_id=marketplace_id
+            ))
             
             # Save results to database
             for product in batch:
@@ -288,27 +476,80 @@ def batch_analyze_products(self, job_id: str, user_id: str, product_ids: List[st
                         except Exception as e:
                             logger.warning(f"Could not get supplier_id for product {product_id}: {e}")
                         
-                        # Save analysis - only columns that exist in analyses table
-                        # Note: title, brand, image_url go to products table, not analyses
-                        # Unique constraint is (user_id, supplier_id, asin)
+                        # Save analysis - include ALL fields
                         analysis_data = {
                             "user_id": user_id,
                             "asin": asin,
                             "supplier_id": supplier_id,  # Can be NULL
                             "analysis_data": {},  # Required JSONB field
+                            
+                            # Pricing
+                            "sell_price": result.get("sell_price"),
+                            "buy_cost": result.get("buy_cost"),
+                            
+                            # Fee breakdown
+                            "referral_fee": result.get("referral_fee"),
+                            "referral_fee_percent": result.get("referral_fee_percent"),
+                            "fba_fee": result.get("fees_fba") or result.get("fba_fee"),
+                            "variable_closing_fee": result.get("variable_closing_fee"),
+                            "fees_total": result.get("fees_total"),
+                            
+                            # Shipping & landed cost
+                            "inbound_shipping": result.get("inbound_shipping"),
+                            "prep_cost": result.get("prep_cost"),
+                            "total_landed_cost": result.get("total_landed_cost"),
+                            
+                            # Profit
+                            "net_profit": result.get("net_profit"),
+                            "roi": result.get("roi"),
+                            "profit_margin": result.get("profit_margin"),
+                            
+                            # Promo
+                            "promo_buy_cost": result.get("promo_buy_cost"),
+                            "promo_landed_cost": result.get("promo_landed_cost"),
+                            "promo_net_profit": result.get("promo_net_profit"),
+                            "promo_roi": result.get("promo_roi"),
+                            
+                            # Worst case
+                            "worst_case_price": result.get("worst_case_price"),
+                            "worst_case_fees": result.get("worst_case_fees"),
+                            "worst_case_profit": result.get("worst_case_profit"),
+                            "still_profitable_at_worst": result.get("still_profitable_at_worst"),
+                            
+                            # Dimensions
+                            "item_weight_lb": result.get("item_weight_lb"),
+                            "item_length_in": result.get("item_length_in"),
+                            "item_width_in": result.get("item_width_in"),
+                            "item_height_in": result.get("item_height_in"),
+                            "size_tier": result.get("size_tier"),
+                            
+                            # Competition & product
+                            "category": result.get("category"),
+                            "bsr": result.get("bsr") or result.get("current_sales_rank"),
+                            "fba_seller_count": result.get("fba_seller_count"),
+                            "fbm_seller_count": result.get("fbm_seller_count"),
+                            "total_seller_count": result.get("seller_count") or result.get("total_seller_count"),
+                            "variation_count": result.get("variation_count"),
+                            "review_count": result.get("review_count"),
+                            "rating": result.get("rating"),
+                            
+                            # 365-day
+                            "fba_lowest_365d": result.get("fba_lowest_365d"),
+                            "fba_lowest_date": result.get("fba_lowest_date"),
+                            "fbm_lowest_365d": result.get("fbm_lowest_365d"),
+                            "amazon_was_seller": result.get("amazon_was_seller"),
+                            "lowest_was_fba": result.get("lowest_was_fba"),
+                            
+                            # Stage
+                            "analysis_stage": result.get("analysis_stage"),
+                            "passed_stage2": result.get("passed_stage2"),
+                            
+                            # Legacy fields (for compatibility)
+                            "price_source": result.get("price_source", "sp-api"),
+                            "sales_drops_30": result.get("sales_drops_30"),
+                            "sales_drops_90": result.get("sales_drops_90"),
+                            "sales_drops_180": result.get("sales_drops_180"),
                         }
-                        
-                        # SP-API data (primary) - only add if value exists
-                        if result.get("fees_total") is not None:
-                            analysis_data["fees_total"] = result.get("fees_total")
-                        if result.get("fees_referral") is not None:
-                            analysis_data["fees_referral"] = result.get("fees_referral")
-                        if result.get("fees_fba") is not None:
-                            analysis_data["fees_fba"] = result.get("fees_fba")
-                        if result.get("seller_count") is not None:
-                            analysis_data["seller_count"] = result.get("seller_count")
-                        if result.get("price_source"):
-                            analysis_data["price_source"] = result.get("price_source", "sp-api")
                         
                         # Keepa data (secondary) - only add if value exists
                         if result.get("category"):
@@ -327,6 +568,46 @@ def batch_analyze_products(self, job_id: str, user_id: str, product_ids: List[st
                             analysis_data["rating"] = result.get("rating")
                         if result.get("review_count") is not None:
                             analysis_data["review_count"] = result.get("review_count")
+                        
+                        # Stage tracking
+                        if result.get("analysis_stage"):
+                            analysis_data["analysis_stage"] = result.get("analysis_stage")
+                        if result.get("stage2_roi") is not None:
+                            analysis_data["stage2_roi"] = result.get("stage2_roi")
+                        if result.get("passed_stage2") is not None:
+                            analysis_data["passed_stage2"] = result.get("passed_stage2")
+                        
+                        # Keepa 365-day data
+                        if result.get("fba_lowest_365d") is not None:
+                            analysis_data["fba_lowest_365d"] = result.get("fba_lowest_365d")
+                        if result.get("fba_lowest_date"):
+                            analysis_data["fba_lowest_date"] = result.get("fba_lowest_date")
+                        if result.get("fbm_lowest_365d") is not None:
+                            analysis_data["fbm_lowest_365d"] = result.get("fbm_lowest_365d")
+                        if result.get("fbm_lowest_date"):
+                            analysis_data["fbm_lowest_date"] = result.get("fbm_lowest_date")
+                        if result.get("lowest_was_fba") is not None:
+                            analysis_data["lowest_was_fba"] = result.get("lowest_was_fba")
+                        if result.get("amazon_was_seller") is not None:
+                            analysis_data["amazon_was_seller"] = result.get("amazon_was_seller")
+                        
+                        # Worst case
+                        if result.get("worst_case_profit") is not None:
+                            analysis_data["worst_case_profit"] = result.get("worst_case_profit")
+                        if result.get("still_profitable_at_worst") is not None:
+                            analysis_data["still_profitable_at_worst"] = result.get("still_profitable_at_worst")
+                        
+                        # Competition
+                        if result.get("fba_seller_count") is not None:
+                            analysis_data["fba_seller_count"] = result.get("fba_seller_count")
+                        if result.get("fbm_seller_count") is not None:
+                            analysis_data["fbm_seller_count"] = result.get("fbm_seller_count")
+                        
+                        # Promo analysis
+                        if result.get("promo_net_profit") is not None:
+                            analysis_data["promo_net_profit"] = result.get("promo_net_profit")
+                        if result.get("promo_roi") is not None:
+                            analysis_data["promo_roi"] = result.get("promo_roi")
                         
                         # Upsert with correct unique constraint
                         analysis_result = supabase.table("analyses").upsert(
@@ -488,6 +769,52 @@ def analyze_chunk(self, job_id: str, user_id: str, product_chunk: List[Dict], ch
         except:
             pass
         
+        # Build buy_costs, promo_costs, and source_data dicts from product_sources
+        buy_costs = {}
+        promo_costs = {}
+        source_data = {}
+        try:
+            product_ids_chunk = [p["id"] for p in product_chunk]
+            sources_result = supabase.table("product_sources")\
+                .select("product_id, buy_cost, promo_buy_cost, supplier_ships_direct, inbound_rate_override, prep_cost_override")\
+                .in_("product_id", product_ids_chunk)\
+                .execute()
+            
+            # Create mapping: product_id -> buy_cost, promo_buy_cost, and shipping overrides
+            product_id_to_buy_cost = {}
+            product_id_to_promo_cost = {}
+            product_id_to_source = {}
+            for source in (sources_result.data or []):
+                pid = source.get("product_id")
+                cost = source.get("buy_cost")
+                promo_cost = source.get("promo_buy_cost")
+                if pid and cost:
+                    product_id_to_buy_cost[pid] = float(cost)
+                if pid and promo_cost:
+                    product_id_to_promo_cost[pid] = float(promo_cost)
+                if pid:
+                    product_id_to_source[pid] = {
+                        "supplier_ships_direct": source.get("supplier_ships_direct", False),
+                        "inbound_rate_override": source.get("inbound_rate_override"),
+                        "prep_cost_override": source.get("prep_cost_override"),
+                    }
+            
+            # Map to ASINs
+            for product in product_chunk:
+                asin = product["asin"]
+                product_id = product["id"]
+                if product_id in product_id_to_buy_cost:
+                    buy_costs[asin] = product_id_to_buy_cost[product_id]
+                if product_id in product_id_to_promo_cost:
+                    promo_costs[asin] = product_id_to_promo_cost[product_id]
+                if product_id in product_id_to_source:
+                    source_data[asin] = product_id_to_source[product_id]
+        except Exception as e:
+            logger.warning(f"Could not fetch buy_costs for chunk: {e}")
+        
+        # Get user cost settings
+        user_settings = run_async(get_user_cost_settings(user_id))
+        
         # =====================================================
         # USE BATCH ANALYZER - This uses:
         # - Keepa batch (100 ASINs) for catalog
@@ -496,7 +823,14 @@ def analyze_chunk(self, job_id: str, user_id: str, product_chunk: List[Dict], ch
         # NO individual SP-API catalog or offers calls!
         # =====================================================
         logger.info(f"📦 Chunk {chunk_index}: Calling batch_analyzer.analyze_products()")
-        results = run_async(batch_analyzer.analyze_products(asins, marketplace_id))
+        results = run_async(batch_analyzer.analyze_products(
+            asins,
+            buy_costs=buy_costs,
+            promo_costs=promo_costs,
+            source_data=source_data,
+            user_settings=user_settings,
+            marketplace_id=marketplace_id
+        ))
         
         success_count = 0
         error_count = 0
@@ -507,7 +841,9 @@ def analyze_chunk(self, job_id: str, user_id: str, product_chunk: List[Dict], ch
                 continue
             
             try:
-                if result.get("success"):
+                # Save ALL products, even if they don't have pricing
+                # Products without pricing will have pricing_status = 'no_pricing' and needs_review = True
+                if result.get("success") or result.get("pricing_status") == "no_pricing" or result.get("title") or result.get("brand"):
                     # Get supplier_id from product_sources if available
                     supplier_id = None
                     try:
@@ -521,31 +857,125 @@ def analyze_chunk(self, job_id: str, user_id: str, product_chunk: List[Dict], ch
                     except Exception as e:
                         logger.warning(f"Could not get supplier_id for product {product_id}: {e}")
                     
-                    # Save analysis
-                    analysis_result = supabase.table("analyses").upsert({
+                    # Save analysis - include ALL fields (same format as single product)
+                    analysis_data_chunk = {
                         "user_id": user_id,
                         "asin": asin,
                         "supplier_id": supplier_id,  # Can be NULL
                         "analysis_data": {},  # Required JSONB field
+                        
+                        # Pricing status
+                        "pricing_status": result.get("pricing_status", "complete"),
+                        "pricing_status_reason": result.get("pricing_status_reason"),
+                        "needs_review": result.get("needs_review", False),
+                        "manual_sell_price": result.get("manual_sell_price"),
+                        
+                        # Pricing
                         "sell_price": result.get("sell_price"),
+                        "buy_cost": result.get("buy_cost"),
+                        
+                        # Fee breakdown
+                        "referral_fee": result.get("referral_fee"),
+                        "referral_fee_percent": result.get("referral_fee_percent"),
+                        "fba_fee": result.get("fees_fba") or result.get("fba_fee"),
+                        "variable_closing_fee": result.get("variable_closing_fee"),
                         "fees_total": result.get("fees_total"),
-                        "fees_referral": result.get("fees_referral"),
-                        "fees_fba": result.get("fees_fba"),
-                        "seller_count": result.get("seller_count"),
+                        
+                        # Shipping & landed cost
+                        "inbound_shipping": result.get("inbound_shipping"),
+                        "prep_cost": result.get("prep_cost"),
+                        "total_landed_cost": result.get("total_landed_cost"),
+                        
+                        # Profit
+                        "net_profit": result.get("net_profit"),
+                        "roi": result.get("roi"),
+                        "profit_margin": result.get("profit_margin"),
+                        
+                        # Promo
+                        "promo_buy_cost": result.get("promo_buy_cost"),
+                        "promo_landed_cost": result.get("promo_landed_cost"),
+                        "promo_net_profit": result.get("promo_net_profit"),
+                        "promo_roi": result.get("promo_roi"),
+                        
+                        # Worst case
+                        "worst_case_price": result.get("worst_case_price"),
+                        "worst_case_fees": result.get("worst_case_fees"),
+                        "worst_case_profit": result.get("worst_case_profit"),
+                        "still_profitable_at_worst": result.get("still_profitable_at_worst"),
+                        
+                        # Dimensions
+                        "item_weight_lb": result.get("item_weight_lb"),
+                        "item_length_in": result.get("item_length_in"),
+                        "item_width_in": result.get("item_width_in"),
+                        "item_height_in": result.get("item_height_in"),
+                        "size_tier": result.get("size_tier"),
+                        
+                        # Competition & product
+                        "category": result.get("category"),
+                        "bsr": result.get("bsr") or result.get("current_sales_rank"),
+                        "fba_seller_count": result.get("fba_seller_count"),
+                        "fbm_seller_count": result.get("fbm_seller_count"),
+                        "total_seller_count": result.get("seller_count") or result.get("total_seller_count"),
+                        "variation_count": result.get("variation_count"),
+                        "review_count": result.get("review_count"),
+                        "rating": result.get("rating"),
+                        
+                        # 365-day
+                        "fba_lowest_365d": result.get("fba_lowest_365d"),
+                        "fba_lowest_date": result.get("fba_lowest_date"),
+                        "fbm_lowest_365d": result.get("fbm_lowest_365d"),
+                        "amazon_was_seller": result.get("amazon_was_seller"),
+                        "lowest_was_fba": result.get("lowest_was_fba"),
+                        
+                        # Stage
+                        "analysis_stage": result.get("analysis_stage"),
+                        "passed_stage2": result.get("passed_stage2"),
+                        
+                        # Legacy fields (for compatibility)
                         "price_source": result.get("price_source", "sp-api"),
                         "title": result.get("title"),
                         "brand": result.get("brand"),
                         "image_url": result.get("image_url"),
-                        # Note: bsr is stored in products table, not analyses
-                        "category": result.get("category"),
                         "sales_drops_30": result.get("sales_drops_30"),
                         "sales_drops_90": result.get("sales_drops_90"),
                         "sales_drops_180": result.get("sales_drops_180"),
-                        "variation_count": result.get("variation_count"),
                         "amazon_in_stock": result.get("amazon_in_stock"),
-                        "rating": result.get("rating"),
-                        "review_count": result.get("review_count"),
-                    }, on_conflict="user_id,supplier_id,asin").execute()
+                    }
+                    
+                    # Add optional fields only if they exist (already included above)
+                    if result.get("stage2_roi") is not None:
+                        analysis_data_chunk["stage2_roi"] = result.get("stage2_roi")
+                    if result.get("passed_stage2") is not None:
+                        analysis_data_chunk["passed_stage2"] = result.get("passed_stage2")
+                    if result.get("fba_lowest_365d") is not None:
+                        analysis_data_chunk["fba_lowest_365d"] = result.get("fba_lowest_365d")
+                    if result.get("fba_lowest_date"):
+                        analysis_data_chunk["fba_lowest_date"] = result.get("fba_lowest_date")
+                    if result.get("fbm_lowest_365d") is not None:
+                        analysis_data_chunk["fbm_lowest_365d"] = result.get("fbm_lowest_365d")
+                    if result.get("fbm_lowest_date"):
+                        analysis_data_chunk["fbm_lowest_date"] = result.get("fbm_lowest_date")
+                    if result.get("lowest_was_fba") is not None:
+                        analysis_data_chunk["lowest_was_fba"] = result.get("lowest_was_fba")
+                    if result.get("amazon_was_seller") is not None:
+                        analysis_data_chunk["amazon_was_seller"] = result.get("amazon_was_seller")
+                    if result.get("worst_case_profit") is not None:
+                        analysis_data_chunk["worst_case_profit"] = result.get("worst_case_profit")
+                    if result.get("still_profitable_at_worst") is not None:
+                        analysis_data_chunk["still_profitable_at_worst"] = result.get("still_profitable_at_worst")
+                    if result.get("fba_seller_count") is not None:
+                        analysis_data_chunk["fba_seller_count"] = result.get("fba_seller_count")
+                    if result.get("fbm_seller_count") is not None:
+                        analysis_data_chunk["fbm_seller_count"] = result.get("fbm_seller_count")
+                    if result.get("promo_net_profit") is not None:
+                        analysis_data_chunk["promo_net_profit"] = result.get("promo_net_profit")
+                    if result.get("promo_roi") is not None:
+                        analysis_data_chunk["promo_roi"] = result.get("promo_roi")
+                    
+                    analysis_result = supabase.table("analyses").upsert(
+                        analysis_data_chunk,
+                        on_conflict="user_id,supplier_id,asin"
+                    ).execute()
                     
                     analysis_id = analysis_result.data[0]["id"] if analysis_result.data else None
                     

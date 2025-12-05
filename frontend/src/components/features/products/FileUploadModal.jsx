@@ -10,6 +10,7 @@ import {
   CheckCircle, Cancel, ExpandMore, ExpandLess
 } from '@mui/icons-material';
 import api from '../../../services/api';
+import PipelineProgressTracker from './PipelineProgressTracker';
 
 export default function FileUploadModal({ open, onClose, onComplete }) {
   const [suppliers, setSuppliers] = useState([]);
@@ -207,24 +208,25 @@ export default function FileUploadModal({ open, onClose, onComplete }) {
         )}
 
         {/* PROCESSING STATE */}
-        {(job?.status === 'processing' || job?.status === 'pending' || job?.status === 'parsing') && (
+        {(job?.status === 'processing' || job?.status === 'pending' || job?.status === 'parsing' || job?.status === 'analyzing') && (
           <Box sx={{ mb: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
               <CircularProgress size={20} />
               <Typography variant="body1">
-                {job.status === 'parsing' ? 'Parsing file...' : `Processing for ${supplierName}...`}
+                {job.status === 'parsing' ? 'Parsing file...' : 
+                 job.status === 'analyzing' ? 'Analyzing products...' :
+                 `Processing for ${supplierName}...`}
               </Typography>
             </Box>
             
-            <LinearProgress 
-              variant="determinate" 
-              value={job.progress || 0} 
-              sx={{ mb: 1, height: 8, borderRadius: 1 }}
+            {/* Enhanced Progress Tracker */}
+            <PipelineProgressTracker
+              job={job}
+              parsedData={job.metadata?.parsed_data || job.result?.parsed_data}
+              conversionData={job.metadata?.conversion_data || job.result?.conversion_data}
+              pricingData={job.metadata?.pricing_data || job.result?.pricing_data}
+              keepaData={job.metadata?.keepa_data || job.result?.keepa_data}
             />
-            
-            <Typography variant="caption" color="text.secondary">
-              {job.processed_items || 0} / {job.total_items || '?'} rows
-            </Typography>
           </Box>
         )}
 

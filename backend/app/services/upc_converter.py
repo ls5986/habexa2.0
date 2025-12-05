@@ -1,9 +1,10 @@
 """
 UPC to ASIN conversion service using SP-API.
 Converts UPC/EAN/GTIN to ASIN when ASIN is not available.
+Supports batch conversion of up to 20 UPCs per request for efficiency.
 """
 import logging
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from app.services.sp_api_client import sp_api_client
 
 logger = logging.getLogger(__name__)
@@ -12,6 +13,7 @@ logger = logging.getLogger(__name__)
 class UPCConverter:
     """
     Converts UPC/EAN/GTIN to ASIN using SP-API catalog search.
+    Supports single and batch conversion (up to 20 UPCs per request).
     """
     
     async def upc_to_asin(
@@ -33,7 +35,7 @@ class UPCConverter:
             return None
         
         # Clean and validate UPC
-        upc_clean = str(upc).strip().replace("-", "").replace(" ", "")
+        upc_clean = str(upc).strip().replace("-", "").replace(" ", "").replace(".0", "")
         
         # Validate UPC format (12-14 digits)
         if not upc_clean.isdigit():
@@ -119,6 +121,123 @@ class UPCConverter:
         
         return None
     
+    async def upcs_to_asins_batch(
+        self,
+        upcs: List[str],
+        marketplace_id: str = "ATVPDKIKX0DER"
+    ) -> Dict[str, Optional[str]]:
+        """
+        Convert multiple UPCs/EANs/GTINs to ASINs in batch.
+        SP-API supports up to 20 identifiers per request.
+        
+        Args:
+            upcs: List of UPC/EAN/GTIN codes (up to 20)
+            marketplace_id: Amazon marketplace ID
+            
+        Returns:
+            Dictionary mapping UPC -> ASIN (or None if not found)
+        """
+        if not upcs:
+            return {}
+        
+        # Limit to 20 UPCs per batch (SP-API limit)
+        upcs_limited = upcs[:20]
+        
+        # Normalize and validate UPCs
+        normalized_upcs = []
+        upc_to_original = {}  # Map normalized -> original for result mapping
+        
+        for upc in upcs_limited:
+            if not upc:
+                continue
+            
+            # Clean and validate
+            upc_clean = str(upc).strip().replace("-", "").replace(" ", "").replace(".0", "")
+            
+            # Validate format
+            if not upc_clean.isdigit():
+                logger.warning(f"Invalid UPC format: {upc}")
+                continue
+            
+            if len(upc_clean) < 12 or len(upc_clean) > 14:
+                logger.warning(f"UPC length invalid (must be 12-14 digits): {upc_clean}")
+                continue
+            
+            # Normalize to 12 digits (UPC-A) or 13 digits (EAN-13)
+            if len(upc_clean) == 14:
+                upc_clean = upc_clean[1:]  # Remove first digit (packaging indicator)
+            
+            normalized_upcs.append(upc_clean)
+            upc_to_original[upc_clean] = upc
+        
+        if not normalized_upcs:
+            return {}
+        
+        # Batch convert using SP-API catalog search
+        try:
+            result = await sp_api_client.search_catalog_items(
+                identifiers=normalized_upcs,
+                identifiers_type="UPC",
+                marketplace_id=marketplace_id
+            )
+            
+            if not result:
+                logger.warning(f"No response from SP-API for batch UPC conversion")
+                return {upc: None for upc in upcs_limited}
+            
+            # Parse results - build mapping of UPC -> ASIN
+            upc_to_asin = {}
+            
+            # SP-API returns items - each item corresponds to one identifier
+            # Items are typically returned in the same order as input identifiers
+            items = result.get("items") or []
+            summaries = result.get("summaries") or []
+            
+            # Use items if available, otherwise summaries
+            catalog_items = items if items else summaries
+            
+            # Match items to UPCs by position (SP-API returns in order)
+            for idx, item in enumerate(catalog_items):
+                if idx >= len(normalized_upcs):
+                    break
+                
+                upc_key = normalized_upcs[idx]
+                
+                # Extract ASIN from item
+                asin = (
+                    item.get("asin") or
+                    item.get("productId") or
+                    item.get("identifiers", {}).get("marketplaceASIN", {}).get("asin") or
+                    (item.get("identifiers", {}) or {}).get("asin")
+                )
+                
+                if asin:
+                    upc_to_asin[upc_key] = asin
+                    # Also map original UPC format
+                    original_upc = upc_to_original.get(upc_key)
+                    if original_upc and original_upc != upc_key:
+                        upc_to_asin[original_upc] = asin
+            
+            # Build result dictionary - map all input UPCs to ASINs (or None)
+            results = {}
+            for upc in upcs_limited:
+                upc_clean = str(upc).strip().replace("-", "").replace(" ", "").replace(".0", "")
+                if len(upc_clean) == 14:
+                    upc_clean = upc_clean[1:]
+                
+                # Try normalized first, then original
+                asin = upc_to_asin.get(upc_clean) or upc_to_asin.get(upc)
+                results[upc] = asin
+            
+            success_count = sum(1 for asin in results.values() if asin)
+            logger.info(f"✅ Batch UPC conversion: {success_count}/{len(upcs_limited)} successful")
+            
+            return results
+            
+        except Exception as e:
+            logger.error(f"Error in batch UPC conversion: {e}", exc_info=True)
+            return {upc: None for upc in upcs_limited}
+    
     def is_valid_upc(self, value: str) -> bool:
         """
         Check if a string is a valid UPC/EAN/GTIN format.
@@ -133,7 +252,7 @@ class UPCConverter:
             return False
         
         # Clean the value
-        clean = str(value).strip().replace("-", "").replace(" ", "")
+        clean = str(value).strip().replace("-", "").replace(" ", "").replace(".0", "")
         
         # Must be all digits
         if not clean.isdigit():
@@ -158,7 +277,7 @@ class UPCConverter:
         if not value:
             return None
         
-        clean = str(value).strip().replace("-", "").replace(" ", "")
+        clean = str(value).strip().replace("-", "").replace(" ", "").replace(".0", "")
         
         if self.is_valid_upc(clean):
             return clean
@@ -168,4 +287,3 @@ class UPCConverter:
 
 # Singleton instance
 upc_converter = UPCConverter()
-

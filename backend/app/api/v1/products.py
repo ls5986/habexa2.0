@@ -244,6 +244,7 @@ async def get_deals(
     min_roi: Optional[float] = Query(None),
     min_profit: Optional[float] = Query(None),
     search: Optional[str] = Query(None),
+    asin_status: Optional[str] = Query(None),
     limit: int = Query(50, le=100),
     offset: int = Query(0),
     current_user = Depends(get_current_user)
@@ -268,6 +269,8 @@ async def get_deals(
             query = query.eq("supplier_id", supplier_id)
         if search:
             query = query.ilike("asin", f"%{search}%")
+        if asin_status:
+            query = query.eq("asin_status", asin_status)
         if min_roi is not None:
             query = query.gte("roi", min_roi)
         if min_profit is not None:
@@ -1323,6 +1326,87 @@ async def get_keepa_analysis(asin: str, current_user = Depends(get_current_user)
         logger.error(f"Failed to get Keepa analysis: {e}", exc_info=True)
         raise HTTPException(500, str(e))
 
+
+@router.patch("/{product_id}/asin")
+async def set_product_asin(
+    product_id: str,
+    request: dict,
+    current_user = Depends(get_current_user)
+):
+    """
+    Manually set ASIN for a product that doesn't have one.
+    Updates product and changes product_sources stage to 'new' (ready for analysis).
+    """
+    user_id = str(current_user.id)
+    asin = request.get("asin", "").strip().upper()
+    
+    if not asin:
+        raise HTTPException(400, "ASIN is required")
+    
+    if len(asin) != 10:
+        raise HTTPException(400, "ASIN must be 10 characters")
+    
+    try:
+        # Verify product belongs to user
+        product = supabase.table("products")\
+            .select("id, asin, asin_status")\
+            .eq("id", product_id)\
+            .eq("user_id", user_id)\
+            .limit(1)\
+            .execute()
+        
+        if not product.data:
+            raise HTTPException(404, "Product not found")
+        
+        product_data = product.data[0]
+        
+        # Check if ASIN already exists for another product
+        existing = supabase.table("products")\
+            .select("id")\
+            .eq("user_id", user_id)\
+            .eq("asin", asin)\
+            .neq("id", product_id)\
+            .limit(1)\
+            .execute()
+        
+        if existing.data:
+            raise HTTPException(400, f"ASIN {asin} is already assigned to another product")
+        
+        # Update product
+        update_data = {
+            "asin": asin,
+            "asin_status": "manual",
+            "updated_at": datetime.utcnow().isoformat()
+        }
+        
+        result = supabase.table("products")\
+            .update(update_data)\
+            .eq("id", product_id)\
+            .eq("user_id", user_id)\
+            .execute()
+        
+        if not result.data:
+            raise HTTPException(500, "Failed to update product")
+        
+        # Update product_sources stage to 'new' (ready for analysis)
+        supabase.table("product_sources")\
+            .update({
+                "stage": "new",
+                "updated_at": datetime.utcnow().isoformat()
+            })\
+            .eq("product_id", product_id)\
+            .execute()
+        
+        return {
+            "success": True,
+            "asin": asin,
+            "message": "ASIN set successfully. Product is now ready for analysis."
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to set ASIN for product {product_id}: {e}", exc_info=True)
+        raise HTTPException(500, str(e))
 
 @router.get("/{asin}/variations")
 async def get_product_variations(

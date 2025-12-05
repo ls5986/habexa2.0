@@ -73,8 +73,8 @@ const Settings = () => {
 
   // Cost settings form state
   const [costForm, setCostForm] = useState({
-    default_prep_cost: 0.50,
-    default_inbound_shipping: 0.50,
+    inbound_rate_per_lb: 0.35,
+    default_prep_cost: 0.10,
   });
 
   // Load data into forms
@@ -103,8 +103,8 @@ const Settings = () => {
   useEffect(() => {
     if (costSettings) {
       setCostForm({
-        default_prep_cost: costSettings.default_prep_cost || 0.50,
-        default_inbound_shipping: costSettings.default_inbound_shipping || 0.50,
+        inbound_rate_per_lb: costSettings.inbound_rate_per_lb || costSettings.default_inbound_shipping || 0.35,
+        default_prep_cost: costSettings.default_prep_cost || 0.10,
       });
     }
   }, [costSettings]);
@@ -200,7 +200,14 @@ const Settings = () => {
 
   const handleSaveCosts = async () => {
     try {
-      await updateCostSettings(costForm);
+      // Map to backend field names (backend may use different names)
+      const dataToSave = {
+        inbound_rate_per_lb: costForm.inbound_rate_per_lb,
+        default_prep_cost: costForm.default_prep_cost,
+        // Also send legacy field names for compatibility
+        default_inbound_shipping: costForm.inbound_rate_per_lb,
+      };
+      await updateCostSettings(dataToSave);
       showToast('Cost settings saved', 'success');
     } catch (error) {
       showToast(error.message || 'Failed to save cost settings', 'error');
@@ -509,27 +516,38 @@ const Settings = () => {
       {tab === 3 && (
         <Card>
           <CardContent>
-            <Typography variant="h6" fontWeight={600} mb={3}>
-              Cost Settings
+            <Typography variant="h6" fontWeight={600} mb={1}>
+              📦 Shipping & Prep Costs
+            </Typography>
+            <Typography variant="body2" color="text.secondary" mb={3}>
+              These costs are included in all profit calculations
             </Typography>
             <Box display="flex" flexDirection="column" gap={3}>
               <TextField
-                label="Default Prep Cost"
+                label="Inbound Shipping Rate"
                 type="number"
-                value={costForm.default_prep_cost}
-                onChange={(e) => setCostForm({ ...costForm, default_prep_cost: parseFloat(e.target.value) || 0 })}
-                InputProps={{ startAdornment: '$' }}
+                step="0.01"
+                value={costForm.inbound_rate_per_lb}
+                onChange={(e) => setCostForm({ ...costForm, inbound_rate_per_lb: parseFloat(e.target.value) || 0 })}
+                InputProps={{
+                  startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                  endAdornment: <InputAdornment position="end">/lb</InputAdornment>,
+                }}
                 fullWidth
-                helperText="Default cost per unit for prep/packaging"
+                helperText="Cost to ship TO Amazon (typical: $0.30-0.50/lb)"
               />
               <TextField
-                label="Default Inbound Shipping"
+                label="Default Prep Cost"
                 type="number"
-                value={costForm.default_inbound_shipping}
-                onChange={(e) => setCostForm({ ...costForm, default_inbound_shipping: parseFloat(e.target.value) || 0 })}
-                InputProps={{ startAdornment: '$' }}
+                step="0.01"
+                value={costForm.default_prep_cost}
+                onChange={(e) => setCostForm({ ...costForm, default_prep_cost: parseFloat(e.target.value) || 0 })}
+                InputProps={{
+                  startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                  endAdornment: <InputAdornment position="end">/unit</InputAdornment>,
+                }}
                 fullWidth
-                helperText="Default cost per unit for inbound shipping to Amazon"
+                helperText="Labeling, poly bags, etc. (typical: $0.10-0.30)"
               />
               <Button
                 variant="contained"

@@ -10,7 +10,16 @@ from app.services.supabase_client import supabase
 from app.services.stripe_service import StripeService
 from app.services.feature_gate import feature_gate, require_feature, require_limit
 from app.services.upc_converter import upc_converter
-from app.tasks.analysis import analyze_single_product, batch_analyze_products
+from app.tasks.analysis import analyze_single_product, batch_analyze_products, get_user_cost_settings
+from app.tasks.base import run_async
+from app.services.cost_calculator import (
+    calculate_inbound_shipping,
+    calculate_prep_cost,
+    calculate_landed_cost,
+    calculate_net_profit,
+    calculate_roi
+)
+from datetime import datetime
 import uuid
 import logging
 
@@ -346,3 +355,161 @@ async def test_upc_conversion(upc: str, current_user=Depends(get_current_user)):
     except Exception as e:
         logger.error(f"Error testing UPC conversion: {e}", exc_info=True)
         raise HTTPException(500, f"Error converting UPC: {str(e)}")
+
+
+class ManualPriceRequest(BaseModel):
+    sell_price: float
+
+
+@router.patch("/{analysis_id}/manual-price")
+async def set_manual_price(
+    analysis_id: str,
+    request: ManualPriceRequest,
+    current_user=Depends(get_current_user)
+):
+    """
+    Manually set sell price for products without SP-API pricing.
+    Recalculates profit based on manual price.
+    """
+    user_id = str(current_user.id)
+    
+    # Get current analysis
+    result = supabase.table("analyses")\
+        .select("*, products!inner(user_id, id)")\
+        .eq("id", analysis_id)\
+        .execute()
+    
+    if not result.data:
+        raise HTTPException(404, "Analysis not found")
+    
+    analysis = result.data[0]
+    product = analysis.get("products", {})
+    
+    if product.get("user_id") != user_id:
+        raise HTTPException(403, "Not authorized")
+    
+    # Get buy_cost from product_sources
+    source_result = supabase.table("product_sources")\
+        .select("buy_cost, pack_size")\
+        .eq("product_id", product["id"])\
+        .limit(1)\
+        .execute()
+    
+    buy_cost = source_result.data[0]["buy_cost"] if source_result.data else 0
+    
+    if not buy_cost or buy_cost <= 0:
+        raise HTTPException(400, "Product must have a buy_cost to calculate profit")
+    
+    sell_price = request.sell_price
+    
+    # Estimate fees (rough estimate without SP-API)
+    # Typical: 15% referral + ~$3-5 FBA
+    estimated_referral = sell_price * 0.15
+    estimated_fba = 4.50  # Default estimate
+    fees_total = estimated_referral + estimated_fba
+    
+    # Get user's shipping settings
+    user_settings = run_async(get_user_cost_settings(user_id))
+    inbound_rate = user_settings.get("inbound_rate_per_lb", 0.35)
+    prep_cost = user_settings.get("default_prep_cost", 0.10)
+    
+    # Estimate weight if not available
+    weight = analysis.get("item_weight_lb") or 0.5
+    inbound_shipping = weight * inbound_rate
+    
+    # Calculate profit
+    landed_cost = buy_cost + inbound_shipping + prep_cost
+    net_profit = sell_price - fees_total - landed_cost
+    roi = (net_profit / landed_cost) * 100 if landed_cost > 0 else 0
+    
+    # Update analysis
+    update_data = {
+        "manual_sell_price": sell_price,
+        "sell_price": sell_price,
+        "fees_total": round(fees_total, 2),
+        "referral_fee": round(estimated_referral, 2),
+        "referral_fee_percent": 15.0,
+        "fba_fee": estimated_fba,
+        "inbound_shipping": round(inbound_shipping, 2),
+        "prep_cost": prep_cost,
+        "total_landed_cost": round(landed_cost, 2),
+        "net_profit": round(net_profit, 2),
+        "roi": round(roi, 2),
+        "profit_margin": round((net_profit / sell_price) * 100, 2) if sell_price > 0 else 0,
+        "pricing_status": "manual",
+        "needs_review": False,  # Reviewed - manual price set
+        "analysis_stage": "stage2_complete",
+        "updated_at": datetime.utcnow().isoformat(),
+    }
+    
+    supabase.table("analyses").update(update_data).eq("id", analysis_id).execute()
+    
+    return {
+        "success": True,
+        "calculated": {
+            "sell_price": sell_price,
+            "fees_total": round(fees_total, 2),
+            "net_profit": round(net_profit, 2),
+            "roi": round(roi, 2),
+        },
+        "note": "Fees are estimated. Re-analyze when product has active offers for accurate fees."
+    }
+
+
+@router.post("/{analysis_id}/re-analyze")
+async def re_analyze_single(
+    analysis_id: str,
+    current_user=Depends(get_current_user)
+):
+    """Re-run analysis for a single product (useful after pricing becomes available)."""
+    user_id = str(current_user.id)
+    
+    # Get analysis
+    result = supabase.table("analyses")\
+        .select("*, products!inner(asin, user_id, id)")\
+        .eq("id", analysis_id)\
+        .execute()
+    
+    if not result.data:
+        raise HTTPException(404, "Analysis not found")
+    
+    analysis = result.data[0]
+    product = analysis.get("products", {})
+    
+    if product.get("user_id") != user_id:
+        raise HTTPException(403, "Not authorized")
+    
+    asin = product["asin"]
+    product_id = product["id"]
+    
+    # Get buy_cost from product_sources
+    source_result = supabase.table("product_sources")\
+        .select("buy_cost")\
+        .eq("product_id", product_id)\
+        .limit(1)\
+        .execute()
+    
+    buy_cost = source_result.data[0]["buy_cost"] if source_result.data else None
+    
+    # Create job
+    job_id = str(uuid.uuid4())
+    supabase.table("jobs").insert({
+        "id": job_id,
+        "user_id": user_id,
+        "type": "analyze_single",
+        "status": "pending",
+        "total_items": 1,
+        "metadata": {
+            "buy_cost": buy_cost,
+            "supplier_id": analysis.get("supplier_id"),
+        }
+    }).execute()
+    
+    # Queue re-analysis
+    analyze_single_product.delay(job_id, user_id, product_id, asin, buy_cost)
+    
+    return {
+        "success": True,
+        "job_id": job_id,
+        "message": f"Re-analysis started for {asin}"
+    }

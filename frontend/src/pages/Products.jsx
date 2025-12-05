@@ -4,7 +4,8 @@ import {
   Box, Typography, Card, Button, Chip, IconButton, Tabs, Tab,
   TextField, InputAdornment, Menu, MenuItem, Checkbox, Select,
   FormControl, InputLabel, CircularProgress, Dialog, DialogTitle,
-  DialogContent, DialogActions, LinearProgress, Tooltip, Alert
+  DialogContent, DialogActions, LinearProgress, Tooltip, Alert,
+  Radio, RadioGroup, FormControlLabel
 } from '@mui/material';
 import {
   Search, Upload, Plus, Download, RefreshCw, MoreVertical,
@@ -14,6 +15,7 @@ import {
 import api from '../services/api';
 import FileUploadModal from '../components/features/products/FileUploadModal';
 import BatchAnalyzeButton from '../components/features/products/BatchAnalyzeButton';
+import ManualPriceDialog from '../components/features/products/ManualPriceDialog';
 import { useFeatureGate } from '../hooks/useFeatureGate';
 import { useToast } from '../context/ToastContext';
 import { handleApiError } from '../utils/errorHandler';
@@ -45,27 +47,39 @@ function useDebounce(value, delay) {
 }
 
 // Memoized Deal Row Component
-const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, onDelete }) => {
+const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, onDelete, onSetAsin, onOpenManualPrice }) => {
   const roi = deal.roi || 0;
   const profit = deal.profit || 0;
   const moq = deal.moq || 1;
   const buyCost = deal.buy_cost || 0;
   const totalInvestment = deal.total_investment || (moq * buyCost);
   const totalProfit = moq * profit;
+  const asinStatus = deal.asin_status || 'found';
+  const needsAsin = asinStatus === 'not_found' || !deal.asin;
 
   const [editingMoq, setEditingMoq] = useState(false);
   const [tempMoq, setTempMoq] = useState(moq);
+  const [editingAsin, setEditingAsin] = useState(false);
+  const [tempAsin, setTempAsin] = useState('');
 
   const handleMoqSave = () => {
     onUpdateMoq(deal.deal_id, tempMoq);
     setEditingMoq(false);
   };
 
+  const handleAsinSave = () => {
+    if (tempAsin.length === 10) {
+      onSetAsin(deal.product_id, tempAsin);
+      setEditingAsin(false);
+      setTempAsin('');
+    }
+  };
+
   return (
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: '40px 110px 1fr 120px 80px 80px 80px 90px 80px 80px 60px',
+        gridTemplateColumns: '40px 140px 1fr 120px 80px 80px 80px 90px 80px 80px 60px',
         p: 1.5,
         borderBottom: '1px solid',
         borderColor: 'divider',
@@ -81,9 +95,61 @@ const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, on
         onClick={(e) => e.stopPropagation()}
         onChange={onSelect}
       />
-      <Typography variant="body2" fontFamily="monospace" fontSize={12}>
-        {deal.asin}
-      </Typography>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+        {needsAsin ? (
+          <>
+            {editingAsin ? (
+              <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+                <TextField
+                  size="small"
+                  placeholder="Enter ASIN"
+                  value={tempAsin}
+                  onChange={(e) => setTempAsin(e.target.value.toUpperCase().slice(0, 10))}
+                  onClick={(e) => e.stopPropagation()}
+                  sx={{ width: 100, fontSize: 11 }}
+                  inputProps={{ style: { fontSize: 11, fontFamily: 'monospace' } }}
+                />
+                <Button
+                  size="small"
+                  variant="contained"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleAsinSave();
+                  }}
+                  disabled={tempAsin.length !== 10}
+                  sx={{ minWidth: 40, height: 28, fontSize: 10 }}
+                >
+                  Save
+                </Button>
+              </Box>
+            ) : (
+              <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+                <Chip label="Needs ASIN" color="warning" size="small" sx={{ fontSize: 10, height: 20 }} />
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingAsin(true);
+                  }}
+                  sx={{ minWidth: 60, height: 24, fontSize: 10 }}
+                >
+                  Add
+                </Button>
+              </Box>
+            )}
+            {deal.upc && (
+              <Typography variant="caption" color="text.secondary" fontSize={10}>
+                UPC: {deal.upc}
+              </Typography>
+            )}
+          </>
+        ) : (
+          <Typography variant="body2" fontFamily="monospace" fontSize={12}>
+            {deal.asin}
+          </Typography>
+        )}
+      </Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
         {deal.image_url ? (
           <Box
@@ -134,9 +200,24 @@ const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, on
       </Box>
       
       {/* Unit Cost */}
-      <Typography variant="body2" align="right" color="text.secondary">
-        ${buyCost.toFixed(2)}
-      </Typography>
+      <Box sx={{ textAlign: 'right' }}>
+        <Typography variant="body2" color="text.secondary">
+          ${buyCost.toFixed(2)}
+        </Typography>
+        {deal.has_promo && deal.promo_percent && (
+          <Chip 
+            label={`${deal.promo_percent}% OFF`} 
+            color="success" 
+            size="small"
+            sx={{ 
+              fontWeight: 'bold',
+              fontSize: 9,
+              height: 18,
+              mt: 0.5
+            }}
+          />
+        )}
+      </Box>
       
       {/* Total Investment */}
       <Typography 
@@ -169,12 +250,35 @@ const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, on
         </Typography>
       </Tooltip>
       
-      {/* Stage */}
-      <Chip
-        label={deal.stage || 'new'}
-        size="small"
-        sx={{ height: 22, fontSize: 11 }}
-      />
+      {/* Pricing Status & Stage */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+        {needsReview && (
+          <Tooltip title={`Reason: ${analysis.pricing_status_reason || 'No pricing data'}`}>
+            <Chip
+              label={pricingStatus === 'manual' ? 'Manual' : 'No Pricing'}
+              color={pricingStatus === 'manual' ? 'info' : 'warning'}
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (pricingStatus === 'no_pricing' && onOpenManualPrice) {
+                  onOpenManualPrice(deal, analysis);
+                }
+              }}
+              sx={{
+                height: 18,
+                fontSize: 9,
+                cursor: pricingStatus === 'no_pricing' ? 'pointer' : 'default',
+                '&:hover': pricingStatus === 'no_pricing' ? { bgcolor: 'warning.dark' } : {}
+              }}
+            />
+          </Tooltip>
+        )}
+        <Chip
+          label={deal.stage || 'new'}
+          size="small"
+          sx={{ height: 22, fontSize: 11 }}
+        />
+      </Box>
       
       {/* Actions */}
       <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
@@ -216,7 +320,8 @@ export default function Products() {
   const [loading, setLoading] = useState(true);
   const [activeStage, setActiveStage] = useState(null); // null = all
   const [selected, setSelected] = useState([]);
-  const [filters, setFilters] = useState({ minRoi: '', minProfit: '', search: '', supplier: '' });
+  const [filters, setFilters] = useState({ minRoi: '', minProfit: '', search: '', supplier: '', asinStatus: 'all', pricingStatus: 'all' });
+  const [showPromoOnly, setShowPromoOnly] = useState(false);
   const [suppliers, setSuppliers] = useState([]);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -242,6 +347,7 @@ export default function Products() {
       if (filters.minProfit) params.append('min_profit', filters.minProfit);
       if (debouncedSearch) params.append('search', debouncedSearch);
       if (filters.supplier) params.append('supplier_id', filters.supplier);
+      if (filters.asinStatus && filters.asinStatus !== 'all') params.append('asin_status', filters.asinStatus);
       params.append('limit', '100');
       
       // Add timestamp to bypass cache if force refresh
@@ -304,7 +410,7 @@ export default function Products() {
       setLoading(false);
       fetchInProgress.current = false;
     }
-  }, [activeStage, filters.minRoi, filters.minProfit, debouncedSearch, filters.supplier, showToast]);
+  }, [activeStage, filters.minRoi, filters.minProfit, debouncedSearch, filters.supplier, filters.asinStatus, showToast]);
 
   // Fetch suppliers once
   const fetchSuppliers = useCallback(async () => {
@@ -437,6 +543,17 @@ export default function Products() {
     }
   };
 
+  const handleSetAsin = async (productId, asin) => {
+    try {
+      await api.patch(`/products/${productId}/asin`, { asin });
+      showToast('ASIN set successfully. Product is now ready for analysis.', 'success');
+      fetchData(true); // Force refresh
+    } catch (err) {
+      console.error('Failed to set ASIN:', err);
+      showToast('Failed to set ASIN: ' + (err.response?.data?.detail || err.message), 'error');
+    }
+  };
+
   const handleDeleteClick = (deal) => {
     setDeleteDialog({ open: true, deal, deleting: false });
   };
@@ -470,8 +587,27 @@ export default function Products() {
 
   // Memoized filtered deals for client-side filtering (if needed)
   const filteredDeals = useMemo(() => {
-    return deals; // Server-side filtering, but can add client-side here if needed
-  }, [deals]);
+    let filtered = deals;
+    
+    // Filter by promo if enabled
+    if (showPromoOnly) {
+      filtered = filtered.filter(d => d.has_promo === true);
+    }
+    
+    // Filter by pricing status
+    if (filters.pricingStatus && filters.pricingStatus !== 'all') {
+      filtered = filtered.filter(d => {
+        const analysis = d.analysis || {};
+        const status = analysis.pricing_status || 'complete';
+        if (filters.pricingStatus === 'needs_review') {
+          return analysis.needs_review || status === 'no_pricing';
+        }
+        return status === filters.pricingStatus;
+      });
+    }
+    
+    return filtered;
+  }, [deals, showPromoOnly, filters.pricingStatus]);
 
   return (
     <Box sx={{ p: 3 }}>
@@ -574,6 +710,47 @@ export default function Products() {
             ))}
           </Select>
         </FormControl>
+        <FormControl size="small" sx={{ width: 150 }}>
+          <InputLabel>ASIN Status</InputLabel>
+          <Select
+            value={filters.asinStatus}
+            label="ASIN Status"
+            onChange={(e) => { 
+              setFilters({ ...filters, asinStatus: e.target.value }); 
+              setTimeout(() => fetchData(), 500);
+            }}
+          >
+            <MenuItem value="all">All Products</MenuItem>
+            <MenuItem value="found">ASIN Found</MenuItem>
+            <MenuItem value="not_found">Needs ASIN</MenuItem>
+            <MenuItem value="manual">Manual Entry</MenuItem>
+          </Select>
+        </FormControl>
+        <FormControl size="small" sx={{ width: 150 }}>
+          <InputLabel>Pricing Status</InputLabel>
+          <Select
+            value={filters.pricingStatus}
+            label="Pricing Status"
+            onChange={(e) => { 
+              setFilters({ ...filters, pricingStatus: e.target.value }); 
+            }}
+          >
+            <MenuItem value="all">All</MenuItem>
+            <MenuItem value="complete">Has Pricing</MenuItem>
+            <MenuItem value="no_pricing">No Pricing</MenuItem>
+            <MenuItem value="manual">Manual Price</MenuItem>
+            <MenuItem value="needs_review">Needs Review</MenuItem>
+          </Select>
+        </FormControl>
+        <FormControlLabel
+          control={
+            <Checkbox 
+              checked={showPromoOnly}
+              onChange={(e) => setShowPromoOnly(e.target.checked)}
+            />
+          }
+          label="Has Promo Deal"
+        />
         
         <Box sx={{ flex: 1 }} />
         
@@ -648,7 +825,7 @@ export default function Products() {
           {/* Table Header */}
           <Box sx={{ 
             display: { xs: 'none', md: 'grid' },
-            gridTemplateColumns: '40px 110px 1fr 120px 80px 80px 80px 90px 80px 80px 60px',
+            gridTemplateColumns: '40px 140px 1fr 120px 80px 80px 80px 90px 80px 80px 60px',
             p: 1.5, 
             borderBottom: '1px solid',
             borderColor: 'divider',
@@ -682,6 +859,9 @@ export default function Products() {
                 onSelect={() => handleSelect(deal.deal_id)}
                 onClick={() => navigate(`/deals/${deal.deal_id}`)}
                 onUpdateMoq={handleUpdateMoq}
+                onDelete={handleDeleteClick}
+                onSetAsin={handleSetAsin}
+                onOpenManualPrice={(deal, analysis) => setManualPriceDialog({ open: true, deal, analysis })}
               />
             ))}
           </Box>
@@ -767,6 +947,15 @@ export default function Products() {
         onClose={() => setShowUploadModal(false)}
         onComplete={handleUploadComplete}
       />
+      <ManualPriceDialog
+        open={manualPriceDialog.open}
+        onClose={() => setManualPriceDialog({ open: false, deal: null, analysis: null })}
+        deal={manualPriceDialog.deal}
+        analysis={manualPriceDialog.analysis}
+        onSave={() => {
+          fetchData(true);
+        }}
+      />
 
       {/* Delete Confirmation Dialog */}
       <Dialog 
@@ -846,23 +1035,65 @@ export default function Products() {
 
 // Add Product Dialog
 function AddProductDialog({ open, onClose, onAdded, suppliers }) {
-  const [form, setForm] = useState({ asin: '', buy_cost: '', supplier_id: '', supplier_name: '', moq: '1', notes: '' });
+  const [form, setForm] = useState({ 
+    asin: '', 
+    upc: '',
+    identifier_type: 'asin',
+    buy_cost: '', 
+    is_pack: false,
+    pack_size: 1,
+    wholesale_cost: '',
+    supplier_id: '', 
+    supplier_name: '', 
+    moq: '1', 
+    notes: '' 
+  });
   const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
 
   const handleSubmit = async () => {
-    if (!form.asin) return;
+    const identifier = form.identifier_type === 'asin' ? form.asin : form.upc;
+    if (!identifier) {
+      showToast('Please enter ASIN or UPC', 'error');
+      return;
+    }
+    
+    const finalBuyCost = form.is_pack 
+      ? parseFloat(form.wholesale_cost) / form.pack_size 
+      : parseFloat(form.buy_cost);
+    
+    if (!finalBuyCost || finalBuyCost <= 0) {
+      showToast('Please enter a valid cost', 'error');
+      return;
+    }
+    
     setLoading(true);
     try {
       await api.post('/products', {
-        asin: form.asin,
-        buy_cost: form.buy_cost ? parseFloat(form.buy_cost) : null,
+        asin: form.identifier_type === 'asin' ? form.asin : null,
+        upc: form.identifier_type === 'upc' ? form.upc : null,
+        identifier_type: form.identifier_type,
+        buy_cost: finalBuyCost || null,
+        pack_size: form.is_pack ? form.pack_size : 1,
+        wholesale_cost: form.is_pack ? parseFloat(form.wholesale_cost) : null,
         supplier_id: form.supplier_id || null,
         supplier_name: form.supplier_name || null,
         moq: parseInt(form.moq) || 1,
         notes: form.notes
       });
-      setForm({ asin: '', buy_cost: '', supplier_id: '', supplier_name: '', moq: '1', notes: '' });
+      setForm({ 
+        asin: '', 
+        upc: '',
+        identifier_type: 'asin',
+        buy_cost: '', 
+        is_pack: false,
+        pack_size: 1,
+        wholesale_cost: '',
+        supplier_id: '', 
+        supplier_name: '', 
+        moq: '1', 
+        notes: '' 
+      });
       onAdded();
     } catch (err) {
       showToast(err.response?.data?.detail || 'Failed to add product', 'error');
@@ -876,20 +1107,94 @@ function AddProductDialog({ open, onClose, onAdded, suppliers }) {
       <DialogTitle>Add Product</DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+          {/* Identifier Type Toggle */}
+          <Box sx={{ mb: 1 }}>
+            <FormControl component="fieldset">
+              <RadioGroup
+                row
+                value={form.identifier_type}
+                onChange={(e) => setForm({ ...form, identifier_type: e.target.value, asin: '', upc: '' })}
+              >
+                <FormControlLabel value="asin" control={<Radio />} label="ASIN" />
+                <FormControlLabel value="upc" control={<Radio />} label="UPC" />
+              </RadioGroup>
+            </FormControl>
+          </Box>
+          
+          {/* Identifier Input */}
           <TextField
-            label="ASIN"
-            value={form.asin}
-            onChange={(e) => setForm({ ...form, asin: e.target.value.toUpperCase() })}
-            placeholder="B08VBVBS7N"
+            label={form.identifier_type === 'asin' ? 'ASIN' : 'UPC'}
+            value={form.identifier_type === 'asin' ? form.asin : form.upc}
+            onChange={(e) => setForm({ 
+              ...form, 
+              [form.identifier_type]: form.identifier_type === 'asin' 
+                ? e.target.value.toUpperCase() 
+                : e.target.value.replace(/[^0-9]/g, '').slice(0, 14)
+            })}
+            placeholder={form.identifier_type === 'asin' ? 'B08VBVBS7N' : '888003659162'}
             required
+            fullWidth
           />
-          <TextField
-            label="Buy Cost"
-            type="number"
-            value={form.buy_cost}
-            onChange={(e) => setForm({ ...form, buy_cost: e.target.value })}
-            InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+          
+          {/* Pack Toggle */}
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={form.is_pack}
+                onChange={(e) => setForm({ 
+                  ...form, 
+                  is_pack: e.target.checked,
+                  pack_size: e.target.checked ? form.pack_size : 1,
+                  wholesale_cost: e.target.checked ? form.wholesale_cost : ''
+                })}
+              />
+            }
+            label="This is a case/pack (multiple units)"
+            sx={{ display: 'block' }}
           />
+          
+          {form.is_pack ? (
+            <Box sx={{ p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
+              <Typography variant="subtitle2" gutterBottom>Case Pricing</Typography>
+              <Box display="flex" gap={2}>
+                <TextField
+                  label="Pack Size"
+                  type="number"
+                  value={form.pack_size}
+                  onChange={(e) => setForm({ ...form, pack_size: Math.max(1, parseInt(e.target.value) || 1) })}
+                  sx={{ width: 140 }}
+                  helperText="Units per case"
+                  inputProps={{ min: 1 }}
+                />
+                <TextField
+                  label="Case Cost"
+                  type="number"
+                  step="0.01"
+                  value={form.wholesale_cost}
+                  onChange={(e) => setForm({ ...form, wholesale_cost: e.target.value })}
+                  fullWidth
+                  InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+                  helperText="Cost for entire case"
+                />
+              </Box>
+              {form.wholesale_cost && form.pack_size > 0 && (
+                <Alert severity="success" sx={{ mt: 2 }}>
+                  <strong>${(parseFloat(form.wholesale_cost) / form.pack_size).toFixed(4)}</strong> per unit
+                </Alert>
+              )}
+            </Box>
+          ) : (
+            <TextField
+              label="Unit Cost"
+              type="number"
+              step="0.01"
+              value={form.buy_cost}
+              onChange={(e) => setForm({ ...form, buy_cost: e.target.value })}
+              fullWidth
+              InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+              helperText="Cost per single unit"
+            />
+          )}
           <FormControl>
             <InputLabel>Supplier</InputLabel>
             <Select
@@ -926,7 +1231,7 @@ function AddProductDialog({ open, onClose, onAdded, suppliers }) {
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={loading || !form.asin}>
+        <Button variant="contained" onClick={handleSubmit} disabled={loading || !(form.identifier_type === 'asin' ? form.asin : form.upc) || (!form.buy_cost && !form.wholesale_cost)}>
           {loading ? <CircularProgress size={20} /> : 'Add Product'}
         </Button>
       </DialogActions>

@@ -29,6 +29,7 @@ class AlertSettingsUpdate(BaseModel):
 class CostSettingsUpdate(BaseModel):
     default_prep_cost: Optional[float] = None
     default_inbound_shipping: Optional[float] = None
+    inbound_rate_per_lb: Optional[float] = None  # New field name
 
 
 @router.get("/profile")
@@ -171,36 +172,102 @@ async def update_alert_settings(data: AlertSettingsUpdate, current_user=Depends(
 
 @router.get("/costs")
 async def get_cost_settings(current_user=Depends(get_current_user)):
-    """Get cost settings."""
+    """Get cost settings. Checks user_cost_settings first, falls back to user_settings."""
     try:
-        result = supabase.table("user_settings").select("default_prep_cost, default_inbound_shipping").eq("user_id", current_user.id).single().execute()
+        # Try new user_cost_settings table first
+        result = supabase.table("user_cost_settings")\
+            .select("inbound_rate_per_lb, default_prep_cost")\
+            .eq("user_id", current_user.id)\
+            .single()\
+            .execute()
         
         if result.data:
-            return result.data
+            return {
+                "inbound_rate_per_lb": result.data.get("inbound_rate_per_lb", 0.35),
+                "default_prep_cost": result.data.get("default_prep_cost", 0.10),
+                # Also return legacy names for compatibility
+                "default_inbound_shipping": result.data.get("inbound_rate_per_lb", 0.35),
+            }
+    except Exception:
+        pass
+    
+    try:
+        # Fall back to user_settings table
+        result = supabase.table("user_settings")\
+            .select("default_prep_cost, default_inbound_shipping")\
+            .eq("user_id", current_user.id)\
+            .single()\
+            .execute()
         
-        return {
-            "default_prep_cost": 0.50,
-            "default_inbound_shipping": 0.50,
-        }
-    except Exception as e:
-        # Table doesn't exist yet - return defaults
-        import logging
-        logging.getLogger(__name__).warning(f"User settings table not found: {e}")
-        return {
-            "default_prep_cost": 0.50,
-            "default_inbound_shipping": 0.50,
-        }
+        if result.data:
+            inbound_rate = result.data.get("default_inbound_shipping", 0.35)
+            return {
+                "inbound_rate_per_lb": inbound_rate,
+                "default_prep_cost": result.data.get("default_prep_cost", 0.10),
+                "default_inbound_shipping": inbound_rate,
+            }
+    except Exception:
+        pass
+    
+    # Return defaults
+    return {
+        "inbound_rate_per_lb": 0.35,
+        "default_prep_cost": 0.10,
+        "default_inbound_shipping": 0.35,
+    }
 
 
 @router.put("/costs")
 async def update_cost_settings(data: CostSettingsUpdate, current_user=Depends(get_current_user)):
-    """Update cost settings."""
+    """Update cost settings. Saves to user_cost_settings table (new) or user_settings (fallback)."""
     update_data = {k: v for k, v in data.dict().items() if v is not None}
     
     if not update_data:
         return await get_cost_settings(current_user)
     
-    # Check if settings exist
+    # Normalize field names - convert inbound_rate_per_lb to default_inbound_shipping if needed
+    if "inbound_rate_per_lb" in update_data and "default_inbound_shipping" not in update_data:
+        update_data["default_inbound_shipping"] = update_data["inbound_rate_per_lb"]
+    
+    # Try to save to new user_cost_settings table first
+    try:
+        existing = supabase.table("user_cost_settings")\
+            .select("id")\
+            .eq("user_id", current_user.id)\
+            .single()\
+            .execute()
+        
+        if existing.data:
+            # Update existing
+            save_data = {
+                "inbound_rate_per_lb": update_data.get("inbound_rate_per_lb") or update_data.get("default_inbound_shipping", 0.35),
+                "default_prep_cost": update_data.get("default_prep_cost", 0.10),
+                "updated_at": "now()",
+            }
+            result = supabase.table("user_cost_settings")\
+                .update(save_data)\
+                .eq("user_id", current_user.id)\
+                .execute()
+        else:
+            # Create new
+            save_data = {
+                "user_id": current_user.id,
+                "inbound_rate_per_lb": update_data.get("inbound_rate_per_lb") or update_data.get("default_inbound_shipping", 0.35),
+                "default_prep_cost": update_data.get("default_prep_cost", 0.10),
+            }
+            result = supabase.table("user_cost_settings").insert(save_data).execute()
+        
+        if result.data:
+            return {
+                "inbound_rate_per_lb": result.data[0].get("inbound_rate_per_lb", 0.35),
+                "default_prep_cost": result.data[0].get("default_prep_cost", 0.10),
+                "default_inbound_shipping": result.data[0].get("inbound_rate_per_lb", 0.35),
+            }
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"Could not save to user_cost_settings: {e}")
+    
+    # Fall back to user_settings table
     existing = supabase.table("user_settings").select("id").eq("user_id", current_user.id).execute()
     
     if existing.data:
@@ -209,8 +276,8 @@ async def update_cost_settings(data: CostSettingsUpdate, current_user=Depends(ge
         # Create with defaults + updates
         defaults = {
             "user_id": current_user.id,
-            "default_prep_cost": 0.50,
-            "default_inbound_shipping": 0.50,
+            "default_prep_cost": 0.10,
+            "default_inbound_shipping": 0.35,
         }
         defaults.update(update_data)
         result = supabase.table("user_settings").insert(defaults).execute()

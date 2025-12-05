@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Card, CardContent, Grid, Chip, Button,
-  IconButton, Tabs, Tab, CircularProgress, Tooltip, Divider
+  IconButton, Tabs, Tab, CircularProgress, Tooltip, Divider,
+  Table, TableBody, TableRow, TableCell, Accordion, AccordionSummary,
+  AccordionDetails, InputAdornment
 } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {
   ArrowLeft, ArrowRight, Copy, ExternalLink, RefreshCw, Star,
   TrendingUp, Package, Calculator, BarChart2, Users, Layers,
@@ -11,6 +14,18 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 import { habexa } from '../theme';
+
+// Helper function
+const formatPricingReason = (reason) => {
+  const reasons = {
+    'no_active_offers': 'No active sellers on Amazon',
+    'no_response': 'No response from Amazon API',
+    'gated': 'Product is gated/restricted',
+    'invalid_asin': 'ASIN may be invalid',
+    'unknown': 'Unknown reason',
+  };
+  return reasons[reason] || reason || 'Unknown';
+};
 
 // Import tab components
 import ProfitCalculator from '../components/features/deals/ProfitCalculator';
@@ -304,6 +319,208 @@ export default function DealDetail() {
                   ${((deal.buy_cost || 0) * (deal.moq || 1)).toFixed(2)}
                 </Typography>
               </Box>
+              
+              {/* No Pricing Alert */}
+              {analysis && analysis.pricing_status === 'no_pricing' && (
+                <Alert
+                  severity="warning"
+                  sx={{ mb: 2 }}
+                  action={
+                    <Button
+                      size="small"
+                      onClick={() => {
+                        // Navigate to manual price entry or show dialog
+                        // For now, show alert with instructions
+                        window.open(`/products?pricingStatus=no_pricing&asin=${deal.asin}`, '_blank');
+                      }}
+                    >
+                      Enter Price
+                    </Button>
+                  }
+                >
+                  <AlertTitle>No Pricing Data Available</AlertTitle>
+                  <Typography variant="body2">
+                    Reason: {formatPricingReason(analysis.pricing_status_reason)}
+                  </Typography>
+                  <Typography variant="body2" sx={{ mt: 1 }}>
+                    This usually means:
+                    • Product is currently out of stock
+                    • No active FBA/FBM sellers
+                    • Product may be gated/restricted
+                  </Typography>
+                  {analysis.fba_lowest_365d && (
+                    <Typography variant="body2" sx={{ mt: 1 }}>
+                      💡 Keepa shows it sold for ${analysis.fba_lowest_365d?.toFixed(2)} in the past 365 days
+                    </Typography>
+                  )}
+                </Alert>
+              )}
+
+              {/* Complete Cost Breakdown */}
+              {analysis && (
+                <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1, mb: 2, mt: 2 }}>
+                  <Typography variant="subtitle2" gutterBottom fontWeight={600}>
+                    💰 Complete Cost Breakdown
+                  </Typography>
+                  
+                  <Table size="small">
+                    <TableBody>
+                      {/* Landed Cost Section */}
+                      <TableRow>
+                        <TableCell>Buy Cost (per unit)</TableCell>
+                        <TableCell align="right">${deal.buy_cost?.toFixed(4) || '—'}</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>+ Inbound Shipping</TableCell>
+                        <TableCell align="right">${analysis.inbound_shipping?.toFixed(2) || '—'}</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>+ Prep Cost</TableCell>
+                        <TableCell align="right">${analysis.prep_cost?.toFixed(2) || '—'}</TableCell>
+                      </TableRow>
+                      <TableRow sx={{ bgcolor: 'grey.200' }}>
+                        <TableCell><strong>= Total Landed Cost</strong></TableCell>
+                        <TableCell align="right">
+                          <strong>${analysis.total_landed_cost?.toFixed(2) || '—'}</strong>
+                        </TableCell>
+                      </TableRow>
+                      
+                      {/* Divider */}
+                      <TableRow><TableCell colSpan={2}><Divider /></TableCell></TableRow>
+                      
+                      {/* Revenue - Costs = Profit */}
+                      <TableRow>
+                        <TableCell>Sell Price</TableCell>
+                        <TableCell align="right">${analysis.sell_price?.toFixed(2) || '—'}</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>- Amazon Fees</TableCell>
+                        <TableCell align="right">-${analysis.fees_total?.toFixed(2) || '—'}</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>- Landed Cost</TableCell>
+                        <TableCell align="right">-${analysis.total_landed_cost?.toFixed(2) || '—'}</TableCell>
+                      </TableRow>
+                      <TableRow sx={{ bgcolor: (analysis.net_profit > 0 ? 'success.50' : 'error.50') }}>
+                        <TableCell><strong>= Net Profit</strong></TableCell>
+                        <TableCell align="right">
+                          <strong style={{ color: analysis.net_profit > 0 ? 'green' : 'red' }}>
+                            ${analysis.net_profit?.toFixed(2) || '—'}
+                          </strong>
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                  
+                  <Box sx={{ textAlign: 'center', mt: 2 }}>
+                    <Typography 
+                      variant="h4" 
+                      color={analysis.roi >= 30 ? 'success.main' : 'warning.main'}
+                    >
+                      {analysis.roi?.toFixed(1) || '—'}% ROI
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {analysis.profit_margin?.toFixed(1) || '—'}% Margin
+                    </Typography>
+                  </Box>
+                </Box>
+              )}
+              
+              {/* Fee Breakdown (expandable) */}
+              {analysis && analysis.fees_total && (
+                <Accordion sx={{ mb: 2 }}>
+                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Typography>
+                      Fee Breakdown (${analysis.fees_total?.toFixed(2)} total)
+                    </Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <Typography>
+                      Referral Fee: ${analysis.referral_fee?.toFixed(2) || '—'} 
+                      {analysis.referral_fee_percent && ` (${analysis.referral_fee_percent}%)`}
+                    </Typography>
+                    <Typography>
+                      FBA Fee: ${analysis.fba_fee?.toFixed(2) || '—'}
+                    </Typography>
+                    {analysis.variable_closing_fee > 0 && (
+                      <Typography>
+                        Closing Fee: ${analysis.variable_closing_fee?.toFixed(2)}
+                      </Typography>
+                    )}
+                  </AccordionDetails>
+                </Accordion>
+              )}
+              
+              {/* Product Dimensions (if available) */}
+              {analysis && analysis.item_weight_lb && (
+                <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1, mb: 2 }}>
+                  <Typography variant="subtitle2" gutterBottom>📦 Dimensions</Typography>
+                  <Typography variant="body2">
+                    Weight: {analysis.item_weight_lb} lb | 
+                    {analysis.item_length_in && analysis.item_width_in && analysis.item_height_in && (
+                      <> {analysis.item_length_in}" × {analysis.item_width_in}" × {analysis.item_height_in}"</>
+                    )}
+                  </Typography>
+                  {analysis.size_tier && (
+                    <Chip label={analysis.size_tier} size="small" sx={{ mt: 1 }} />
+                  )}
+                </Box>
+              )}
+              
+              {/* Promo Comparison Section */}
+              {deal.has_promo && deal.promo_percent && (
+                <Box sx={{ 
+                  p: 2, 
+                  bgcolor: 'success.50', 
+                  border: '1px solid',
+                  borderColor: 'success.main',
+                  borderRadius: 1, 
+                  mb: 2
+                }}>
+                  <Typography variant="subtitle1" fontWeight="bold" color="success.dark" gutterBottom>
+                    🎉 PROMO: {deal.promo_percent}% OFF
+                    {deal.promo_qty > 0 && ` (Min ${deal.promo_qty} cases)`}
+                    {deal.promo_qty === 0 && ' (No minimum)'}
+                  </Typography>
+                  
+                  <Grid container spacing={2} sx={{ mt: 1 }}>
+                    <Grid item xs={6}>
+                      <Typography variant="caption" color="text.secondary">Regular Pricing</Typography>
+                      <Typography variant="body2">Buy: ${deal.buy_cost?.toFixed(4) || '—'}/unit</Typography>
+                      <Typography variant="body2">Landed: ${analysis?.total_landed_cost?.toFixed(2) || '—'}/unit</Typography>
+                      <Typography variant="body2" fontWeight="bold">
+                        ROI: {analysis?.roi?.toFixed(1) || '—'}%
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="caption" color="success.dark" fontWeight="bold">With Promo</Typography>
+                      <Typography variant="body2" color="success.dark">
+                        Buy: ${deal.promo_buy_cost?.toFixed(4) || '—'}/unit
+                      </Typography>
+                      <Typography variant="body2" color="success.dark">
+                        Landed: ${analysis?.promo_landed_cost?.toFixed(2) || '—'}/unit
+                      </Typography>
+                      <Typography variant="body2" color="success.dark" fontWeight="bold">
+                        ROI: {analysis?.promo_roi?.toFixed(1) || '—'}% 🚀
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                  
+                  {deal.promo_qty > 0 && (
+                    <>
+                      <Divider sx={{ my: 1 }} />
+                      <Typography variant="body2">
+                        Min Order: {deal.promo_qty} cases × {deal.pack_size || 1} units = {deal.promo_qty * (deal.pack_size || 1)} units
+                      </Typography>
+                      <Typography variant="body2">
+                        Min Investment: {deal.promo_qty} × ${deal.promo_wholesale_cost?.toFixed(2) || '—'} = 
+                        <strong> ${((deal.promo_qty || 0) * (deal.promo_wholesale_cost || 0))?.toFixed(2)}</strong>
+                      </Typography>
+                    </>
+                  )}
+                </Box>
+              )}
+              
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                 <Typography variant="body2" color="text.secondary">Sell Price</Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -394,6 +611,69 @@ export default function DealDetail() {
                     </Typography>
                   </Box>
                 </>
+              )}
+
+              {/* 365-Day Analysis - only if data exists */}
+              {analysis && analysis.fba_lowest_365d && (
+                <Box sx={{ p: 2, bgcolor: 'orange.50', borderRadius: 1, mb: 2, mt: 2 }}>
+                  <Typography variant="subtitle2" gutterBottom fontWeight={600}>
+                    📊 365-Day Price Analysis
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={6}>
+                      <Typography variant="caption" color="text.secondary">FBA Lowest (365d)</Typography>
+                      <Typography variant="body2">${analysis.fba_lowest_365d?.toFixed(2) || '—'}</Typography>
+                      {analysis.fba_lowest_date && (
+                        <Typography variant="caption" color="text.secondary">
+                          on {new Date(analysis.fba_lowest_date).toLocaleDateString()}
+                        </Typography>
+                      )}
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="caption" color="text.secondary">Worst Case Profit</Typography>
+                      <Typography 
+                        variant="body2" 
+                        color={analysis.still_profitable_at_worst ? 'success.main' : 'error.main'}
+                        fontWeight="bold"
+                      >
+                        ${analysis.worst_case_profit?.toFixed(2) || '—'}
+                      </Typography>
+                      {analysis.still_profitable_at_worst ? (
+                        <Chip label="✓ Still Profitable" color="success" size="small" sx={{ mt: 0.5 }} />
+                      ) : (
+                        <Chip label="⚠️ Would Lose Money" color="error" size="small" sx={{ mt: 0.5 }} />
+                      )}
+                    </Grid>
+                  </Grid>
+                </Box>
+              )}
+              
+              {/* Competition Section */}
+              {analysis && (analysis.fba_seller_count !== undefined || analysis.fbm_seller_count !== undefined) && (
+                <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1, mb: 2 }}>
+                  <Typography variant="subtitle2" gutterBottom fontWeight={600}>
+                    👥 Competition
+                  </Typography>
+                  <Typography variant="body2">
+                    FBA Sellers: {analysis.fba_seller_count || 0}
+                  </Typography>
+                  <Typography variant="body2">
+                    FBM Sellers: {analysis.fbm_seller_count || 0}
+                  </Typography>
+                  {analysis.bsr && (
+                    <Typography variant="body2">
+                      Sales Rank: #{analysis.bsr?.toLocaleString()}
+                    </Typography>
+                  )}
+                  {analysis.sales_drops_30 !== undefined && (
+                    <Typography variant="body2">
+                      Sales/month (est): {analysis.sales_drops_30} drops in 30d
+                    </Typography>
+                  )}
+                  {analysis.amazon_was_seller && (
+                    <Chip label="⚠️ Amazon was seller" color="warning" size="small" sx={{ mt: 1 }} />
+                  )}
+                </Box>
               )}
 
               {/* Profitability Badge */}

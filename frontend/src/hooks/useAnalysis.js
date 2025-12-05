@@ -5,7 +5,7 @@ export const useAnalysis = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const analyzeSingle = async (identifier, buyCost, moq = 1, supplierId = null, identifierType = 'asin', quantity = 1) => {
+  const analyzeSingle = async (identifier, buyCost, moq = 1, supplierId = null, identifierType = 'asin', quantity = 1, packInfo = {}) => {
     try {
       setLoading(true);
       setError(null);
@@ -21,6 +21,14 @@ export const useAnalysis = () => {
       } else {
         payload.upc = identifier;
         payload.quantity = quantity;
+      }
+      
+      // Add pack size info if provided
+      if (packInfo.pack_size) {
+        payload.pack_size = packInfo.pack_size;
+      }
+      if (packInfo.wholesale_cost !== null && packInfo.wholesale_cost !== undefined) {
+        payload.wholesale_cost = packInfo.wholesale_cost;
       }
       
       const response = await api.post('/analyze/single', payload);
