@@ -172,9 +172,12 @@ services:
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+        required: false
       - key: SECRET_KEY
         sync: false
-      # Amazon SP-API (REQUIRED for analysis - used by batch_analyzer for pricing/fees)
+      # Amazon SP-API (REQUIRED for analysis - used by batch_analyzer for pricing/fees AND UPC conversion)
       - key: SP_API_LWA_APP_ID
         sync: false
         required: false
@@ -209,8 +212,16 @@ services:
       # Keepa API (REQUIRED for analysis - used by batch_analyzer for catalog data)
       - key: KEEPA_API_KEY
         sync: false
+      # ASIN Data API (optional fallback)
+      - key: ASIN_DATA_API_KEY
+        sync: false
+        required: false
       # OpenAI (for file processing if needed)
       - key: OPENAI_API_KEY
+        sync: false
+        required: false
+      # Super Admins (for feature gating)
+      - key: SUPER_ADMIN_EMAILS
         sync: false
         required: false
       # Redis (REQUIRED for Celery broker/backend)
