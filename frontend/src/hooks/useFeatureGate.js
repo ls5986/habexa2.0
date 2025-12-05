@@ -41,10 +41,13 @@ export function useFeatureGate() {
 
     fetchLimits();
     
-    // Refresh every 60 seconds to keep usage up to date (reduced from 30s to reduce spam)
-    const interval = setInterval(fetchLimits, 60000);
-    return () => clearInterval(interval);
-  }, []);
+    // Only poll if limits data exists (to avoid multiple simultaneous requests)
+    // Increased to 120 seconds to reduce server load
+    if (limitsData) {
+      const interval = setInterval(fetchLimits, 120000);
+      return () => clearInterval(interval);
+    }
+  }, [limitsData]);
 
   const tier = limitsData?.tier || 'free';
   const isSuperAdmin = limitsData?.is_super_admin || false;
