@@ -207,7 +207,7 @@ const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, on
       {/* Unit Cost */}
       <Box sx={{ textAlign: 'right' }}>
         <Typography variant="body2" color="text.secondary">
-          ${buyCost.toFixed(2)}
+          ${(buyCost || 0).toFixed(2)}
         </Typography>
         {deal.has_promo && deal.promo_percent && (
           <Chip 
@@ -229,9 +229,9 @@ const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, on
         variant="body2" 
         align="right" 
         fontWeight="600"
-        color={totalInvestment > 500 ? 'warning.main' : 'text.primary'}
+        color={(totalInvestment || 0) > 500 ? 'warning.main' : 'text.primary'}
       >
-        ${totalInvestment.toFixed(2)}
+        ${(totalInvestment || 0).toFixed(2)}
       </Typography>
       
       {/* ROI - Pre-calculated from view */}
@@ -245,11 +245,11 @@ const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, on
       </Typography>
       
       {/* Profit per unit - Pre-calculated from view */}
-      <Tooltip title={`Total: $${totalProfit.toFixed(2)}`}>
+      <Tooltip title={`Total: $${(totalProfit || 0).toFixed(2)}`}>
         <Typography
           variant="body2"
           align="right"
-          color={profit > 0 ? 'success.main' : 'error.main'}
+          color={(profit || 0) > 0 ? 'success.main' : 'error.main'}
         >
           ${profit ? profit.toFixed(2) : '-'}
         </Typography>

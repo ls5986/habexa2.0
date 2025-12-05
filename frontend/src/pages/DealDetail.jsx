@@ -307,16 +307,16 @@ export default function DealDetail() {
               
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, mt: 1 }}>
                 <Typography variant="body2" color="text.secondary">Buy Cost</Typography>
-                <Typography variant="body2" fontWeight="600">${deal.buy_cost?.toFixed(2) || '—'}</Typography>
+                <Typography variant="body2" fontWeight="600">${deal?.buy_cost ? deal.buy_cost.toFixed(2) : '—'}</Typography>
               </Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                 <Typography variant="body2" color="text.secondary">MOQ</Typography>
-                <Typography variant="body2" fontWeight="600">{deal.moq || 1}</Typography>
+                <Typography variant="body2" fontWeight="600">{deal?.moq || 1}</Typography>
               </Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                 <Typography variant="body2" color="text.secondary">Total Investment</Typography>
                 <Typography variant="body2" fontWeight="600">
-                  ${((deal.buy_cost || 0) * (deal.moq || 1)).toFixed(2)}
+                  ${((deal?.buy_cost || 0) * (deal?.moq || 1)).toFixed(2)}
                 </Typography>
               </Box>
               

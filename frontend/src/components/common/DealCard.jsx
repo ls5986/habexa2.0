@@ -4,7 +4,8 @@ import { formatCurrency, formatROI } from '../../utils/formatters';
 import GatingBadge from './GatingBadge';
 
 const DealCard = ({ deal, onView, onMessage, onSave, onDismiss }) => {
-  const isProfitable = deal.roi >= 30;
+  if (!deal) return null;
+  const isProfitable = (deal.roi || 0) >= 30;
 
   return (
     <Card
@@ -65,19 +66,19 @@ const DealCard = ({ deal, onView, onMessage, onSave, onDismiss }) => {
             <Box>
               <Typography variant="caption" color="text.secondary">Buy</Typography>
               <Typography variant="body2" fontWeight="600" color="white">
-                {formatCurrency(deal.buy_cost)}
+                {formatCurrency(deal.buy_cost || 0)}
               </Typography>
             </Box>
             <Box>
               <Typography variant="caption" color="text.secondary">Sell</Typography>
               <Typography variant="body2" fontWeight="600" color="white">
-                {formatCurrency(deal.sell_price)}
+                {formatCurrency(deal.sell_price || 0)}
               </Typography>
             </Box>
             <Box>
               <Typography variant="caption" color="text.secondary">Profit</Typography>
               <Typography variant="body2" fontWeight="600" color="success.main">
-                {formatCurrency(deal.net_profit)}
+                {formatCurrency(deal.net_profit || 0)}
               </Typography>
             </Box>
             <Box>
@@ -93,7 +94,7 @@ const DealCard = ({ deal, onView, onMessage, onSave, onDismiss }) => {
                 }}
               >
                 {isProfitable && <TrendingUp size={14} />}
-                {formatROI(deal.roi)}
+                {formatROI(deal.roi || 0)}
               </Typography>
             </Box>
           </Box>
