@@ -340,7 +340,7 @@ export default function DealDetail() {
                 >
                   <AlertTitle>No Pricing Data Available</AlertTitle>
                   <Typography variant="body2">
-                    Reason: {formatPricingReason(analysis.pricing_status_reason)}
+                    Reason: {formatPricingReason(analysis?.pricing_status_reason)}
                   </Typography>
                   <Typography variant="body2" sx={{ mt: 1 }}>
                     This usually means:
