@@ -29,19 +29,21 @@ async def get_product_details(
     """
     try:
         # Get marketplace_id from user connection if available
-        user_id = str(current_user.id)
-        try:
-            from app.services.supabase_client import supabase
-            connection_result = supabase.table("amazon_connections")\
-                .select("marketplace_id")\
-                .eq("user_id", user_id)\
-                .eq("is_connected", True)\
-                .limit(1)\
-                .execute()
-            if connection_result.data and connection_result.data[0].get("marketplace_id"):
-                marketplace_id = connection_result.data[0]["marketplace_id"]
-        except:
-            pass
+        # In TEST_MODE, current_user may be None
+        if current_user:
+            user_id = str(current_user.id)
+            try:
+                from app.services.supabase_client import supabase
+                connection_result = supabase.table("amazon_connections")\
+                    .select("marketplace_id")\
+                    .eq("user_id", user_id)\
+                    .eq("is_connected", True)\
+                    .limit(1)\
+                    .execute()
+                if connection_result.data and connection_result.data[0].get("marketplace_id"):
+                    marketplace_id = connection_result.data[0]["marketplace_id"]
+            except:
+                pass
         
         # Fetch catalog data (title, brand, image, BSR)
         catalog = await sp_api_client.get_catalog_item(asin, marketplace_id)

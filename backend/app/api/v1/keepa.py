@@ -97,9 +97,7 @@ async def get_keepa_product(
         raise  # Re-raise HTTP exceptions
     except Exception as e:
         # Log unexpected errors
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"Unexpected error in Keepa endpoint for {asin}: {e}")
+        logger.error(f"Unexpected error in Keepa endpoint for {asin}: {e}", exc_info=True)
         raise HTTPException(500, f"Internal error fetching Keepa data: {str(e)}")
 
 
