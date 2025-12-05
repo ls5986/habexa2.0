@@ -771,16 +771,13 @@ def process_file_upload_sync(job_id: str, user_id: str, supplier_id: str, file_c
     Synchronous wrapper for process_file_upload.
     Can be called directly without Celery (for BackgroundTasks fallback).
     """
-    import traceback
     logger.info(f"Running process_file_upload_sync for job {job_id}")
     try:
-        # Call the actual processing logic (extract from Celery task)
-        # We'll call the same function but without Celery binding
+        # Call the actual processing logic directly (pass None as self to skip Celery retry)
         process_file_upload(None, job_id, user_id, supplier_id, file_contents_b64, filename)
     except Exception as e:
         logger.error(f"process_file_upload_sync failed for job {job_id}: {e}", exc_info=True)
         raise
-            except Exception as analysis_error:
                 # Don't fail the upload job if auto-analysis fails
                 logger.warning(f"Failed to auto-analyze uploaded products: {analysis_error}")
         

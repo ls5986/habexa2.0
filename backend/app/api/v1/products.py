@@ -521,9 +521,7 @@ async def upload_file(
             logger.warning(f"⚠️ Celery task queue failed: {celery_error}")
             logger.warning("Falling back to FastAPI BackgroundTasks (Celery worker may not be running)...")
             
-            # Fallback: Use FastAPI BackgroundTasks
-            # This ensures the task runs even if Celery is not available
-            background_tasks = BackgroundTasks()
+            # Fallback: Use FastAPI BackgroundTasks (passed as dependency)
             background_tasks.add_task(run_file_processing)
             logger.info(f"✅ Added to BackgroundTasks for job {job_id}")
             
