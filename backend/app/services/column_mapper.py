@@ -5,7 +5,7 @@ Uses OpenAI to intelligently detect column purposes.
 """
 import os
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from openai import OpenAI
 from app.core.config import settings
 
@@ -304,7 +304,7 @@ def apply_mapping(row: Dict[str, Any], column_mapping: Dict[str, str]) -> Dict[s
     return mapped
 
 
-def validate_row(mapped: Dict[str, Any]) -> tuple[bool, str]:
+def validate_row(mapped: Dict[str, Any]) -> Tuple[bool, str]:
     """
     Validate a mapped row.
     
