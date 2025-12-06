@@ -421,6 +421,7 @@ export default function Products() {
   const [asinSelectionDialog, setAsinSelectionDialog] = useState({ open: false, product: null });
   const [manualAsinDialog, setManualAsinDialog] = useState({ open: false, product: null, asinInput: '' });
   const [counts, setCounts] = useState({ all: 0, found: 0, not_found: 0, multiple_found: 0, manual: 0 });
+  const [asinStatusStats, setAsinStatusStats] = useState({ all: 0, asin_found: 0, needs_selection: 0, needs_asin: 0, manual_entry: 0 });
   const { hasFeature, promptUpgrade } = useFeatureGate();
   const { showToast } = useToast();
 
@@ -530,10 +531,24 @@ export default function Products() {
     }
   }, []);
 
+  // Fetch ASIN status stats
+  const fetchAsinStatusStats = useCallback(async () => {
+    try {
+      const response = await api.get('/products/stats/asin-status');
+      if (response.data) {
+        console.log('📊 ASIN Stats:', response.data); // DEBUG
+        setAsinStatusStats(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch ASIN status stats:', error);
+    }
+  }, []);
+
   // Initial load - only once
   useEffect(() => {
     fetchData();
     fetchSuppliers();
+    fetchAsinStatusStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run on mount
 
@@ -845,11 +860,11 @@ export default function Products() {
               setTimeout(() => fetchData(), 500);
             }}
           >
-            <MenuItem value="all">All Products ({counts.all || 0})</MenuItem>
-            <MenuItem value="found">ASIN Found ({counts.found || 0})</MenuItem>
-            <MenuItem value="multiple_found">Needs Selection ({counts.multiple_found || 0})</MenuItem>
-            <MenuItem value="not_found">Needs ASIN ({counts.not_found || 0})</MenuItem>
-            <MenuItem value="manual">Manual Entry ({counts.manual || 0})</MenuItem>
+            <MenuItem value="all">All Products ({asinStatusStats.all || 0})</MenuItem>
+            <MenuItem value="asin_found">ASIN Found ({asinStatusStats.asin_found || 0})</MenuItem>
+            <MenuItem value="needs_selection">Needs Selection ({asinStatusStats.needs_selection || 0})</MenuItem>
+            <MenuItem value="needs_asin">Needs ASIN ({asinStatusStats.needs_asin || 0})</MenuItem>
+            <MenuItem value="manual_entry">Manual Entry ({asinStatusStats.manual_entry || 0})</MenuItem>
           </Select>
         </FormControl>
         <FormControl size="small" sx={{ width: 150 }}>

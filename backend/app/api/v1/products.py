@@ -308,7 +308,25 @@ async def get_deals(
         if search:
             query = query.ilike("asin", f"%{search}%")
         if asin_status:
-            query = query.eq("asin_status", asin_status)
+            # Map frontend filter values to database filtering
+            if asin_status == "asin_found":
+                # Products with ASIN
+                query = query.not_.is_("asin", "null")
+                query = query.neq("asin", "")
+            elif asin_status == "needs_selection":
+                # Products in needs_selection status
+                query = query.eq("asin_status", "needs_selection")
+            elif asin_status == "needs_asin":
+                # Products with UPC but no ASIN
+                query = query.not_.is_("upc", "null")
+                query = query.neq("upc", "")
+                query = query.or_("asin.is.null,asin.eq.")
+            elif asin_status == "manual_entry":
+                # Products with no UPC or ASIN
+                query = query.or_("asin.is.null,asin.eq.,upc.is.null,upc.eq.")
+            else:
+                # Fallback to direct status match
+                query = query.eq("asin_status", asin_status)
         if min_roi is not None:
             query = query.gte("roi", min_roi)
         if min_profit is not None:
@@ -371,14 +389,15 @@ async def get_asin_status_stats(current_user = Depends(get_current_user)):
     user_id = str(current_user.id)
     
     try:
-        # Get all products for this user
-        all_products = supabase.table("products")\
-            .select("id, asin, upc, asin_status, upload_source")\
+        # Get ALL products for this user
+        result = supabase.table("products")\
+            .select("id, asin, upc, status")\
             .eq("user_id", user_id)\
             .execute()
         
-        products = all_products.data or []
+        products = result.data or []
         
+        # Count by status
         stats = {
             "all": len(products),
             "asin_found": 0,
@@ -390,21 +409,26 @@ async def get_asin_status_stats(current_user = Depends(get_current_user)):
         for product in products:
             asin = product.get("asin")
             upc = product.get("upc")
-            asin_status = product.get("asin_status")
-            upload_source = product.get("upload_source")
+            status = product.get("status")
             
-            if asin and asin_status not in ["needs_selection", "multiple_found"]:
+            # Has ASIN = Found
+            if asin and asin.strip():
                 stats["asin_found"] += 1
-            elif asin_status in ["needs_selection", "multiple_found"]:
-                stats["needs_selection"] += 1
-            elif upc and not asin:
+            # Has UPC but no ASIN = Needs ASIN
+            elif upc and upc.strip():
                 stats["needs_asin"] += 1
-            elif upload_source == "manual" and not upc:
+            # No UPC or ASIN = Manual Entry
+            else:
                 stats["manual_entry"] += 1
+            
+            # Check if needs selection (multiple ASINs found)
+            if status == "needs_selection":
+                stats["needs_selection"] += 1
         
+        logger.info(f"📊 ASIN Status Stats for user {user_id}: {stats}")
         return stats
     except Exception as e:
-        logger.error(f"Failed to get ASIN status stats: {e}")
+        logger.error(f"Failed to get ASIN status stats: {e}", exc_info=True)
         return {
             "all": 0,
             "asin_found": 0,
