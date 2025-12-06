@@ -226,3 +226,51 @@ Return the JSON mapping now:"""
 
 # Singleton instance
 column_mapper = ColumnMapper()
+
+# Export functions for backward compatibility with upload.py
+def auto_map_columns(headers: List[str], sample_data: Optional[Dict] = None) -> Dict[str, str]:
+    """
+    Auto-map CSV/Excel columns to product fields.
+    Wrapper around ColumnMapper for backward compatibility.
+    Uses fallback mapping (synchronous) for simplicity.
+    
+    Args:
+        headers: List of column names from CSV/Excel
+        sample_data: Optional dict of sample data (first row) - not used in fallback
+    
+    Returns:
+        Dict mapping our fields to CSV columns
+    """
+    # Use fallback mapping (synchronous) for now
+    # If AI mapping is needed, it should be called directly via map_columns_ai
+    return column_mapper.map_columns_fallback(headers)
+
+
+def validate_mapping(mapping_dict: Dict[str, str], headers: List[str] = None) -> Dict:
+    """
+    Validate column mapping.
+    Wrapper around ColumnMapper.validate_mapping for backward compatibility.
+    
+    Args:
+        mapping_dict: Dict mapping our fields to CSV columns
+        headers: Optional list of headers (not used, kept for compatibility)
+    
+    Returns:
+        {
+            'valid': bool,
+            'errors': List[str],  # Missing required fields
+            'warnings': List[str]
+        }
+    """
+    result = column_mapper.validate_mapping(mapping_dict)
+    
+    # Convert to expected format
+    return {
+        'valid': result['valid'],
+        'errors': result.get('missing_required', []),
+        'warnings': result.get('warnings', [])
+    }
+
+
+# Export expected fields as MAPPABLE_FIELDS for backward compatibility
+MAPPABLE_FIELDS = ColumnMapper.EXPECTED_FIELDS
