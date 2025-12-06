@@ -49,19 +49,23 @@ class BatchAnalyzer:
         # ==========================================
         logger.info("📚 Fetching data from Keepa and SP-API in parallel...")
         
-        # Run Keepa and SP-API pricing calls in parallel
+        # Run Keepa, SP-API pricing, and SP-API catalog calls in parallel
         keepa_task = keepa_client.get_products_batch(asins, domain=1, history=False, days=90)
         
         # Prepare SP-API pricing calls
-        sp_api_tasks = []
+        sp_api_pricing_tasks = []
         for i in range(0, len(asins), SP_API_BATCH_SIZE):
             batch = asins[i:i + SP_API_BATCH_SIZE]
-            sp_api_tasks.append(sp_api_client.get_competitive_pricing_batch(batch, marketplace_id))
+            sp_api_pricing_tasks.append(sp_api_client.get_competitive_pricing_batch(batch, marketplace_id))
+        
+        # Prepare SP-API catalog calls for images/details (parallel with pricing)
+        sp_api_catalog_task = sp_api_client.get_catalog_items_batch(asins, marketplace_id)
         
         # Execute all API calls in parallel
-        keepa_data, *sp_api_results = await asyncio.gather(
+        keepa_data, catalog_data, *sp_api_results = await asyncio.gather(
             keepa_task,
-            *sp_api_tasks,
+            sp_api_catalog_task,
+            *sp_api_pricing_tasks,
             return_exceptions=True
         )
         
@@ -75,7 +79,7 @@ class BatchAnalyzer:
                     results[asin].update({
                         "title": data.get("title"),
                         "brand": data.get("brand"),
-                        "image_url": data.get("image_url"),
+                        "image_url": data.get("image_url"),  # Keepa image (fallback)
                         "bsr": data.get("bsr"),
                         "category": data.get("category"),
                         "sales_drops_30": data.get("sales_drops_30"),
@@ -86,6 +90,29 @@ class BatchAnalyzer:
                         "rating": data.get("rating"),
                         "review_count": data.get("review_count"),
                     })
+        
+        # Handle SP-API catalog results (images, titles, brands - higher quality than Keepa)
+        if isinstance(catalog_data, Exception):
+            logger.warning(f"SP-API catalog error: {catalog_data}")
+            catalog_data = {}
+        else:
+            logger.info(f"📸 SP-API catalog: Got data for {len(catalog_data)} products")
+            for asin, catalog in catalog_data.items():
+                if asin in results and catalog:
+                    # SP-API catalog has higher quality images/details - use it if available
+                    if catalog.get("image_url"):
+                        results[asin]["image_url"] = catalog.get("image_url")
+                        logger.debug(f"✅ {asin}: Using SP-API image")
+                    
+                    # SP-API title/brand are more reliable
+                    if catalog.get("title"):
+                        results[asin]["title"] = catalog.get("title")
+                    if catalog.get("brand"):
+                        results[asin]["brand"] = catalog.get("brand")
+                    if catalog.get("sales_rank_category"):
+                        results[asin]["category"] = catalog.get("sales_rank_category")
+                    if catalog.get("sales_rank"):
+                        results[asin]["bsr"] = catalog.get("sales_rank")
         
         # Handle SP-API pricing results
         all_pricing_data = {}

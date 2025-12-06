@@ -76,7 +76,7 @@ async def analyze_single(
     identifier_type = request.identifier_type.lower()
     
     if identifier_type == "upc":
-        # Convert UPC to ASIN
+        # Convert UPC to ASIN(s) - handle multiple matches
         if not request.upc:
             raise HTTPException(400, "UPC is required when identifier_type is 'upc'")
         
@@ -84,12 +84,50 @@ async def analyze_single(
         if not upc_clean:
             raise HTTPException(400, "Invalid UPC format. Must be 12-14 digits.")
         
-        logger.info(f"Converting UPC {upc_clean} to ASIN...")
-        asin = await upc_converter.upc_to_asin(upc_clean)
+        logger.info(f"Converting UPC {upc_clean} to ASIN(s)...")
+        potential_asins, asin_status = await upc_converter.upc_to_asins(upc_clean)
         
-        if not asin:
+        if asin_status == "not_found":
             raise HTTPException(404, f"Could not find ASIN for UPC {upc_clean}. Product may not be available on Amazon.")
         
+        if asin_status == "error":
+            raise HTTPException(500, f"Error converting UPC {upc_clean} to ASIN.")
+        
+        # Handle multiple ASINs - save product with multiple_found status
+        if asin_status == "multiple" and len(potential_asins) > 1:
+            logger.warning(f"⚠️ Multiple ASINs found for UPC {upc_clean}: {len(potential_asins)} matches")
+            
+            # Create product with multiple_found status
+            new_prod = supabase.table("products").insert({
+                "user_id": user_id,
+                "asin": None,  # No ASIN selected yet
+                "upc": upc_clean,
+                "status": "pending",
+                "asin_status": "multiple_found",
+                "potential_asins": [a.get("asin") for a in potential_asins]  # Store ASIN list
+            }).execute()
+            
+            product_id = new_prod.data[0]["id"] if new_prod.data else None
+            
+            if not product_id:
+                raise HTTPException(500, "Failed to create product")
+            
+            # Return response indicating multiple ASINs found
+            return {
+                "product_id": product_id,
+                "asin": None,
+                "status": "multiple_asins_found",
+                "asin_status": "multiple_found",
+                "potential_asins": potential_asins,  # Full ASIN info with title, image, etc.
+                "upc": upc_clean,
+                "message": f"Found {len(potential_asins)} products for this UPC. Please select which one to analyze."
+            }
+        
+        # Single ASIN found - use it
+        if not potential_asins or len(potential_asins) == 0:
+            raise HTTPException(404, f"Could not find ASIN for UPC {upc_clean}.")
+        
+        asin = potential_asins[0].get("asin")
         logger.info(f"✅ Converted UPC {upc_clean} to ASIN {asin}")
         
         # Store UPC and quantity for reference
