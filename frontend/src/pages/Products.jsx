@@ -87,11 +87,12 @@ const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, on
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: '40px 140px 1fr 120px 80px 80px 80px 90px 80px 80px 60px',
+        gridTemplateColumns: '40px 50px 140px 1fr 120px 70px 80px 80px 90px 80px 80px 60px',
         p: 1.5,
         borderBottom: '1px solid',
         borderColor: 'divider',
         alignItems: 'center',
+        gap: 1,
         '&:hover': { bgcolor: 'action.hover' },
         cursor: 'pointer'
       }}
@@ -103,6 +104,41 @@ const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, on
         onClick={(e) => e.stopPropagation()}
         onChange={onSelect}
       />
+      {/* Product Image - Separate Column */}
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        {deal.image_url ? (
+          <Box
+            component="img"
+            src={deal.image_url}
+            sx={{ 
+              width: 40, 
+              height: 40, 
+              borderRadius: 1, 
+              objectFit: 'cover', 
+              flexShrink: 0,
+              border: '1px solid',
+              borderColor: 'divider'
+            }}
+            onError={(e) => {
+              e.target.style.display = 'none';
+            }}
+          />
+        ) : (
+          <Box sx={{ 
+            width: 40, 
+            height: 40, 
+            bgcolor: 'grey.100', 
+            borderRadius: 1,
+            border: '1px solid',
+            borderColor: 'divider',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <Package size={20} color="#999" />
+          </Box>
+        )}
+      </Box>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
         {needsSelection ? (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
@@ -180,7 +216,7 @@ const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, on
           </>
         ) : (
           <>
-            <Typography variant="body2" fontFamily="monospace" fontSize={12}>
+            <Typography variant="body2" fontFamily="monospace" fontSize={12} fontWeight={500}>
               {deal.asin}
             </Typography>
             {isVariation && (
@@ -199,20 +235,10 @@ const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, on
           </>
         )}
       </Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
-        {deal.image_url ? (
-          <Box
-            component="img"
-            src={deal.image_url}
-            sx={{ width: 32, height: 32, borderRadius: 1, objectFit: 'cover', flexShrink: 0 }}
-          />
-        ) : (
-          <Box sx={{ width: 32, height: 32, bgcolor: habexa.navy.light, borderRadius: 1 }} />
-        )}
-        <Typography variant="body2" noWrap sx={{ minWidth: 0 }}>
-          {deal.title || (deal.roi === undefined && deal.profit === undefined ? 'Pending analysis...' : 'Unknown Product')}
-        </Typography>
-      </Box>
+      {/* Product Title - No image here anymore */}
+      <Typography variant="body2" noWrap sx={{ minWidth: 0, fontWeight: 500 }}>
+        {deal.title || (deal.roi === undefined && deal.profit === undefined ? 'Pending analysis...' : 'Unknown Product')}
+      </Typography>
       
       {/* Supplier Name */}
       <Typography variant="body2" color="text.secondary" noWrap>
@@ -220,7 +246,7 @@ const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, on
       </Typography>
       
       {/* MOQ - Editable */}
-      <Box sx={{ textAlign: 'right' }} onClick={(e) => e.stopPropagation()}>
+      <Box sx={{ textAlign: 'center', display: 'flex', justifyContent: 'center' }} onClick={(e) => e.stopPropagation()}>
         {editingMoq ? (
           <TextField
             size="small"
@@ -231,18 +257,24 @@ const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, on
             onKeyDown={(e) => e.key === 'Enter' && handleMoqSave()}
             autoFocus
             sx={{ width: 50 }}
-            inputProps={{ min: 1, style: { textAlign: 'right', padding: '4px' } }}
+            inputProps={{ min: 1, style: { textAlign: 'center', padding: '4px' } }}
           />
         ) : (
           <Chip
             label={moq}
             size="small"
+            variant="outlined"
             onClick={() => setEditingMoq(true)}
             sx={{ 
               minWidth: 40,
               cursor: 'pointer',
-              bgcolor: habexa.gray[300],
-              '&:hover': { bgcolor: habexa.navy.light }
+              bgcolor: 'transparent',
+              borderColor: 'divider',
+              color: 'text.primary',
+              '&:hover': { 
+                bgcolor: 'action.hover',
+                borderColor: habexa.purple.main
+              }
             }}
           />
         )}
