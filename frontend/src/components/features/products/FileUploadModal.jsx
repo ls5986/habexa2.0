@@ -11,6 +11,7 @@ import {
 } from '@mui/icons-material';
 import api from '../../../services/api';
 import PipelineProgressTracker from './PipelineProgressTracker';
+import ColumnMappingDialog from '../../ColumnMappingDialog';
 
 export default function FileUploadModal({ open, onClose, onComplete }) {
   const [suppliers, setSuppliers] = useState([]);
@@ -25,6 +26,11 @@ export default function FileUploadModal({ open, onClose, onComplete }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
   const [showErrors, setShowErrors] = useState(false);
+  
+  // Column mapping state
+  const [previewData, setPreviewData] = useState(null);
+  const [showColumnMapping, setShowColumnMapping] = useState(false);
+  const [uploadedFileData, setUploadedFileData] = useState(null);
 
   // Fetch suppliers on open
   useEffect(() => {
@@ -140,12 +146,6 @@ export default function FileUploadModal({ open, onClose, onComplete }) {
   };
 
   const handleUpload = async () => {
-    // Debug logging
-    console.log('handleUpload called');
-    console.log('file:', file);
-    console.log('selectedSupplier:', selectedSupplier);
-    console.log('Button should be enabled:', !!file && !!selectedSupplier);
-    
     if (!file || !selectedSupplier) {
       setError('Please select a supplier and file');
       return;
@@ -155,28 +155,77 @@ export default function FileUploadModal({ open, onClose, onComplete }) {
     setError(null);
     
     try {
+      // Step 1: Upload for preview + AI column mapping
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('supplier_id', selectedSupplier);
       
-      const res = await api.post('/products/upload', formData, {
+      const previewRes = await api.post('/products/upload/preview', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       
-      setJobId(res.data.job_id);
-      } catch (err) {
-        console.error('Upload error:', err);
-        const errorMessage = err.response?.data?.detail || err.message || 'Upload failed. Please try again.';
-        setError(errorMessage);
-        setUploading(false);
-        // Clear jobId if upload failed
-        setJobId(null);
+      // Store file data for later
+      const fileBase64 = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.readAsDataURL(file);
+      });
+      setUploadedFileData(fileBase64);
+      
+      // Show column mapping dialog
+      setPreviewData(previewRes.data);
+      setShowColumnMapping(true);
+      setUploading(false);
+      
+    } catch (err) {
+      console.error('Preview error:', err);
+      const errorMessage = err.response?.data?.detail || err.message || 'Failed to preview file. Please try again.';
+      setError(errorMessage);
+      setUploading(false);
+    }
+  };
+  
+  const handleConfirmMapping = async (columnMapping) => {
+    setShowColumnMapping(false);
+    setUploading(true);
+    setError(null);
+    
+    try {
+      // Step 2: Confirm upload with column mapping
+      const res = await api.post('/products/upload/confirm', {
+        filename: file.name,
+        file_data: uploadedFileData,
+        column_mapping: columnMapping,
+        supplier_id: selectedSupplier
+      });
+      
+      // For now, use the old upload endpoint as fallback
+      // The new confirm endpoint will be used once fully tested
+      if (res.data.job_id) {
+        setJobId(res.data.job_id);
+      } else {
+        // Fallback to old upload method
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('supplier_id', selectedSupplier);
+        
+        const uploadRes = await api.post('/products/upload', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        setJobId(uploadRes.data.job_id);
       }
+    } catch (err) {
+      console.error('Upload error:', err);
+      const errorMessage = err.response?.data?.detail || err.message || 'Upload failed. Please try again.';
+      setError(errorMessage);
+      setUploading(false);
+      setJobId(null);
+    }
   };
 
   const supplierName = suppliers.find(s => s.id === selectedSupplier)?.name || '';
 
   return (
+    <>
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         Upload Price List
@@ -462,6 +511,18 @@ export default function FileUploadModal({ open, onClose, onComplete }) {
         )}
       </DialogActions>
     </Dialog>
+    
+    {/* Column Mapping Dialog */}
+    <ColumnMappingDialog
+      open={showColumnMapping}
+      onClose={() => {
+        setShowColumnMapping(false);
+        setUploading(false);
+      }}
+      previewData={previewData}
+      onConfirm={handleConfirmMapping}
+    />
+  </>
   );
 }
 

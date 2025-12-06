@@ -68,21 +68,26 @@ class ColumnMapper:
             
             logger.info("🤖 Asking OpenAI to map columns...")
             
-            # Call OpenAI
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You are a data mapping expert. Map CSV/Excel columns to product fields. Return ONLY valid JSON."
-                    },
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ],
-                temperature=0,
-                response_format={"type": "json_object"}
+            # Call OpenAI (synchronous call in async function - OpenAI client is sync)
+            import asyncio
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(
+                None,
+                lambda: client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You are a data mapping expert. Map CSV/Excel columns to product fields. Return ONLY valid JSON."
+                        },
+                        {
+                            "role": "user",
+                            "content": prompt
+                        }
+                    ],
+                    temperature=0,
+                    response_format={"type": "json_object"}
+                )
             )
             
             # Parse response

@@ -21,6 +21,7 @@ import pandas as pd
 from pathlib import Path
 from datetime import datetime
 from app.core.config import settings
+from app.services.column_mapper import column_mapper
 
 logger = logging.getLogger(__name__)
 SYNC_PROCESSING_THRESHOLD = settings.SYNC_PROCESSING_THRESHOLD
@@ -362,6 +363,55 @@ async def get_deals(
         import traceback
         traceback.print_exc()
         raise HTTPException(500, str(e))
+
+@router.get("/stats/asin-status")
+@cached(ttl=10)
+async def get_asin_status_stats(current_user = Depends(get_current_user)):
+    """Get counts for each ASIN status category."""
+    user_id = str(current_user.id)
+    
+    try:
+        # Get all products for this user
+        all_products = supabase.table("products")\
+            .select("id, asin, upc, asin_status, upload_source")\
+            .eq("user_id", user_id)\
+            .execute()
+        
+        products = all_products.data or []
+        
+        stats = {
+            "all": len(products),
+            "asin_found": 0,
+            "needs_selection": 0,
+            "needs_asin": 0,
+            "manual_entry": 0
+        }
+        
+        for product in products:
+            asin = product.get("asin")
+            upc = product.get("upc")
+            asin_status = product.get("asin_status")
+            upload_source = product.get("upload_source")
+            
+            if asin and asin_status not in ["needs_selection", "multiple_found"]:
+                stats["asin_found"] += 1
+            elif asin_status in ["needs_selection", "multiple_found"]:
+                stats["needs_selection"] += 1
+            elif upc and not asin:
+                stats["needs_asin"] += 1
+            elif upload_source == "manual" and not upc:
+                stats["manual_entry"] += 1
+        
+        return stats
+    except Exception as e:
+        logger.error(f"Failed to get ASIN status stats: {e}")
+        return {
+            "all": 0,
+            "asin_found": 0,
+            "needs_selection": 0,
+            "needs_asin": 0,
+            "manual_entry": 0
+        }
 
 @router.get("/stats")
 @cached(ttl=10)  # Cache stats for 10 seconds (reduced from 60 for faster updates)
@@ -748,6 +798,190 @@ async def upload_file(
         import traceback
         logger.error(traceback.format_exc())
         raise HTTPException(500, f"Upload failed: {str(e)}")
+
+@router.post("/upload/preview")
+async def preview_csv_upload(
+    file: UploadFile = File(...),
+    current_user = Depends(get_current_user)
+):
+    """
+    Preview CSV/Excel and suggest column mapping.
+    Returns first 5 rows + suggested mapping.
+    """
+    user_id = str(current_user.id)
+    
+    try:
+        # Read file
+        content = await file.read()
+        
+        # Detect file type
+        if file.filename and (file.filename.endswith('.xlsx') or file.filename.endswith('.xls')):
+            df = pd.read_excel(io.BytesIO(content))
+        else:
+            df = pd.read_csv(io.BytesIO(content))
+        
+        logger.info(f"📄 Uploaded file: {len(df)} rows, {len(df.columns)} columns")
+        
+        # Get column names
+        columns = df.columns.tolist()
+        
+        # Get sample data (first row)
+        sample_data = df.iloc[0].to_dict() if len(df) > 0 else None
+        
+        # AI column mapping
+        suggested_mapping = await column_mapper.map_columns_ai(
+            columns=columns,
+            sample_data=sample_data
+        )
+        
+        # Validate mapping
+        validation = column_mapper.validate_mapping(suggested_mapping)
+        
+        # Get preview data (first 5 rows)
+        preview_data = df.head(5).to_dict('records')
+        
+        return {
+            'filename': file.filename,
+            'total_rows': len(df),
+            'columns': columns,
+            'suggested_mapping': suggested_mapping,
+            'validation': validation,
+            'preview_data': preview_data
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to preview file: {e}", exc_info=True)
+        raise HTTPException(500, f"Failed to preview file: {str(e)}")
+
+class ConfirmUploadRequest(BaseModel):
+    filename: str
+    file_data: str  # Base64 encoded
+    column_mapping: Dict[str, str]  # {'title': 'DESCRIPTION', 'cost': 'WHOLESALE'}
+    supplier_id: Optional[str] = None
+
+@router.post("/upload/confirm")
+async def confirm_csv_upload(
+    request: ConfirmUploadRequest,
+    current_user = Depends(get_current_user)
+):
+    """
+    Process CSV/Excel with user-confirmed column mapping.
+    """
+    user_id = str(current_user.id)
+    
+    try:
+        # Read file (from base64)
+        file_bytes = base64.b64decode(request.file_data)
+        
+        # Parse file
+        if request.filename.endswith('.xlsx') or request.filename.endswith('.xls'):
+            df = pd.read_excel(io.BytesIO(file_bytes))
+        else:
+            df = pd.read_csv(io.BytesIO(file_bytes))
+        
+        logger.info(f"📦 Processing {len(df)} products with mapping: {request.column_mapping}")
+        
+        # Get supplier mapping (if supplier_name column provided)
+        supplier_map = {}
+        if 'supplier_name' in request.column_mapping:
+            suppliers_result = supabase.table('suppliers')\
+                .select('id, name')\
+                .eq('user_id', user_id)\
+                .execute()
+            
+            supplier_map = {s['name']: s['id'] for s in (suppliers_result.data or [])}
+        
+        # Process each row
+        created_products = []
+        errors = []
+        
+        for idx, row in df.iterrows():
+            try:
+                # Map columns to product fields
+                product_data = {
+                    'user_id': user_id,
+                    'upload_source': 'csv',
+                    'source_filename': request.filename,
+                    'status': 'pending',
+                    'uploaded_at': datetime.utcnow().isoformat()
+                }
+                
+                # Apply column mapping
+                for our_field, csv_column in request.column_mapping.items():
+                    if csv_column in row and pd.notna(row[csv_column]):
+                        value = row[csv_column]
+                        
+                        # Map to correct field name
+                        if our_field == 'title':
+                            product_data['uploaded_title'] = str(value)
+                        elif our_field == 'brand':
+                            product_data['uploaded_brand'] = str(value)
+                        elif our_field == 'category':
+                            product_data['uploaded_category'] = str(value)
+                        elif our_field == 'cost':
+                            product_data['buy_cost'] = float(value)
+                        elif our_field == 'case_pack':
+                            product_data['case_pack'] = int(value)
+                        elif our_field == 'moq':
+                            product_data['moq'] = int(value)
+                        elif our_field == 'supplier_name':
+                            if str(value) in supplier_map:
+                                product_data['supplier_id'] = supplier_map[str(value)]
+                        else:
+                            product_data[our_field] = value
+                
+                # Store original row data
+                product_data['original_upload_data'] = row.to_dict()
+                
+                # Add supplier_id if provided
+                if request.supplier_id:
+                    product_data['supplier_id'] = request.supplier_id
+                
+                # Determine ASIN status
+                if product_data.get('asin'):
+                    product_data['asin_status'] = 'found'
+                elif product_data.get('upc'):
+                    product_data['asin_status'] = 'pending_lookup'
+                else:
+                    product_data['asin_status'] = 'needs_input'
+                
+                # Create product
+                result = supabase.table('products').insert(product_data).execute()
+                if result.data:
+                    product = result.data[0]
+                    created_products.append(product)
+                    
+                    # Create product_source (deal) if supplier_id is provided
+                    if request.supplier_id and product_data.get('buy_cost'):
+                        upsert_deal(product['id'], request.supplier_id, {
+                            'buy_cost': product_data.get('buy_cost'),
+                            'moq': product_data.get('moq', 1),
+                            'source': 'csv',
+                            'source_detail': request.filename,
+                            'stage': 'new'
+                        })
+                
+            except Exception as e:
+                logger.error(f"Failed to create product from row {idx}: {e}")
+                errors.append({
+                    'row': idx + 1,
+                    'error': str(e),
+                    'data': row.to_dict()
+                })
+        
+        logger.info(f"✅ Created {len(created_products)} products, {len(errors)} errors")
+        
+        return {
+            'success': True,
+            'total': len(df),
+            'created': len(created_products),
+            'failed': len(errors),
+            'errors': errors[:10]  # Return first 10 errors
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to process upload: {e}", exc_info=True)
+        raise HTTPException(500, f"Failed to process upload: {str(e)}")
 
 @router.post("/upload-csv")
 async def upload_csv(file: UploadFile = File(...), current_user = Depends(get_current_user)):
