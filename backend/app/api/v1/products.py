@@ -252,6 +252,12 @@ async def get_deals(
     """
     Get all deals (product + source combinations) using the view.
     Optimized with Redis caching and single query.
+    
+    Supports filtering by asin_status:
+    - 'found': Has ASIN, analyzed or analyzing
+    - 'not_found': Needs manual ASIN entry
+    - 'multiple_found': Needs ASIN selection from options
+    - 'manual': ASIN was manually entered
     """
     user_id = str(current_user.id)
     
@@ -282,11 +288,39 @@ async def get_deals(
         result = query.execute()
         deals = result.data or []
         
+        # Get counts for each status (for UI filters) - only if no filters applied
+        counts = {}
+        if not stage and not source and not supplier_id and not asin_status and not search:
+            try:
+                # Get total count
+                all_deals = supabase.table("product_deals")\
+                    .select("asin_status", count="exact")\
+                    .eq("user_id", user_id)\
+                    .execute()
+                
+                counts["all"] = all_deals.count or 0
+                
+                # Get counts by status
+                for status in ['found', 'not_found', 'multiple_found', 'manual']:
+                    status_result = supabase.table("product_deals")\
+                        .select("id", count="exact")\
+                        .eq("user_id", user_id)\
+                        .eq("asin_status", status)\
+                        .execute()
+                    counts[status] = status_result.count or 0
+            except Exception as count_error:
+                logger.warning(f"Failed to get status counts: {count_error}")
+                counts = {"all": len(deals)}
+        
         # Log if view returns empty but we expect data (for debugging)
         if len(deals) == 0 and offset == 0:
             logger.debug(f"No deals found for user {user_id} - view might be empty or missing data")
         
-        return {"deals": deals, "total": len(deals)}
+        return {
+            "deals": deals,
+            "total": len(deals),
+            "counts": counts if counts else None
+        }
         
     except Exception as e:
         logger.error(f"Failed to fetch deals: {e}")
@@ -1623,3 +1657,276 @@ async def get_product_variations(
         logger.error(f"Failed to get variations for {asin}: {e}", exc_info=True)
         # Return empty list on error rather than failing
         return {"variations": []}
+
+
+# ============================================
+# ASIN SELECTION & MANUAL ENTRY ENDPOINTS
+# ============================================
+
+class SelectASINRequest(BaseModel):
+    asin: str  # The chosen ASIN from potential_asins
+
+@router.post("/{product_id}/select-asin")
+async def select_asin(
+    product_id: str,
+    request: SelectASINRequest,
+    current_user = Depends(get_current_user)
+):
+    """
+    User selects one ASIN from multiple options.
+    
+    This endpoint is called when asin_status = 'multiple_found'
+    and user clicks on one of the potential ASINs.
+    """
+    user_id = str(current_user.id)
+    
+    try:
+        # Get product
+        product_result = supabase.table("products")\
+            .select("*")\
+            .eq("id", product_id)\
+            .eq("user_id", user_id)\
+            .single()\
+            .execute()
+        
+        if not product_result.data:
+            raise HTTPException(404, "Product not found")
+        
+        product = product_result.data
+        
+        if product.get('asin_status') != 'multiple_found':
+            raise HTTPException(400, "Product does not need ASIN selection")
+        
+        # Validate selected ASIN is in potential_asins
+        potential_asins = product.get('potential_asins') or []
+        if not isinstance(potential_asins, list):
+            potential_asins = []
+        
+        selected_asin_data = next(
+            (a for a in potential_asins if isinstance(a, dict) and a.get('asin') == request.asin),
+            None
+        )
+        
+        if not selected_asin_data:
+            raise HTTPException(400, "Selected ASIN not in potential ASINs")
+        
+        # Update product with selected ASIN
+        update_data = {
+            "asin": request.asin,
+            "asin_status": "found",
+            "title": selected_asin_data.get('title'),
+            "brand": selected_asin_data.get('brand'),
+            "image_url": selected_asin_data.get('image'),
+            "potential_asins": None,  # Clear this now
+            "updated_at": datetime.utcnow().isoformat()
+        }
+        
+        supabase.table("products")\
+            .update(update_data)\
+            .eq("id", product_id)\
+            .execute()
+        
+        # Update product_source stage to trigger analysis
+        supabase.table("product_sources")\
+            .update({"stage": "new"})\
+            .eq("product_id", product_id)\
+            .execute()
+        
+        # Get parent ASIN from Keepa (optional but recommended)
+        # Note: Keepa client may not return parent_asin yet - this is a placeholder
+        # TODO: Update when Keepa client is enhanced to return variation data
+        try:
+            from app.services.keepa_client import get_keepa_client
+            from app.tasks.base import run_async
+            
+            keepa_client = get_keepa_client()
+            keepa_data = run_async(keepa_client.get_product(request.asin, days=90))
+            
+            # Keepa data structure may vary - check for parent_asin field
+            # If Keepa client doesn't provide this yet, we'll skip it
+            if keepa_data:
+                parent_asin = keepa_data.get('parent_asin') or keepa_data.get('parentAsin')
+                if parent_asin:
+                    variation_count = keepa_data.get('variation_count') or len(keepa_data.get('variations', [])) or 1
+                    supabase.table("products")\
+                        .update({
+                            "parent_asin": parent_asin,
+                            "is_variation": True,
+                            "variation_count": variation_count
+                        })\
+                        .eq("id", product_id)\
+                        .execute()
+        except Exception as e:
+            logger.debug(f"Could not get Keepa variation data for {request.asin}: {e}")
+        
+        # Queue for analysis using batch_analyze_products with single product
+        try:
+            from app.tasks.analysis import batch_analyze_products
+            from uuid import uuid4
+            
+            analysis_job_id = str(uuid4())
+            supabase.table("jobs").insert({
+                "id": analysis_job_id,
+                "user_id": user_id,
+                "type": "batch_analyze",
+                "status": "pending",
+                "total_items": 1,
+                "metadata": {
+                    "triggered_by": "asin_selection",
+                    "product_id": product_id
+                }
+            }).execute()
+            
+            batch_analyze_products.delay(analysis_job_id, user_id, [product_id])
+        except Exception as e:
+            logger.warning(f"Could not queue analysis for {product_id}: {e}")
+        
+        return {
+            "success": True,
+            "message": "ASIN selected and queued for analysis",
+            "asin": request.asin
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error selecting ASIN for product {product_id}: {e}", exc_info=True)
+        raise HTTPException(500, str(e))
+
+
+class ManualASINRequest(BaseModel):
+    asin: str  # User-entered ASIN
+
+@router.patch("/{product_id}/manual-asin")
+async def set_manual_asin(
+    product_id: str,
+    request: ManualASINRequest,
+    current_user = Depends(get_current_user)
+):
+    """
+    User manually enters ASIN for a product.
+    
+    Called when asin_status = 'not_found' and user types in ASIN.
+    """
+    user_id = str(current_user.id)
+    
+    try:
+        # Get product
+        product_result = supabase.table("products")\
+            .select("*")\
+            .eq("id", product_id)\
+            .eq("user_id", user_id)\
+            .single()\
+            .execute()
+        
+        if not product_result.data:
+            raise HTTPException(404, "Product not found")
+        
+        product = product_result.data
+        
+        if product.get('asin_status') not in ['not_found', 'manual']:
+            raise HTTPException(400, "Product already has ASIN")
+        
+        # Validate ASIN format
+        asin = request.asin.strip().upper()
+        if len(asin) != 10:
+            raise HTTPException(400, "ASIN must be 10 characters")
+        
+        # Try to get product info from Amazon
+        try:
+            from app.services.keepa_client import get_keepa_client
+            from app.services.sp_api_client import sp_api_client
+            from app.tasks.base import run_async
+            
+            # Try Keepa first
+            keepa_client = get_keepa_client()
+            keepa_data = run_async(keepa_client.get_product(asin, days=90))
+            
+            update_data = {
+                "asin": asin,
+                "asin_status": "manual",
+                "updated_at": datetime.utcnow().isoformat()
+            }
+            
+            if keepa_data:
+                parent_asin = keepa_data.get('parent_asin') or keepa_data.get('parentAsin')
+                variation_count = keepa_data.get('variation_count') or len(keepa_data.get('variations', [])) or 1
+                
+                update_data.update({
+                    "title": keepa_data.get('title'),
+                    "brand": keepa_data.get('brand'),
+                    "image_url": keepa_data.get('image_url') or keepa_data.get('image')
+                })
+                
+                if parent_asin:
+                    update_data.update({
+                        "parent_asin": parent_asin,
+                        "is_variation": True,
+                        "variation_count": variation_count
+                    })
+            else:
+                # Fallback to SP-API
+                catalog_data = await sp_api_client.get_catalog_item(asin)
+                if catalog_data:
+                    update_data.update({
+                        "title": catalog_data.get('title'),
+                        "brand": catalog_data.get('brand'),
+                        "image_url": catalog_data.get('image_url')
+                    })
+            
+            supabase.table("products")\
+                .update(update_data)\
+                .eq("id", product_id)\
+                .execute()
+                
+        except Exception as e:
+            logger.warning(f"Could not verify ASIN {asin}: {e}")
+            # Save anyway
+            supabase.table("products")\
+                .update({
+                    "asin": asin,
+                    "asin_status": "manual",
+                    "updated_at": datetime.utcnow().isoformat()
+                })\
+                .eq("id", product_id)\
+                .execute()
+        
+        # Update stage and queue for analysis
+        supabase.table("product_sources")\
+            .update({"stage": "new"})\
+            .eq("product_id", product_id)\
+            .execute()
+        
+        # Queue for analysis using batch_analyze_products with single product
+        try:
+            from app.tasks.analysis import batch_analyze_products
+            from uuid import uuid4
+            
+            analysis_job_id = str(uuid4())
+            supabase.table("jobs").insert({
+                "id": analysis_job_id,
+                "user_id": user_id,
+                "type": "batch_analyze",
+                "status": "pending",
+                "total_items": 1,
+                "metadata": {
+                    "triggered_by": "asin_selection",
+                    "product_id": product_id
+                }
+            }).execute()
+            
+            batch_analyze_products.delay(analysis_job_id, user_id, [product_id])
+        except Exception as e:
+            logger.warning(f"Could not queue analysis for {product_id}: {e}")
+        
+        return {
+            "success": True,
+            "message": "ASIN set and queued for analysis",
+            "asin": asin
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error setting manual ASIN for product {product_id}: {e}", exc_info=True)
+        raise HTTPException(500, str(e))

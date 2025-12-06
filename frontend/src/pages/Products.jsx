@@ -47,7 +47,7 @@ function useDebounce(value, delay) {
 }
 
 // Memoized Deal Row Component
-const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, onDelete, onSetAsin, onOpenManualPrice, analysis }) => {
+const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, onDelete, onSetAsin, onOpenManualPrice, onSelectAsin, onEnterAsin, analysis }) => {
   const roi = deal.roi || 0;
   const profit = deal.profit || 0;
   const moq = deal.moq || 1;
@@ -56,6 +56,9 @@ const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, on
   const totalProfit = moq * profit;
   const asinStatus = deal.asin_status || 'found';
   const needsAsin = asinStatus === 'not_found' || !deal.asin;
+  const needsSelection = asinStatus === 'multiple_found';
+  const potentialAsins = deal.potential_asins || [];
+  const isVariation = deal.is_variation && deal.variation_count > 1;
   
   // Pricing status from analysis
   const analysisData = analysis || {};
@@ -101,7 +104,30 @@ const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, on
         onChange={onSelect}
       />
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-        {needsAsin ? (
+        {needsSelection ? (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+            <Chip
+              label={`Choose ASIN (${potentialAsins.length})`}
+              color="warning"
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelectAsin && onSelectAsin(deal);
+              }}
+              sx={{
+                fontSize: 10,
+                height: 20,
+                cursor: 'pointer',
+                '&:hover': { bgcolor: 'warning.dark' }
+              }}
+            />
+            {deal.upc && (
+              <Typography variant="caption" color="text.secondary" fontSize={9}>
+                UPC: {deal.upc}
+              </Typography>
+            )}
+          </Box>
+        ) : needsAsin ? (
           <>
             {editingAsin ? (
               <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
@@ -129,18 +155,21 @@ const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, on
               </Box>
             ) : (
               <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-                <Chip label="Needs ASIN" color="warning" size="small" sx={{ fontSize: 10, height: 20 }} />
-                <Button
+                <Chip
+                  label="Enter ASIN"
+                  color="error"
                   size="small"
-                  variant="outlined"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setEditingAsin(true);
+                    onEnterAsin && onEnterAsin(deal);
                   }}
-                  sx={{ minWidth: 60, height: 24, fontSize: 10 }}
-                >
-                  Add
-                </Button>
+                  sx={{
+                    fontSize: 10,
+                    height: 20,
+                    cursor: 'pointer',
+                    '&:hover': { bgcolor: 'error.dark' }
+                  }}
+                />
               </Box>
             )}
             {deal.upc && (
@@ -150,9 +179,24 @@ const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, on
             )}
           </>
         ) : (
-          <Typography variant="body2" fontFamily="monospace" fontSize={12}>
-            {deal.asin}
-          </Typography>
+          <>
+            <Typography variant="body2" fontFamily="monospace" fontSize={12}>
+              {deal.asin}
+            </Typography>
+            {isVariation && (
+              <Chip
+                label={`Variation (${deal.variation_count})`}
+                size="small"
+                variant="outlined"
+                sx={{ fontSize: 9, height: 18, mt: 0.5 }}
+              />
+            )}
+            {deal.upc && (
+              <Typography variant="caption" color="text.secondary" fontSize={9}>
+                UPC: {deal.upc}
+              </Typography>
+            )}
+          </>
         )}
       </Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
@@ -333,6 +377,9 @@ export default function Products() {
   const [analyzing, setAnalyzing] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, deal: null });
   const [manualPriceDialog, setManualPriceDialog] = useState({ open: false, deal: null, analysis: null });
+  const [asinSelectionDialog, setAsinSelectionDialog] = useState({ open: false, product: null });
+  const [manualAsinDialog, setManualAsinDialog] = useState({ open: false, product: null, asinInput: '' });
+  const [counts, setCounts] = useState({ all: 0, found: 0, not_found: 0, multiple_found: 0, manual: 0 });
   const { hasFeature, promptUpgrade } = useFeatureGate();
   const { showToast } = useToast();
 
@@ -386,6 +433,11 @@ export default function Products() {
         stages: { ...defaultStages, ...(statsData.stages || {}) },
         total: statsData.total || 0
       });
+      
+      // Get ASIN status counts from deals response
+      if (dealsRes.data?.counts) {
+        setCounts(dealsRes.data.counts);
+      }
       
       // DEBUG: Log actual data structure
       console.log('Products loaded:', dealsData.length, 'items');
@@ -558,6 +610,34 @@ export default function Products() {
     }
   };
 
+  const handleSelectAsin = async (productId, asin) => {
+    try {
+      await api.post(`/products/${productId}/select-asin`, { asin });
+      showToast('ASIN selected and queued for analysis', 'success');
+      setAsinSelectionDialog({ open: false, product: null });
+      fetchData(true);
+    } catch (err) {
+      console.error('Failed to select ASIN:', err);
+      showToast('Failed to select ASIN: ' + (err.response?.data?.detail || err.message), 'error');
+    }
+  };
+
+  const handleManualAsinSubmit = async () => {
+    if (!manualAsinDialog.product || manualAsinDialog.asinInput.length !== 10) return;
+    
+    try {
+      await api.patch(`/products/${manualAsinDialog.product.product_id || manualAsinDialog.product.id}/manual-asin`, {
+        asin: manualAsinDialog.asinInput.toUpperCase()
+      });
+      showToast('ASIN set and queued for analysis', 'success');
+      setManualAsinDialog({ open: false, product: null, asinInput: '' });
+      fetchData(true);
+    } catch (err) {
+      console.error('Failed to set manual ASIN:', err);
+      showToast('Failed to set ASIN: ' + (err.response?.data?.detail || err.message), 'error');
+    }
+  };
+
   const handleDeleteClick = (deal) => {
     setDeleteDialog({ open: true, deal, deleting: false });
   };
@@ -714,7 +794,7 @@ export default function Products() {
             ))}
           </Select>
         </FormControl>
-        <FormControl size="small" sx={{ width: 150 }}>
+        <FormControl size="small" sx={{ width: 180 }}>
           <InputLabel>ASIN Status</InputLabel>
           <Select
             value={filters.asinStatus}
@@ -724,10 +804,11 @@ export default function Products() {
               setTimeout(() => fetchData(), 500);
             }}
           >
-            <MenuItem value="all">All Products</MenuItem>
-            <MenuItem value="found">ASIN Found</MenuItem>
-            <MenuItem value="not_found">Needs ASIN</MenuItem>
-            <MenuItem value="manual">Manual Entry</MenuItem>
+            <MenuItem value="all">All Products ({counts.all || 0})</MenuItem>
+            <MenuItem value="found">ASIN Found ({counts.found || 0})</MenuItem>
+            <MenuItem value="multiple_found">Needs Selection ({counts.multiple_found || 0})</MenuItem>
+            <MenuItem value="not_found">Needs ASIN ({counts.not_found || 0})</MenuItem>
+            <MenuItem value="manual">Manual Entry ({counts.manual || 0})</MenuItem>
           </Select>
         </FormControl>
         <FormControl size="small" sx={{ width: 150 }}>
@@ -865,6 +946,8 @@ export default function Products() {
                 onUpdateMoq={handleUpdateMoq}
                 onDelete={handleDeleteClick}
                 onSetAsin={handleSetAsin}
+                onSelectAsin={(deal) => setAsinSelectionDialog({ open: true, product: deal })}
+                onEnterAsin={(deal) => setManualAsinDialog({ open: true, product: deal, asinInput: '' })}
                 onOpenManualPrice={(deal, analysis) => setManualPriceDialog({ open: true, deal, analysis })}
                 analysis={deal.analysis}
               />
@@ -961,6 +1044,137 @@ export default function Products() {
           fetchData(true);
         }}
       />
+
+      {/* ASIN Selection Dialog - Multiple ASINs Found */}
+      <Dialog
+        open={asinSelectionDialog.open}
+        onClose={() => setAsinSelectionDialog({ open: false, product: null })}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Choose the Correct ASIN</DialogTitle>
+        <DialogContent>
+          {asinSelectionDialog.product && (
+            <>
+              <Alert severity="info" sx={{ mb: 2 }}>
+                Multiple products found for UPC <strong>{asinSelectionDialog.product.upc}</strong>.
+                Select the one that matches your supplier's product.
+              </Alert>
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2, mt: 2 }}>
+                {asinSelectionDialog.product.potential_asins?.map((asinOption) => (
+                  <Card
+                    key={asinOption.asin}
+                    sx={{
+                      cursor: 'pointer',
+                      '&:hover': { boxShadow: 6 },
+                      border: '2px solid transparent',
+                      transition: 'all 0.2s'
+                    }}
+                    onClick={() => handleSelectAsin(
+                      asinSelectionDialog.product.product_id || asinSelectionDialog.product.id,
+                      asinOption.asin
+                    )}
+                  >
+                    {asinOption.image && (
+                      <Box
+                        component="img"
+                        src={asinOption.image}
+                        alt={asinOption.title}
+                        sx={{
+                          width: '100%',
+                          height: 200,
+                          objectFit: 'contain',
+                          p: 2,
+                          bgcolor: 'background.default'
+                        }}
+                      />
+                    )}
+                    <DialogContent>
+                      <Typography variant="h6" gutterBottom>
+                        {asinOption.title || 'Unknown Product'}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" fontFamily="monospace">
+                        ASIN: {asinOption.asin}
+                      </Typography>
+                      {asinOption.brand && (
+                        <Typography variant="body2" color="text.secondary">
+                          Brand: {asinOption.brand}
+                        </Typography>
+                      )}
+                      {asinOption.category && (
+                        <Typography variant="caption" color="text.secondary">
+                          Category: {asinOption.category}
+                        </Typography>
+                      )}
+                      <Button
+                        variant="contained"
+                        fullWidth
+                        sx={{ mt: 2 }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelectAsin(
+                            asinSelectionDialog.product.product_id || asinSelectionDialog.product.id,
+                            asinOption.asin
+                          );
+                        }}
+                      >
+                        Select This One
+                      </Button>
+                    </DialogContent>
+                  </Card>
+                ))}
+              </Box>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAsinSelectionDialog({ open: false, product: null })}>Cancel</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Manual ASIN Entry Dialog */}
+      <Dialog
+        open={manualAsinDialog.open}
+        onClose={() => setManualAsinDialog({ open: false, product: null, asinInput: '' })}
+      >
+        <DialogTitle>Enter ASIN Manually</DialogTitle>
+        <DialogContent>
+          {manualAsinDialog.product && (
+            <>
+              <Alert severity="info" sx={{ mb: 2 }}>
+                No ASIN found for UPC <strong>{manualAsinDialog.product.upc}</strong>.
+                Please enter the Amazon ASIN manually.
+              </Alert>
+              <TextField
+                autoFocus
+                margin="dense"
+                label="ASIN (10 characters)"
+                type="text"
+                fullWidth
+                value={manualAsinDialog.asinInput}
+                onChange={(e) => setManualAsinDialog({
+                  ...manualAsinDialog,
+                  asinInput: e.target.value.toUpperCase().slice(0, 10)
+                })}
+                inputProps={{ maxLength: 10, style: { fontFamily: 'monospace', fontSize: 14 } }}
+                helperText="Example: B07VRZ8TK3"
+              />
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setManualAsinDialog({ open: false, product: null, asinInput: '' })}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleManualAsinSubmit}
+            variant="contained"
+            disabled={manualAsinDialog.asinInput.length !== 10}
+          >
+            Save ASIN
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog 

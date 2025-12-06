@@ -431,69 +431,125 @@ async def analyze_batch(
 
 @router.get("/{deal_id}")
 async def get_deal(deal_id: str, current_user=Depends(get_current_user)):
-    """Get a single deal with full analysis data. Supports both telegram_deals and product_sources (new schema)."""
+    """
+    Get a single deal with COMPLETE data from DATABASE.
+    
+    NO external API calls. Returns everything from database:
+    - Product info (asin, title, brand, image_url)
+    - Pricing (sell_price, buy_cost, fees)
+    - Analysis data (bsr, sales_estimate, competition, etc.)
+    - Variation info (parent_asin, variation_count)
+    
+    Should take ~50ms, not 10+ seconds.
+    """
     user_id = str(current_user.id)
     
     try:
-        # First try product_deals view (new schema)
-        result = supabase.table("product_deals")\
-            .select("*")\
-            .eq("deal_id", deal_id)\
-            .eq("user_id", user_id)\
-            .limit(1)\
-            .execute()
+        # Try product_deals view first (new schema) - join with analyses in ONE query
+        result = (supabase.table("product_deals")
+            .select("*, analyses(*)")
+            .eq("deal_id", deal_id)
+            .eq("user_id", user_id)
+            .limit(1)
+            .execute())
         
         if result.data and len(result.data) > 0:
             deal = result.data[0]
             
-            # Get full analysis if analysis_id exists
-            if deal.get("analysis_id"):
-                analysis_result = supabase.table("analyses")\
-                    .select("*")\
-                    .eq("id", deal["analysis_id"])\
-                    .eq("user_id", user_id)\
-                    .limit(1)\
-                    .execute()
-                
-                if analysis_result.data:
-                    deal["analysis"] = analysis_result.data[0]
-                else:
-                    deal["analysis"] = None
-            else:
-                deal["analysis"] = None
+            # Extract analysis data (Supabase returns as list or dict)
+            analysis = None
+            if deal.get("analyses"):
+                if isinstance(deal["analyses"], list) and len(deal["analyses"]) > 0:
+                    analysis = deal["analyses"][0]
+                elif isinstance(deal["analyses"], dict):
+                    analysis = deal["analyses"]
             
-            # Map product_deals fields to expected format
+            # Build complete response with ALL data from database
             return {
+                # Basic info
                 "id": deal.get("deal_id"),
                 "deal_id": deal.get("deal_id"),
                 "product_id": deal.get("product_id"),
                 "asin": deal.get("asin"),
-                "title": deal.get("title"),
-                "brand": deal.get("brand_name"),
-                "image_url": deal.get("image_url"),
+                "title": deal.get("title") or (analysis.get("product_title") if analysis else None),
+                "brand": deal.get("brand_name") or (analysis.get("brand") if analysis else None),
+                "image_url": deal.get("image_url") or (analysis.get("image_url") if analysis else None),
+                "upc": deal.get("upc"),
+                
+                # Pricing (from database)
                 "buy_cost": deal.get("buy_cost"),
                 "moq": deal.get("moq"),
-                "sell_price": deal.get("sell_price"),
-                "fees_total": deal.get("fees_total"),
-                "bsr": deal.get("bsr"),
-                "seller_count": deal.get("seller_count"),
-                "fba_seller_count": deal.get("fba_seller_count"),
-                "amazon_sells": deal.get("amazon_sells"),
-                "roi": deal.get("roi"),
-                "profit": deal.get("profit"),
+                "sell_price": deal.get("sell_price") or (analysis.get("sell_price") if analysis else None),
+                "fees_total": deal.get("fees_total") or (analysis.get("fees_total") if analysis else None),
+                "referral_fee": analysis.get("referral_fee") if analysis else None,
+                "fba_fee": analysis.get("fba_fee") if analysis else None,
+                
+                # Profitability (from database)
+                "profit": deal.get("profit") or (analysis.get("net_profit") if analysis else None),
+                "net_profit": analysis.get("net_profit") if analysis else None,
+                "roi": deal.get("roi") or (analysis.get("roi") if analysis else None),
+                "profit_margin": analysis.get("profit_margin") if analysis else None,
+                
+                # Analysis data (from database)
+                "bsr": deal.get("bsr") or (analysis.get("bsr") if analysis else None),
+                "sales_estimate": analysis.get("sales_drops_30") if analysis else None,
+                "estimated_monthly_sales": analysis.get("estimated_monthly_sales") if analysis else None,
+                "seller_count": deal.get("seller_count") or (analysis.get("total_seller_count") if analysis else None),
+                "fba_seller_count": deal.get("fba_seller_count") or (analysis.get("fba_seller_count") if analysis else None),
+                "fbm_seller_count": analysis.get("fbm_seller_count") if analysis else None,
+                "amazon_sells": deal.get("amazon_sells") or (analysis.get("amazon_was_seller") if analysis else None),
+                "amazon_was_seller": analysis.get("amazon_was_seller") if analysis else None,
+                
+                # Variation info (from database)
+                "parent_asin": deal.get("parent_asin") or (analysis.get("parent_asin") if analysis else None),
+                "is_variation": deal.get("is_variation"),
+                "variation_count": deal.get("variation_count"),
+                
+                # Dimensions & shipping (from database)
+                "item_weight_lb": analysis.get("item_weight_lb") if analysis else None,
+                "item_length_in": analysis.get("item_length_in") if analysis else None,
+                "item_width_in": analysis.get("item_width_in") if analysis else None,
+                "item_height_in": analysis.get("item_height_in") if analysis else None,
+                "size_tier": analysis.get("size_tier") if analysis else None,
+                "inbound_shipping": analysis.get("inbound_shipping") if analysis else None,
+                "prep_cost": analysis.get("prep_cost") if analysis else None,
+                "total_landed_cost": analysis.get("total_landed_cost") if analysis else None,
+                
+                # Promo pricing (from database)
+                "has_promo": deal.get("has_promo"),
+                "promo_qty": deal.get("promo_qty"),
+                "promo_percent": deal.get("promo_percent"),
+                "promo_buy_cost": deal.get("promo_buy_cost"),
+                "promo_roi": analysis.get("promo_roi") if analysis else None,
+                "promo_landed_cost": analysis.get("promo_landed_cost") if analysis else None,
+                
+                # 365-day analysis (from database)
+                "fba_lowest_365d": analysis.get("fba_lowest_365d") if analysis else None,
+                "fba_lowest_date": analysis.get("fba_lowest_date") if analysis else None,
+                "worst_case_profit": analysis.get("worst_case_profit") if analysis else None,
+                "still_profitable_at_worst": analysis.get("still_profitable_at_worst") if analysis else None,
+                
+                # Pricing status (from database)
+                "pricing_status": analysis.get("pricing_status") if analysis else None,
+                "pricing_status_reason": analysis.get("pricing_status_reason") if analysis else None,
+                
+                # Metadata
                 "stage": deal.get("stage"),
                 "status": deal.get("product_status"),
                 "supplier_id": deal.get("supplier_id"),
                 "supplier_name": deal.get("supplier_name"),
                 "source": deal.get("source"),
                 "source_detail": deal.get("source_detail"),
-                "analysis": deal.get("analysis"),
                 "analysis_id": deal.get("analysis_id"),
+                "analyzed_at": analysis.get("created_at") if analysis else deal.get("deal_created_at"),
                 "created_at": deal.get("deal_created_at"),
-                "updated_at": deal.get("deal_updated_at")
+                "updated_at": deal.get("deal_updated_at"),
+                
+                # Full analysis object for backwards compatibility
+                "analysis": analysis
             }
         
-        # Fallback to telegram_deals (old schema)
+        # Fallback to telegram_deals (old schema) - still join analyses in one query
         result = supabase.table("telegram_deals")\
             .select("""
                 *,
@@ -510,27 +566,22 @@ async def get_deal(deal_id: str, current_user=Depends(get_current_user)):
         
         deal = result.data[0]
         
-        # Flatten nested data
+        # Extract analysis data
+        analysis = None
         if "analyses" in deal:
-            analysis = deal.pop("analyses")
-            if analysis and len(analysis) > 0:
-                deal["analysis"] = analysis[0]
-            else:
-                deal["analysis"] = None
-        else:
-            deal["analysis"] = None
+            analysis_data = deal.pop("analyses")
+            if analysis_data and len(analysis_data) > 0:
+                analysis = analysis_data[0]
         
+        # Extract channel data
+        channel = None
         if "telegram_channels" in deal:
-            channel = deal.pop("telegram_channels")
-            if channel and len(channel) > 0:
-                deal["channel"] = channel[0]
-            else:
-                deal["channel"] = None
-        else:
-            deal["channel"] = None
+            channel_data = deal.pop("telegram_channels")
+            if channel_data and len(channel_data) > 0:
+                channel = channel_data[0]
         
         # Fallback: find analysis by ASIN if not linked
-        if not deal["analysis"]:
+        if not analysis:
             analysis_result = supabase.table("analyses")\
                 .select("*")\
                 .eq("user_id", user_id)\
@@ -540,8 +591,10 @@ async def get_deal(deal_id: str, current_user=Depends(get_current_user)):
                 .execute()
             
             if analysis_result.data:
-                deal["analysis"] = analysis_result.data[0]
+                analysis = analysis_result.data[0]
         
+        deal["analysis"] = analysis
+        deal["channel"] = channel
         return deal
         
     except HTTPException:
@@ -554,66 +607,74 @@ async def get_deal(deal_id: str, current_user=Depends(get_current_user)):
 
 
 @router.post("/{deal_id}/analyze")
+@router.post("/{deal_id}/reanalyze")  # Alias for clarity
 async def analyze_deal(deal_id: str, current_user=Depends(get_current_user)):
-    """Analyze a single deal."""
+    """
+    Re-analyze a deal with fresh data from external APIs.
+    
+    This is the ONLY place external APIs (SP-API, Keepa) should be called.
+    Updates database with fresh data, then returns updated deal.
+    
+    Only called when user explicitly clicks "Re-analyze" button.
+    """
     user_id = str(current_user.id)
     
     try:
-        # Get deal - use limit(1) NOT single()
-        deal_result = supabase.table("telegram_deals")\
-            .select("asin, buy_cost, channel_id")\
-            .eq("id", deal_id)\
+        # Get deal from database first
+        deal_result = supabase.table("product_deals")\
+            .select("*")\
+            .eq("deal_id", deal_id)\
             .eq("user_id", user_id)\
             .limit(1)\
             .execute()
         
+        # Fallback to telegram_deals if not found
         if not deal_result.data:
-            raise HTTPException(404, "Deal not found")
-        
-        deal = deal_result.data[0]
-        
-        # Update status to analyzing
-        supabase.table("telegram_deals").update({
-            "status": "analyzing"
-        }).eq("id", deal_id).execute()
-        
-        # Get supplier_id from channel
-        supplier_id = None
-        if deal.get("channel_id"):
-            try:
-                channel_result = supabase.table("telegram_channels")\
-                    .select("supplier_id")\
-                    .eq("id", deal["channel_id"])\
-                    .limit(1)\
-                    .execute()
-                if channel_result.data and channel_result.data[0].get("supplier_id"):
-                    supplier_id = channel_result.data[0]["supplier_id"]
-            except:
-                pass
-        
-        # Get or create product for this deal
-        asin = deal["asin"]
-        existing_product = supabase.table("products")\
-            .select("id")\
-            .eq("user_id", user_id)\
-            .eq("asin", asin)\
-            .limit(1)\
-            .execute()
-        
-        if existing_product.data:
-            product_id = existing_product.data[0]["id"]
+            deal_result = supabase.table("telegram_deals")\
+                .select("id, asin, buy_cost, channel_id")\
+                .eq("id", deal_id)\
+                .eq("user_id", user_id)\
+                .limit(1)\
+                .execute()
+            
+            if not deal_result.data:
+                raise HTTPException(404, "Deal not found")
+            
+            deal = deal_result.data[0]
+            asin = deal["asin"]
+            product_id = None
+            
+            # Try to find product by ASIN
+            product_result = supabase.table("products")\
+                .select("id")\
+                .eq("user_id", user_id)\
+                .eq("asin", asin)\
+                .limit(1)\
+                .execute()
+            
+            if product_result.data:
+                product_id = product_result.data[0]["id"]
         else:
+            deal = deal_result.data[0]
+            asin = deal.get("asin")
+            product_id = deal.get("product_id")
+        
+        if not asin:
+            raise HTTPException(400, "Deal has no ASIN")
+        
+        if not product_id:
+            # Create product if doesn't exist
             new_product = supabase.table("products").insert({
                 "user_id": user_id,
                 "asin": asin,
                 "status": "pending"
             }).execute()
             product_id = new_product.data[0]["id"] if new_product.data else None
+            
+            if not product_id:
+                raise HTTPException(500, "Failed to create product")
         
-        if not product_id:
-            raise HTTPException(500, "Failed to create product")
-        
-        # Queue to Celery
+        # Queue analysis to Celery (handles SP-API + Keepa calls)
         job_id = str(uuid.uuid4())
         supabase.table("jobs").insert({
             "id": job_id,
@@ -621,36 +682,26 @@ async def analyze_deal(deal_id: str, current_user=Depends(get_current_user)):
             "type": "single_analyze",
             "status": "pending",
             "total_items": 1,
-            "metadata": {"deal_id": deal_id, "product_id": product_id}
+            "metadata": {"deal_id": deal_id, "product_id": product_id, "triggered_by": "manual_reanalyze"}
         }).execute()
         
         analyze_single_product.delay(job_id, user_id, product_id, asin)
-        
-        # Update deal to link to product
-        supabase.table("telegram_deals").update({
-            "status": "analyzing",
-            "product_id": product_id
-        }).eq("id", deal_id).execute()
         
         return {
             "success": True,
             "job_id": job_id,
             "status": "queued",
-            "message": "Analysis queued. Poll /jobs/{job_id} for results."
+            "message": "Re-analysis queued. The product will be updated with fresh data from SP-API and Keepa.",
+            "note": "Refresh the page in a few seconds to see updated data."
         }
         
     except HTTPException:
         raise
     except Exception as e:
-        # Mark as error
-        supabase.table("telegram_deals").update({
-            "status": "error"
-        }).eq("id", deal_id).execute()
-        
-        logger.error(f"Analysis error for {deal_id}: {e}")
+        logger.error(f"Re-analysis error for {deal_id}: {e}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(500, f"Analysis failed: {str(e)}")
+        raise HTTPException(500, f"Re-analysis failed: {str(e)}")
 
 
 @router.post("/{deal_id}/save")

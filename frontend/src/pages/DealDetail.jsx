@@ -4,7 +4,7 @@ import {
   Box, Typography, Card, CardContent, Grid, Chip, Button,
   IconButton, Tabs, Tab, CircularProgress, Tooltip, Divider,
   Table, TableBody, TableRow, TableCell, Accordion, AccordionSummary,
-  AccordionDetails, InputAdornment
+  AccordionDetails, InputAdornment, Alert, AlertTitle
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {
@@ -47,7 +47,6 @@ export default function DealDetail() {
     eligibility: null,
     sales: null
   });
-  const [keepaData, setKeepaData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
   const [allDealIds, setAllDealIds] = useState([]);
@@ -62,75 +61,28 @@ export default function DealDetail() {
   const fetchDeal = async () => {
     setLoading(true);
     try {
+      // ✅ ONE API call - gets everything from database (50ms, not 10+ seconds)
       const res = await api.get(`/deals/${dealId}`);
-      setDeal(res.data);
+      const dealData = res.data;
+      
+      setDeal(dealData);
       
       // Extract analysis data - handle both direct and JSONB structure
-      let extractedAnalysis = res.data?.analysis;
+      let extractedAnalysis = dealData?.analysis;
       if (extractedAnalysis?.analysis_data) {
         extractedAnalysis = { ...extractedAnalysis, ...extractedAnalysis.analysis_data };
       }
       setAnalysis(extractedAnalysis);
       
-      const asin = res.data?.asin;
-      const sellPrice = extractedAnalysis?.sell_price || res.data?.buy_cost || 0;
-      
-      if (asin) {
-        // Fetch SP-API data and Keepa in parallel
-        // IMPORTANT: Call /sp-api/product/{asin} FIRST to get catalog data (title, brand, image)
-        const [productRes, offersRes, feesRes, eligibilityRes, salesRes, keepaRes] = await Promise.allSettled([
-          api.get(`/sp-api/product/${asin}`).catch(() => null), // Catalog data (title, brand, image)
-          api.get(`/sp-api/product/${asin}/offers`).catch(() => null),
-          sellPrice > 0 ? api.get(`/sp-api/product/${asin}/fees?price=${sellPrice}`).catch(() => null) : Promise.resolve(null),
-          api.get(`/sp-api/product/${asin}/eligibility`).catch(() => null),
-          api.get(`/sp-api/product/${asin}/sales-estimate`).catch(() => null),
-          api.get(`/keepa/product/${asin}?days=90`).catch(() => null)
-        ]);
-        
-        // Extract catalog data and update deal if missing
-        const productData = productRes.status === 'fulfilled' && productRes.value?.data ? productRes.value.data : null;
-        if (productData && (productData.title || productData.image_url || productData.brand)) {
-          // Update deal with catalog data if missing
-          setDeal(prev => ({
-            ...prev,
-            title: prev?.title || productData.title,
-            brand: prev?.brand || productData.brand,
-            image_url: prev?.image_url || productData.image_url,
-            sales_rank: prev?.sales_rank || productData.sales_rank
-          }));
-        }
-        
-        setSpData({
-          product: productData, // Store catalog data
-          offers: offersRes.status === 'fulfilled' && offersRes.value?.data ? offersRes.value.data : null,
-          fees: feesRes.status === 'fulfilled' && feesRes.value?.data ? feesRes.value.data : null,
-          eligibility: eligibilityRes.status === 'fulfilled' && eligibilityRes.value?.data ? eligibilityRes.value.data : null,
-          sales: salesRes.status === 'fulfilled' && salesRes.value?.data ? salesRes.value.data : null
-        });
-        
-        if (keepaRes.status === 'fulfilled' && keepaRes.value?.data) {
-          const keepaResponse = keepaRes.value.data;
-          // Check if Keepa returned an error (our fallback returns structured empty response)
-          if (keepaResponse.error) {
-            console.warn('Keepa API error:', keepaResponse.error);
-            // Still set data so UI can handle gracefully
-            setKeepaData(keepaResponse);
-          } else {
-            setKeepaData(keepaResponse);
-          }
-        } else {
-          // Keepa request failed - set empty structure
-          setKeepaData({
-            asin: asin,
-            error: "Keepa API request failed",
-            stats: {},
-            price_history: [],
-            rank_history: [],
-            current: {},
-            averages: {}
-          });
-        }
-      }
+      // All data is already in the response from database - no need for external APIs
+      // Set empty structures for backwards compatibility with components that expect these
+      setSpData({
+        product: null, // Not needed - data in deal/analysis
+        offers: null, // Not needed - data in deal/analysis
+        fees: null, // Not needed - data in deal/analysis (fees_total, referral_fee, fba_fee)
+        eligibility: null, // Not needed - can be inferred from deal status
+        sales: null // Not needed - data in analysis (bsr, sales_estimate)
+      });
     } catch (err) {
       console.error('Failed to fetch deal:', err);
     } finally {
@@ -157,12 +109,24 @@ export default function DealDetail() {
     }
   };
 
+  const [reanalyzing, setReanalyzing] = useState(false);
+  
   const handleReanalyze = async () => {
+    setReanalyzing(true);
     try {
-      await api.post(`/deals/${dealId}/analyze`);
-      fetchDeal();
+      const response = await api.post(`/deals/${dealId}/reanalyze`);
+      // Show success message
+      alert(response.data.message || 'Product re-analysis queued. Refreshing in 3 seconds...');
+      
+      // Wait 3 seconds then refresh to get updated data
+      setTimeout(() => {
+        fetchDeal();
+      }, 3000);
     } catch (err) {
       console.error('Reanalyze failed:', err);
+      alert('Re-analysis failed. Please try again.');
+    } finally {
+      setReanalyzing(false);
     }
   };
 
@@ -195,8 +159,9 @@ export default function DealDetail() {
     );
   }
 
-  const isProfitable = (analysis?.roi || 0) >= 30;
-  const isEligible = spData.eligibility?.canSell !== false;
+  const isProfitable = (analysis?.roi || deal?.roi || 0) >= 30;
+  // Eligibility can be inferred from deal status - if it has analysis, it's likely eligible
+  const isEligible = deal?.status !== 'error' && (analysis?.gating_status !== 'gated' && analysis?.gating_status !== 'amazon_restricted');
 
   // Tab panels
   const tabs = [
@@ -259,10 +224,10 @@ export default function DealDetail() {
                 justifyContent: 'center',
                 overflow: 'hidden'
               }}>
-                {deal?.image_url || analysis?.image_url || spData.product?.image_url ? (
+                {deal?.image_url || analysis?.image_url ? (
                   <img 
-                    src={deal?.image_url || analysis?.image_url || spData.product?.image_url} 
-                    alt={deal?.title || analysis?.product_title || spData.product?.title || deal.asin}
+                    src={deal?.image_url || analysis?.image_url} 
+                    alt={deal?.title || analysis?.product_title || deal.asin}
                     style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                     onError={(e) => {
                       e.target.style.display = 'none';
@@ -272,7 +237,7 @@ export default function DealDetail() {
                   />
                 ) : null}
                 <Box sx={{ 
-                  display: (deal?.image_url || analysis?.image_url || spData.product?.image_url) ? 'none' : 'flex',
+                  display: (deal?.image_url || analysis?.image_url) ? 'none' : 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   width: '100%',
@@ -304,11 +269,11 @@ export default function DealDetail() {
 
               {/* Title */}
               <Typography variant="body2" sx={{ mb: 2, lineHeight: 1.4 }}>
-                {deal?.title || spData.product?.title || analysis?.product_title || deal.product_title || 'Unknown Product'}
+                {deal?.title || analysis?.product_title || deal.product_title || 'Unknown Product'}
               </Typography>
 
-              {/* Eligibility Badge */}
-              {spData.eligibility && (
+              {/* Eligibility Badge - show if we have gating status from analysis */}
+              {analysis?.gating_status && (
                 <Box sx={{ 
                   display: 'flex', 
                   alignItems: 'center', 
@@ -334,8 +299,8 @@ export default function DealDetail() {
 
               {/* Brand & Category */}
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
-                {(deal?.brand || spData.product?.brand || analysis?.brand) && (
-                  <Chip label={deal?.brand || spData.product?.brand || analysis?.brand} size="small" variant="outlined" />
+                {(deal?.brand || analysis?.brand) && (
+                  <Chip label={deal?.brand || analysis?.brand} size="small" variant="outlined" />
                 )}
                 {analysis?.category && (
                   <Chip label={analysis.category} size="small" variant="outlined" />
@@ -573,7 +538,7 @@ export default function DealDetail() {
                 <Typography variant="body2" color="text.secondary">Sell Price</Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Typography variant="body2" fontWeight="600">
-                    ${(spData.offers?.buy_box_price || analysis?.sell_price)?.toFixed(2) || '—'}
+                    ${(deal?.sell_price || analysis?.sell_price)?.toFixed(2) || '—'}
                   </Typography>
                   {analysis?.price_source && analysis.price_source.startsWith('sp_api') && (
                     <Chip 
@@ -604,13 +569,13 @@ export default function DealDetail() {
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                 <Typography variant="body2" color="text.secondary">Referral Fee</Typography>
                 <Typography variant="body2">
-                  ${(spData.fees?.referralFee || analysis?.referral_fee)?.toFixed(2) || '—'}
+                  ${(analysis?.referral_fee || deal?.referral_fee)?.toFixed(2) || '—'}
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                 <Typography variant="body2" color="text.secondary">FBA Fee</Typography>
                 <Typography variant="body2">
-                  ${(spData.fees?.fbaFee || analysis?.fba_fee)?.toFixed(2) || '—'}
+                  ${(analysis?.fba_fee || deal?.fba_fee)?.toFixed(2) || '—'}
                 </Typography>
               </Box>
               <Divider sx={{ my: 1 }} />
@@ -627,37 +592,45 @@ export default function DealDetail() {
                 </Typography>
               </Box>
 
-              {/* Competition Summary */}
-              {spData.offers && (
+              {/* Competition Summary - from database */}
+              {(deal?.seller_count !== undefined || analysis?.total_seller_count !== undefined) && (
                 <>
                   <Divider sx={{ my: 2 }} />
                   <Typography variant="overline" color="text.secondary">Competition</Typography>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, mt: 1 }}>
-                    <Typography variant="body2" color="text.secondary">Buy Box Price</Typography>
+                    <Typography variant="body2" color="text.secondary">Total Sellers</Typography>
                     <Typography variant="body2" fontWeight="600">
-                      ${spData.offers.buy_box_price?.toFixed(2) || '—'}
+                      {deal?.seller_count || analysis?.total_seller_count || '—'}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="body2" color="text.secondary">FBA Sellers</Typography>
+                    <Typography variant="body2" fontWeight="600">
+                      {deal?.fba_seller_count || analysis?.fba_seller_count || '—'}
                     </Typography>
                   </Box>
                 </>
               )}
 
-              {/* Sales Estimate */}
-              {spData.sales && (
+              {/* Sales Estimate - from database */}
+              {(deal?.bsr || analysis?.bsr) && (
                 <>
                   <Divider sx={{ my: 2 }} />
                   <Typography variant="overline" color="text.secondary">Sales</Typography>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, mt: 1 }}>
                     <Typography variant="body2" color="text.secondary">BSR</Typography>
                     <Typography variant="body2" fontWeight="600">
-                      #{spData.sales.sales_rank?.toLocaleString() || '—'}
+                      #{(deal?.bsr || analysis?.bsr)?.toLocaleString() || '—'}
                     </Typography>
                   </Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography variant="body2" color="text.secondary">Est. Monthly</Typography>
-                    <Typography variant="body2" fontWeight="600">
-                      {spData.sales.est_monthly_sales || '—'} units
-                    </Typography>
-                  </Box>
+                  {(deal?.sales_estimate || analysis?.sales_drops_30 || analysis?.estimated_monthly_sales) && (
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                      <Typography variant="body2" color="text.secondary">Est. Monthly</Typography>
+                      <Typography variant="body2" fontWeight="600">
+                        {(deal?.sales_estimate || analysis?.sales_drops_30 || analysis?.estimated_monthly_sales)?.toLocaleString() || '—'} units
+                      </Typography>
+                    </Box>
+                  )}
                 </>
               )}
 
@@ -759,11 +732,19 @@ export default function DealDetail() {
                 <Button 
                   variant="outlined" 
                   fullWidth
-                  startIcon={<RefreshCw size={16} />}
+                  startIcon={reanalyzing ? <CircularProgress size={16} /> : <RefreshCw size={16} />}
                   onClick={handleReanalyze}
+                  disabled={reanalyzing}
                 >
-                  Re-analyze
+                  {reanalyzing ? 'Re-analyzing...' : 'Re-analyze'}
                 </Button>
+                
+                {/* Last analyzed timestamp */}
+                {deal?.analyzed_at && (
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, textAlign: 'center', display: 'block' }}>
+                    Last analyzed: {new Date(deal.analyzed_at).toLocaleString()}
+                  </Typography>
+                )}
                 <FavoriteButton 
                   productId={deal?.id || deal?.product_id}
                   size="medium"
@@ -801,9 +782,9 @@ export default function DealDetail() {
             {activeTab === 0 && (
               <ProfitCalculator
                 initialBuyCost={deal.buy_cost || 0}
-                sellPrice={spData.offers?.buy_box_price || analysis?.sell_price || 0}
-                referralFee={spData.fees?.referralFee || analysis?.referral_fee || 0}
-                fbaFee={spData.fees?.fbaFee || analysis?.fba_fee || 0}
+                sellPrice={deal?.sell_price || analysis?.sell_price || 0}
+                referralFee={analysis?.referral_fee || deal?.referral_fee || 0}
+                fbaFee={analysis?.fba_fee || deal?.fba_fee || 0}
                 initialQuantity={deal.moq || 1}
               />
             )}
@@ -813,41 +794,29 @@ export default function DealDetail() {
               <MarketIntelligence 
                 deal={deal}
                 analysis={analysis}
-                spApiOffers={spData.offers}
-                spApiSalesEstimate={spData.sales}
+                spApiOffers={null} // Not needed - data in deal/analysis
+                spApiSalesEstimate={null} // Not needed - data in analysis
               />
             )}
 
             {/* Price History Tab */}
             {activeTab === 2 && (
-              <Box>
-                {keepaData?.error ? (
-                  <Alert severity="warning" sx={{ mb: 2 }}>
-                    <Typography variant="body2">
-                      Keepa data not available: {keepaData.error}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                      This may be due to a missing Keepa API key or the product not being tracked by Keepa.
-                    </Typography>
-                  </Alert>
-                ) : null}
-                <PriceHistoryChart asin={deal.asin} buyCost={deal.buy_cost} keepaData={keepaData} />
-              </Box>
+              <PriceHistoryChart asin={deal.asin} buyCost={deal.buy_cost} deal={deal} analysis={analysis} />
             )}
 
             {/* Competitors Tab */}
             {activeTab === 3 && (
-              <CompetitorAnalysis asin={deal.asin} spOffers={spData.offers} />
+              <CompetitorAnalysis asin={deal.asin} deal={deal} analysis={analysis} />
             )}
 
             {/* Variations Tab */}
             {activeTab === 4 && (
-              <VariationAnalysis asin={deal.asin} keepaData={keepaData} />
+              <VariationAnalysis asin={deal.asin} deal={deal} analysis={analysis} />
             )}
 
             {/* Listing Quality Tab */}
             {activeTab === 5 && (
-              <ListingScore analysis={analysis} keepaData={keepaData} />
+              <ListingScore analysis={analysis} deal={deal} />
             )}
           </Box>
         </Grid>

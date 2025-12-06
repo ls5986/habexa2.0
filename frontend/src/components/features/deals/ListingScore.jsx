@@ -5,7 +5,7 @@ import {
 import { FileText, CheckCircle, AlertTriangle, Star } from 'lucide-react';
 import { habexa } from '../../../theme';
 
-export default function ListingScore({ analysis, keepaData }) {
+export default function ListingScore({ analysis, deal }) {
   // Calculate listing quality score
   const calculateScore = () => {
     if (!analysis) return 0;

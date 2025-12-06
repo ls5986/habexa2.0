@@ -4,7 +4,7 @@ Converts UPC/EAN/GTIN to ASIN when ASIN is not available.
 Supports batch conversion of up to 20 UPCs per request for efficiency.
 """
 import logging
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Tuple
 from app.services.sp_api_client import sp_api_client
 
 logger = logging.getLogger(__name__)
@@ -24,15 +24,60 @@ class UPCConverter:
         """
         Convert UPC/EAN/GTIN to ASIN using SP-API.
         
+        DEPRECATED: Use upc_to_asins() instead to get all matches.
+        This method is kept for backward compatibility.
+        
         Args:
             upc: UPC/EAN/GTIN code (12-14 digits)
             marketplace_id: Amazon marketplace ID
             
         Returns:
-            ASIN if found, None otherwise
+            First ASIN if found, None otherwise
+        """
+        asins, status = await self.upc_to_asins(upc, marketplace_id)
+        
+        if status == "found" and asins:
+            return asins[0].get("asin")
+        elif status == "multiple" and asins:
+            # Return first ASIN even if multiple found (for backward compat)
+            logger.warning(f"Multiple ASINs found for UPC {upc}, returning first: {asins[0].get('asin')}")
+            return asins[0].get("asin")
+        
+        return None
+    
+    async def upc_to_asins(
+        self,
+        upc: str,
+        marketplace_id: str = "ATVPDKIKX0DER"
+    ) -> Tuple[List[Dict[str, Any]], str]:
+        """
+        Convert UPC/EAN/GTIN to ASINs using SP-API.
+        Returns all matching ASINs with full product info.
+        
+        Args:
+            upc: UPC/EAN/GTIN code (12-14 digits)
+            marketplace_id: Amazon marketplace ID
+            
+        Returns:
+            Tuple of (list of ASIN dicts, status)
+            
+        Status values:
+            - "found": Single ASIN found
+            - "multiple": Multiple ASINs found
+            - "not_found": No ASINs found
+            - "error": API error or invalid UPC
+            
+        ASIN dict format:
+            {
+                "asin": "B07VRZ8TK3",
+                "title": "Product Name",
+                "brand": "Brand Name",
+                "image": "https://...",
+                "category": "Grocery"
+            }
         """
         if not upc:
-            return None
+            return ([], "error")
         
         # Clean and validate UPC
         upc_clean = str(upc).strip().replace("-", "").replace(" ", "").replace(".0", "")
@@ -40,11 +85,11 @@ class UPCConverter:
         # Validate UPC format (12-14 digits)
         if not upc_clean.isdigit():
             logger.warning(f"Invalid UPC format: {upc}")
-            return None
+            return ([], "error")
         
         if len(upc_clean) < 12 or len(upc_clean) > 14:
             logger.warning(f"UPC length invalid (must be 12-14 digits): {upc_clean}")
-            return None
+            return ([], "error")
         
         # Normalize to 12 digits (UPC-A) or 13 digits (EAN-13)
         # If 14 digits, it's GTIN-14, use last 13 digits
@@ -53,73 +98,86 @@ class UPCConverter:
         
         try:
             # Use SP-API catalog search to find product by UPC
-            # SP-API catalog search accepts identifiers like UPC/EAN
             result = await sp_api_client.search_catalog_items(
                 identifiers=[upc_clean],
                 identifiers_type="UPC",
                 marketplace_id=marketplace_id
             )
             
-            if result:
-                # SP-API catalog search returns items in this structure:
-                # {
-                #   "items": [
-                #     {
-                #       "asin": "B08...",
-                #       "identifiers": {
-                #         "marketplaceASIN": {
-                #           "marketplaceId": "...",
-                #           "asin": "B08..."
-                #         }
-                #       },
-                #       "summaries": [...]
-                #     }
-                #   ]
-                # }
-                items = result.get("items") or []
-                
-                if items:
-                    # Get first item's ASIN
-                    first_item = items[0]
-                    
-                    # Try multiple locations for ASIN
-                    asin = (
-                        first_item.get("asin") or
-                        first_item.get("productId") or
-                        first_item.get("identifiers", {}).get("marketplaceASIN", {}).get("asin") or
-                        (first_item.get("identifiers", {}) or {}).get("asin")
-                    )
-                    
-                    if asin:
-                        logger.info(f"✅ Converted UPC {upc_clean} to ASIN {asin}")
-                        return asin
-                    else:
-                        # Log the full item structure for debugging
-                        import json
-                        logger.warning(f"UPC {upc_clean} found but no ASIN in response. Item keys: {list(first_item.keys())}")
-                        logger.debug(f"Full item structure: {json.dumps(first_item, indent=2, default=str)[:1000]}")
-                else:
-                    # Check if summaries exist at top level (different response format)
-                    summaries = result.get("summaries") or []
-                    if summaries:
-                        first_summary = summaries[0]
-                        asin = (
-                            first_summary.get("asin") or
-                            first_summary.get("productId") or
-                            first_summary.get("identifiers", {}).get("marketplaceASIN", {}).get("asin")
-                        )
-                        if asin:
-                            logger.info(f"✅ Converted UPC {upc_clean} to ASIN {asin} (from summaries)")
-                            return asin
-                    
-                    logger.warning(f"No products found for UPC {upc_clean}. Response keys: {list(result.keys()) if isinstance(result, dict) else 'N/A'}")
-            else:
+            if not result:
                 logger.warning(f"No response from SP-API for UPC {upc_clean}")
+                return ([], "not_found")
+            
+            # Extract all items from response
+            items = result.get("items") or []
+            
+            # If no items, check summaries
+            if not items:
+                summaries = result.get("summaries") or []
+                if summaries:
+                    items = summaries
+            
+            if not items:
+                logger.info(f"No products found for UPC {upc_clean}")
+                return ([], "not_found")
+            
+            # Extract ASIN info from all items
+            asins = []
+            for item in items:
+                # Try multiple locations for ASIN
+                asin = (
+                    item.get("asin") or
+                    item.get("productId") or
+                    item.get("identifiers", {}).get("marketplaceASIN", {}).get("asin") or
+                    (item.get("identifiers", {}) or {}).get("asin")
+                )
+                
+                if not asin:
+                    continue
+                
+                # Extract summary data
+                summaries = item.get("summaries") or []
+                summary = summaries[0] if summaries else {}
+                
+                # Extract images
+                images = item.get("images") or []
+                main_image = None
+                if images:
+                    for img_set in images:
+                        if isinstance(img_set, dict):
+                            img_list = img_set.get("images") or []
+                            for img in img_list:
+                                if isinstance(img, dict) and img.get("variant") == "MAIN":
+                                    main_image = img.get("link")
+                                    break
+                                elif isinstance(img, dict) and not main_image:
+                                    # Use first image if MAIN not found
+                                    main_image = img.get("link")
+                
+                # Build ASIN info dict
+                asin_info = {
+                    "asin": asin,
+                    "title": summary.get("itemName") or item.get("itemName") or "",
+                    "brand": summary.get("brand") or item.get("brand") or "",
+                    "image": main_image,
+                    "category": summary.get("productType") or summary.get("websiteDisplayGroup") or item.get("productType") or ""
+                }
+                
+                asins.append(asin_info)
+            
+            if len(asins) == 0:
+                logger.info(f"No valid ASINs found for UPC {upc_clean}")
+                return ([], "not_found")
+            elif len(asins) == 1:
+                logger.info(f"✅ Found single ASIN for UPC {upc_clean}: {asins[0]['asin']}")
+                return (asins, "found")
+            else:
+                logger.warning(f"⚠️ Found {len(asins)} ASINs for UPC {upc_clean}")
+                return (asins, "multiple")
                 
         except Exception as e:
-            logger.error(f"Error converting UPC {upc_clean} to ASIN: {e}", exc_info=True)
-        
-        return None
+            logger.error(f"Error converting UPC {upc_clean} to ASINs: {e}", exc_info=True)
+            return ([], "error")
     
     async def upcs_to_asins_batch(
         self,

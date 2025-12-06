@@ -1,51 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
-  Box, Typography, Card, CardContent, Grid, Chip, CircularProgress, Alert
+  Box, Typography, Card, CardContent, Alert, Chip
 } from '@mui/material';
-import { Layers, Package } from 'lucide-react';
-import api from '../../../services/api';
-import { handleApiError } from '../../../utils/errorHandler';
+import { Layers, Info } from 'lucide-react';
 import { habexa } from '../../../theme';
 
-export default function VariationAnalysis({ asin, keepaData }) {
-  const [loading, setLoading] = useState(true);
-  const [variations, setVariations] = useState([]);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    if (asin) {
-      fetchVariations();
-    } else {
-      setLoading(false);
-    }
-  }, [asin]);
-
-  const fetchVariations = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await api.get(`/products/${asin}/variations`);
-      setVariations(res.data.variations || []);
-    } catch (err) {
-      const errorMessage = handleApiError(err, null); // No toast in this component
-      setError(errorMessage);
-      setVariations([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <Card sx={{ bgcolor: '#ffffff' }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-            <CircularProgress />
-          </Box>
-        </CardContent>
-      </Card>
-    );
-  }
+export default function VariationAnalysis({ asin, deal, analysis }) {
+  // Use data from database - no API calls needed!
+  // Variation info is stored in deal object after analysis
+  const hasVariations = deal?.is_variation && deal?.variation_count > 1;
+  const variationCount = deal?.variation_count || 0;
+  const parentAsin = deal?.parent_asin;
 
   return (
     <Card sx={{ bgcolor: '#ffffff' }}>
@@ -55,46 +20,55 @@ export default function VariationAnalysis({ asin, keepaData }) {
           <Typography variant="h6" fontWeight="600">Product Variations</Typography>
         </Box>
 
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
+        {hasVariations ? (
+          <Box>
+            <Alert severity="info" sx={{ mb: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                <Info size={16} />
+                <Typography variant="body2" fontWeight={600}>
+                  This product is part of a {variationCount}-variation family
+                </Typography>
+              </Box>
+              {parentAsin && (
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                  Parent ASIN: <code style={{ fontFamily: 'monospace', background: '#f5f5f5', padding: '2px 6px', borderRadius: 2 }}>{parentAsin}</code>
+                </Typography>
+              )}
+            </Alert>
 
-        {!error && variations.length === 0 ? (
+            <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Variation Information
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Total Variations</Typography>
+                  <Typography variant="h6">{variationCount}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">This ASIN</Typography>
+                  <Typography variant="body2" fontFamily="monospace">{asin}</Typography>
+                </Box>
+              </Box>
+            </Box>
+
+            <Alert severity="warning" sx={{ mt: 3 }}>
+              <Typography variant="body2">
+                Detailed variation breakdown is coming soon. The backend endpoint to fetch individual variation data is being developed.
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                For now, you can see this product is part of a variation family with {variationCount} total variations.
+              </Typography>
+            </Alert>
+          </Box>
+        ) : (
           <Box sx={{ textAlign: 'center', py: 6 }}>
             <Layers size={48} color="#666666" style={{ marginBottom: 16 }} />
-            <Typography variant="h6" gutterBottom>No Variations Found</Typography>
+            <Typography variant="h6" gutterBottom>No Variations</Typography>
             <Typography color="text.secondary">
-              This product doesn't have variations, or variation data is not available.
+              This product does not have variations. It's a standalone product.
             </Typography>
           </Box>
-        ) : !error && (
-          <Grid container spacing={2}>
-            {variations.map((variation, i) => (
-              <Grid item xs={12} sm={6} md={4} key={i}>
-                <Card sx={{ 
-                  bgcolor: '#ffffff',
-                  border: '2px solid #7c3aed',
-                  borderRadius: 1
-                }}>
-                  <CardContent>
-                    <Typography variant="body2" fontWeight="600" gutterBottom sx={{ color: '#1a1a2e' }}>
-                      {variation.title || `Variation ${i + 1}`}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: '#666666' }} display="block">
-                      ASIN: {variation.asin}
-                    </Typography>
-                    {variation.price && (
-                      <Typography variant="body2" sx={{ mt: 1, color: '#1a1a2e' }}>
-                        ${variation.price.toFixed(2)}
-                      </Typography>
-                    )}
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
         )}
       </CardContent>
     </Card>
