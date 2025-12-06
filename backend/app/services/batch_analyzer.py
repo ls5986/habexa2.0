@@ -40,55 +40,71 @@ class BatchAnalyzer:
         results = {asin: {"asin": asin, "success": False} for asin in asins}
         
         logger.info(f"🚀 Analyzing {len(asins)} products...")
+        import time
+        start_time = time.time()
         
         # ==========================================
-        # STEP 1: KEEPA - Batch of 100
+        # STEP 1 & 2: PARALLEL API CALLS
+        # Keepa and SP-API can run in parallel - they're independent!
         # ==========================================
-        logger.info("📚 Fetching catalog data from Keepa...")
+        logger.info("📚 Fetching data from Keepa and SP-API in parallel...")
         
-        # Process all ASINs in one batch call (handles internal batching)
-        keepa_data = await keepa_client.get_products_batch(asins, domain=1, history=False, days=90)
+        # Run Keepa and SP-API pricing calls in parallel
+        keepa_task = keepa_client.get_products_batch(asins, domain=1, history=False, days=90)
         
-        for asin, data in keepa_data.items():
-            if asin in results:
-                results[asin].update({
-                    "title": data.get("title"),
-                    "brand": data.get("brand"),
-                    "image_url": data.get("image_url"),
-                    "bsr": data.get("bsr"),
-                    "category": data.get("category"),
-                    "sales_drops_30": data.get("sales_drops_30"),
-                    "sales_drops_90": data.get("sales_drops_90"),
-                    "sales_drops_180": data.get("sales_drops_180"),
-                    "variation_count": data.get("variation_count"),
-                    "amazon_in_stock": data.get("amazon_in_stock"),
-                    "rating": data.get("rating"),
-                    "review_count": data.get("review_count"),
-                })
-        
-        # ==========================================
-        # STEP 2: SP-API PRICING - Batch of 20
-        # ==========================================
-        logger.info("💰 Fetching pricing from SP-API...")
-        
-        # Store all pricing responses for later analysis
-        all_pricing_data = {}
-        sp_api_success = False
+        # Prepare SP-API pricing calls
+        sp_api_tasks = []
         for i in range(0, len(asins), SP_API_BATCH_SIZE):
             batch = asins[i:i + SP_API_BATCH_SIZE]
+            sp_api_tasks.append(sp_api_client.get_competitive_pricing_batch(batch, marketplace_id))
+        
+        # Execute all API calls in parallel
+        keepa_data, *sp_api_results = await asyncio.gather(
+            keepa_task,
+            *sp_api_tasks,
+            return_exceptions=True
+        )
+        
+        # Handle Keepa results
+        if isinstance(keepa_data, Exception):
+            logger.error(f"Keepa API error: {keepa_data}")
+            keepa_data = {}
+        else:
+            for asin, data in keepa_data.items():
+                if asin in results:
+                    results[asin].update({
+                        "title": data.get("title"),
+                        "brand": data.get("brand"),
+                        "image_url": data.get("image_url"),
+                        "bsr": data.get("bsr"),
+                        "category": data.get("category"),
+                        "sales_drops_30": data.get("sales_drops_30"),
+                        "sales_drops_90": data.get("sales_drops_90"),
+                        "sales_drops_180": data.get("sales_drops_180"),
+                        "variation_count": data.get("variation_count"),
+                        "amazon_in_stock": data.get("amazon_in_stock"),
+                        "rating": data.get("rating"),
+                        "review_count": data.get("review_count"),
+                    })
+        
+        # Handle SP-API pricing results
+        all_pricing_data = {}
+        sp_api_success = False
+        for idx, pricing_result in enumerate(sp_api_results):
+            if isinstance(pricing_result, Exception):
+                logger.warning(f"SP-API pricing batch {idx + 1} failed: {pricing_result}")
+                continue
             
-            try:
-                pricing_data = await sp_api_client.get_competitive_pricing_batch(batch, marketplace_id)
-                all_pricing_data.update(pricing_data)  # Store for later
-                
-                for asin, data in pricing_data.items():
-                    if data.get("buy_box_price") and asin in results:
-                        results[asin]["sell_price"] = data["buy_box_price"]
-                        results[asin]["seller_count"] = data.get("offer_count", 0)
-                        results[asin]["price_source"] = "sp-api"
-                        sp_api_success = True
-            except Exception as e:
-                logger.warning(f"SP-API pricing batch failed for batch {i//SP_API_BATCH_SIZE + 1}: {e}")
+            all_pricing_data.update(pricing_result)
+            for asin, data in pricing_result.items():
+                if data.get("buy_box_price") and asin in results:
+                    results[asin]["sell_price"] = data["buy_box_price"]
+                    results[asin]["seller_count"] = data.get("offer_count", 0)
+                    results[asin]["price_source"] = "sp-api"
+                    sp_api_success = True
+        
+        api_time = time.time() - start_time
+        logger.info(f"⚡ API calls completed in {api_time:.2f}s (parallel)")
         
         # ==========================================
         # STEP 2B: KEEPA PRICING FALLBACK - If SP-API failed

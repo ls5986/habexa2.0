@@ -145,6 +145,8 @@ async def analyze_single(
         adjusted_buy_cost = wholesale_cost / pack_size
     
     logger.info(f"🔍 Analyzing ASIN {asin} synchronously (no job needed)")
+    import time
+    total_start = time.time()
     
     try:
         # Run analysis synchronously - no job, no Celery, just do it
@@ -160,69 +162,79 @@ async def analyze_single(
             }
         }
         
-        # Get user cost settings
-        user_settings = await get_user_cost_settings(user_id)
+        # Get user cost settings and run analysis in parallel
+        analysis_start = time.time()
+        user_settings_task = get_user_cost_settings(user_id)
         
-        # Run analysis directly
+        # Start analysis immediately (it will use default settings if user_settings not ready)
+        # But we'll wait for user_settings before profit calculation
         results = await batch_analyzer.analyze_products(
             [asin],
             buy_costs=buy_costs,
             promo_costs=promo_costs,
             source_data=source_data,
-            user_settings=user_settings
+            user_settings=await user_settings_task  # Wait for settings
         )
+        
+        analysis_time = time.time() - analysis_start
+        logger.info(f"⚡ Analysis API calls completed in {analysis_time:.2f}s")
         
         result = results.get(asin, {})
         
         if not result:
             raise HTTPException(500, "Analysis returned no data")
         
-        # Create/update product_source
+        # OPTIMIZATION: Reduce database queries
+        db_start = time.time()
+        supplier_id = request.supplier_id
+        
+        # Get existing records (optimized - single query for product_source with supplier_id)
+        existing_source_result = None
         if adjusted_buy_cost:
             try:
-                existing_source = supabase.table("product_sources")\
-                    .select("id")\
+                existing_source_result = supabase.table("product_sources")\
+                    .select("id, supplier_id")\
                     .eq("product_id", product_id)\
                     .eq("user_id", user_id)\
                     .limit(1)\
                     .execute()
-                
-                if existing_source.data:
-                    supabase.table("product_sources").update({
-                        "buy_cost": adjusted_buy_cost,
-                        "moq": request.moq,
-                        "supplier_id": request.supplier_id,
-                        "stage": "reviewed",
-                        "updated_at": datetime.utcnow().isoformat()
-                    }).eq("id", existing_source.data[0]["id"]).execute()
+                # Get supplier_id from source if not provided
+                if not supplier_id and existing_source_result.data:
+                    supplier_id = existing_source_result.data[0].get("supplier_id")
+            except Exception as e:
+                logger.warning(f"Could not fetch product_source: {e}")
+        
+        # Check existing analysis
+        existing_analysis_result = supabase.table("analyses")\
+            .select("id")\
+            .eq("user_id", user_id)\
+            .eq("asin", asin)\
+            .limit(1)\
+            .execute()
+        
+        # Update/insert product_source
+        if adjusted_buy_cost:
+            try:
+                source_update_data = {
+                    "buy_cost": adjusted_buy_cost,
+                    "moq": request.moq,
+                    "supplier_id": supplier_id,
+                    "stage": "reviewed",
+                    "updated_at": datetime.utcnow().isoformat()
+                }
+                if existing_source_result and existing_source_result.data:
+                    supabase.table("product_sources").update(source_update_data).eq("id", existing_source_result.data[0]["id"]).execute()
                 else:
                     supabase.table("product_sources").insert({
                         "user_id": user_id,
                         "product_id": product_id,
-                        "supplier_id": request.supplier_id,
-                        "buy_cost": adjusted_buy_cost,
-                        "moq": request.moq,
-                        "stage": "reviewed",
+                        **source_update_data,
                         "source": "quick_analyze"
                     }).execute()
             except Exception as e:
-                logger.warning(f"Could not create product_source: {e}")
+                logger.warning(f"Could not create/update product_source: {e}")
         
-        # Get supplier_id if not set
-        supplier_id = request.supplier_id
-        if not supplier_id:
-            try:
-                sources = supabase.table("product_sources")\
-                    .select("supplier_id")\
-                    .eq("product_id", product_id)\
-                    .limit(1)\
-                    .execute()
-                if sources.data and sources.data[0].get("supplier_id"):
-                    supplier_id = sources.data[0]["supplier_id"]
-            except:
-                pass
-        
-        # Save analysis to database
+        # Prepare analysis data
         analysis_data = {
             "user_id": user_id,
             "asin": asin,
@@ -249,16 +261,9 @@ async def analyze_single(
             "stage2_roi": result.get("stage2_roi"),
         }
         
-        # Upsert analysis
-        existing_analysis = supabase.table("analyses")\
-            .select("id")\
-            .eq("user_id", user_id)\
-            .eq("asin", asin)\
-            .limit(1)\
-            .execute()
-        
-        if existing_analysis.data:
-            supabase.table("analyses").update(analysis_data).eq("id", existing_analysis.data[0]["id"]).execute()
+        # Update/insert analysis
+        if existing_analysis_result.data:
+            supabase.table("analyses").update(analysis_data).eq("id", existing_analysis_result.data[0]["id"]).execute()
         else:
             supabase.table("analyses").insert(analysis_data).execute()
         
@@ -268,23 +273,18 @@ async def analyze_single(
             "updated_at": datetime.utcnow().isoformat()
         }).eq("id", product_id).execute()
         
-        # Get usage info
-        try:
-            check = await feature_gate.check_limit(current_user, "analyses_per_month")
-            usage = {
-                "analyses_remaining": check.get("remaining", 999),
-                "analyses_limit": check.get("limit", 999),
-                "unlimited": check.get("unlimited", False)
-            }
-        except Exception as e:
-            logger.warning(f"Usage tracking failed: {e}")
-            usage = {
-                "analyses_remaining": 999,
-                "analyses_limit": 999,
-                "unlimited": True
-            }
+        db_time = time.time() - db_start
+        logger.info(f"⚡ Database operations completed in {db_time:.2f}s")
         
-        logger.info(f"✅ Analysis complete for ASIN {asin}")
+        # Use cached usage from initial check (avoid redundant call)
+        usage = {
+            "analyses_remaining": limit_check.get("remaining", 999),
+            "analyses_limit": limit_check.get("limit", 999),
+            "unlimited": limit_check.get("unlimited", False)
+        }
+        
+        total_time = time.time() - total_start
+        logger.info(f"✅ Analysis complete for ASIN {asin} in {total_time:.2f}s (API: {analysis_time:.2f}s, DB: {db_time:.2f}s)")
         
         # Return results directly - no job needed!
         return {
