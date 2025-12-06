@@ -10,6 +10,7 @@ from app.api.deps import get_current_user
 from app.services.supabase_client import supabase
 import os
 import traceback
+import re
 
 router = APIRouter(tags=["debug"])
 security = HTTPBearer(auto_error=False)  # Don't auto-raise 403

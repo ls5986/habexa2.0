@@ -158,7 +158,21 @@ async def analyze_single(
     }).execute()
     
     # Queue to Celery (buy_cost is retrieved from job metadata in the task)
-    analyze_single_product.delay(job_id, user_id, product_id, asin)
+    try:
+        logger.info(f"🚀 Queuing analysis task for job {job_id}, product {product_id}, ASIN {asin}")
+        task_result = analyze_single_product.delay(job_id, user_id, product_id, asin)
+        logger.info(f"✅ Task queued successfully: {task_result.id} for job {job_id}")
+    except Exception as e:
+        logger.error(f"❌ FAILED to queue Celery task for job {job_id}: {e}", exc_info=True)
+        # Update job status to failed
+        supabase.table("jobs").update({
+            "status": "failed",
+            "error_message": f"Failed to queue task: {str(e)}"
+        }).eq("id", job_id).execute()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to queue analysis task: {str(e)}"
+        )
     
     # Get usage info
     try:
