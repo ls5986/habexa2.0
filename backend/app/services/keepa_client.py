@@ -67,6 +67,7 @@ class KeepaClient:
                 
                 if not products:
                     logger.warning(f"⚠️ No products in response. Response keys: {list(data.keys())}")
+                    logger.warning(f"⚠️ Full response sample: {str(data)[:500]}")
                     return {}
                 
                 for p in products:
