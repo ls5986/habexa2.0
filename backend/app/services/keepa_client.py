@@ -53,9 +53,21 @@ class KeepaClient:
                     return {}
                 
                 data = resp.json()
-                products = data.get("products") or []
+                products = data.get("products")
+                
+                # Handle None or empty list
+                if products is None:
+                    logger.warning(f"⚠️ Keepa returned products=None (might be null in JSON)")
+                    products = []
+                elif not isinstance(products, list):
+                    logger.warning(f"⚠️ Keepa returned products as {type(products)}, expected list")
+                    products = []
                 
                 logger.info(f"📦 Keepa returned {len(products)} products, tokens left: {data.get('tokensLeft')}")
+                
+                if not products:
+                    logger.warning(f"⚠️ No products in response. Response keys: {list(data.keys())}")
+                    return {}
                 
                 for p in products:
                     if not p:
