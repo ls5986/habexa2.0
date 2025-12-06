@@ -384,7 +384,11 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
             "products_created": 0,
             "deals_processed": 0,
             "total_rows": total,
-            "format": "kehe" if is_kehe else "standard"
+            "format": "kehe" if is_kehe else "standard",
+            "analyzed": 0,
+            "needs_asin_selection": 0,
+            "needs_manual_asin": 0,
+            "errors": 0
         }
         error_list = []
         processed = 0
@@ -477,12 +481,12 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                 # Process UPCs in batches
                 all_upcs = [upc for upc, _, _ in upcs_to_convert]
                 
-                logger.info(f"🔄 Starting batch UPC conversion for {len(all_upcs)} UPCs in {(len(all_upcs) + BATCH_SIZE - 1) // BATCH_SIZE} batches...")
+                logger.info(f"🔄 Starting batch UPC conversion for {len(all_upcs)} UPCs in {(len(all_upcs) + UPC_BATCH_SIZE - 1) // UPC_BATCH_SIZE} batches...")
                 logger.info(f"   First 10 UPCs: {all_upcs[:10]}")
                 
-                for batch_start in range(0, len(all_upcs), BATCH_SIZE):
-                    batch_upcs = all_upcs[batch_start:batch_start + BATCH_SIZE]
-                    batch_num = batch_start // BATCH_SIZE + 1
+                for batch_start in range(0, len(all_upcs), UPC_BATCH_SIZE):
+                    batch_upcs = all_upcs[batch_start:batch_start + UPC_BATCH_SIZE]
+                    batch_num = batch_start // UPC_BATCH_SIZE + 1
                     
                     try:
                         # Batch convert up to 20 UPCs at once
@@ -501,20 +505,20 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                             found = sum(1 for v in upc_to_asin_results.values() if v)
                             logger.info(f"   Found: {found}/{len(batch_upcs)}")
                         
-                        # Process results
+                        # Process results - check for multiple ASINs if batch returned single ASIN
                         for upc in batch_upcs:
                             asin_result = upc_to_asin_results.get(upc)
+                            supplier_data, row_num = upc_info_map.get(upc, (None, None))
                             
                             if asin_result:
-                                logger.info(f"   ✅ UPC {upc} → ASIN {asin_result}")
-                            else:
-                                logger.warning(f"   ❌ UPC {upc} → No ASIN found")
-                            
-                            if asin_result:
-                                upc_to_asin_cache[upc] = asin_result
-                                supplier_data, row_num = upc_info_map.get(upc, (None, None))
+                                # Batch conversion found an ASIN - use it directly (no redundant API call)
+                                logger.info(f"   ✅ UPC {upc} → ASIN {asin_result} (from batch)")
                                 
-                                # Create parsed row
+                                # Use the ASIN from batch directly - no need for detailed lookup
+                                # Variation checking can be done later if needed (e.g., during analysis)
+                                upc_to_asin_cache[upc] = asin_result
+                                
+                                # Create parsed row with single ASIN
                                 if is_kehe and supplier_data:
                                     parsed_rows.append({
                                         "asin": asin_result,
@@ -522,6 +526,7 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                                         "pack_size": supplier_data.get("pack_size", 1),
                                         "wholesale_cost": supplier_data.get("wholesale_cost"),
                                         "supplier_sku": supplier_data.get("supplier_sku"),
+                                        "supplier_title": supplier_data.get("title"),
                                         "promo_qty": supplier_data.get("promo_qty"),
                                         "moq": supplier_data.get("moq", 1),
                                         "notes": supplier_data.get("notes"),
@@ -553,39 +558,122 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                                             })
                                 asins.append(asin_result)
                             else:
-                                # UPC conversion failed - but we still want to save the product
-                                supplier_data, row_num = upc_info_map.get(upc, (None, None))
+                                # Batch conversion returned None - try detailed lookup to confirm
+                                logger.warning(f"   ❌ UPC {upc} → No ASIN found in batch, checking detailed lookup...")
                                 
-                                if supplier_data:
-                                    # Create parsed row without ASIN - will be saved with asin_status = 'not_found'
-                                    parsed_rows.append({
-                                        "asin": None,  # No ASIN yet
-                                        "upc": upc,  # Keep UPC for manual lookup
-                                        "buy_cost": supplier_data.get("buy_cost"),
-                                        "pack_size": supplier_data.get("pack_size", 1),
-                                        "wholesale_cost": supplier_data.get("wholesale_cost"),
-                                        "supplier_sku": supplier_data.get("supplier_sku"),
-                                        "promo_qty": supplier_data.get("promo_qty"),
-                                        "moq": supplier_data.get("moq", 1),
-                                        "notes": supplier_data.get("notes"),
-                                        "brand": supplier_data.get("brand"),
-                                        "title": supplier_data.get("title"),
-                                        "asin_status": "not_found"  # Mark for manual entry
-                                    })
-                                    logger.info(f"✅ Row {row_num}: UPC {upc} conversion failed, but product will be saved with asin_status='not_found'")
+                                detailed_result = run_async(
+                                    upc_converter.upc_to_asins(upc)
+                                )
+                                detailed_asins, lookup_status = detailed_result if isinstance(detailed_result, tuple) else ([], "error")
+                                
+                                if lookup_status == "multiple" and len(detailed_asins) > 1:
+                                    # Multiple ASINs found - same handling as above
+                                    logger.warning(f"   ⚠️ UPC {upc} has {len(detailed_asins)} ASINs - user must choose")
+                                    
+                                    if is_kehe and supplier_data:
+                                        parsed_rows.append({
+                                            "asin": None,
+                                            "upc": upc,
+                                            "potential_asins": detailed_asins,
+                                            "asin_status": "multiple_found",
+                                            "buy_cost": supplier_data.get("buy_cost"),
+                                            "pack_size": supplier_data.get("pack_size", 1),
+                                            "wholesale_cost": supplier_data.get("wholesale_cost"),
+                                            "supplier_sku": supplier_data.get("supplier_sku"),
+                                            "supplier_title": supplier_data.get("title"),
+                                            "promo_qty": supplier_data.get("promo_qty"),
+                                            "moq": supplier_data.get("moq", 1),
+                                            "notes": supplier_data.get("notes"),
+                                            "brand": supplier_data.get("brand")
+                                        })
+                                    else:
+                                        original_row = None
+                                        for orig_row in batch:
+                                            if parse_upc(orig_row) == upc:
+                                                original_row = orig_row
+                                                break
+                                        
+                                        parsed_rows.append({
+                                            "asin": None,
+                                            "upc": upc,
+                                            "potential_asins": detailed_asins,
+                                            "asin_status": "multiple_found",
+                                            "supplier_title": original_row.get("title") if original_row else None,
+                                            "buy_cost": supplier_data.get("buy_cost") if supplier_data else parse_cost(original_row) if original_row else None,
+                                            "moq": supplier_data.get("moq", 1) if supplier_data else parse_moq(original_row) if original_row else 1,
+                                            "notes": supplier_data.get("notes") if supplier_data else parse_notes(original_row) if original_row else None
+                                        })
+                                    
+                                    if row_num:
+                                        error_list.append(f"Row {row_num}: Found {len(detailed_asins)} ASINs for UPC {upc} - user must choose")
+                                elif lookup_status == "found" and len(detailed_asins) == 1:
+                                    # Single ASIN found in detailed lookup (batch may have missed it)
+                                    asin_result = detailed_asins[0].get("asin")
+                                    if asin_result:
+                                        logger.info(f"   ✅ UPC {upc} → ASIN {asin_result} (from detailed lookup)")
+                                        upc_to_asin_cache[upc] = asin_result
+                                        
+                                        if is_kehe and supplier_data:
+                                            parsed_rows.append({
+                                                "asin": asin_result,
+                                                "buy_cost": supplier_data.get("buy_cost"),
+                                                "pack_size": supplier_data.get("pack_size", 1),
+                                                "wholesale_cost": supplier_data.get("wholesale_cost"),
+                                                "supplier_sku": supplier_data.get("supplier_sku"),
+                                                "supplier_title": supplier_data.get("title"),
+                                                "promo_qty": supplier_data.get("promo_qty"),
+                                                "moq": supplier_data.get("moq", 1),
+                                                "notes": supplier_data.get("notes"),
+                                                "brand": supplier_data.get("brand")
+                                            })
+                                        else:
+                                            original_row = None
+                                            for orig_row in batch:
+                                                if parse_upc(orig_row) == upc:
+                                                    original_row = orig_row
+                                                    break
+                                            
+                                            if original_row:
+                                                parsed_rows.append({
+                                                    "asin": asin_result,
+                                                    "buy_cost": parse_cost(original_row),
+                                                    "moq": parse_moq(original_row),
+                                                    "notes": parse_notes(original_row)
+                                                })
+                                        asins.append(asin_result)
                                 else:
-                                    # No supplier_data - this shouldn't happen for KEHE format, but handle it
-                                    logger.warning(f"⚠️ Row {row_num}: UPC {upc} conversion failed but no supplier_data available")
-                                
-                                if row_num:
-                                    error_list.append(f"Row {row_num}: Could not convert UPC {upc} to ASIN - product saved for manual entry")
+                                    # NO ASIN FOUND - save product anyway for manual entry
+                                    logger.info(f"   ❌ UPC {upc} → No ASIN found - product will be saved for manual entry")
+                                    
+                                    if supplier_data:
+                                        parsed_rows.append({
+                                            "asin": None,  # No ASIN yet
+                                            "upc": upc,  # Keep UPC for manual lookup
+                                            "asin_status": "not_found",
+                                            "buy_cost": supplier_data.get("buy_cost"),
+                                            "pack_size": supplier_data.get("pack_size", 1),
+                                            "wholesale_cost": supplier_data.get("wholesale_cost"),
+                                            "supplier_sku": supplier_data.get("supplier_sku"),
+                                            "supplier_title": supplier_data.get("title"),
+                                            "promo_qty": supplier_data.get("promo_qty"),
+                                            "moq": supplier_data.get("moq", 1),
+                                            "notes": supplier_data.get("notes"),
+                                            "brand": supplier_data.get("brand")
+                                        })
+                                        logger.info(f"✅ Row {row_num}: UPC {upc} conversion failed, but product will be saved with asin_status='not_found'")
+                                    else:
+                                        # No supplier_data - this shouldn't happen for KEHE format, but handle it
+                                        logger.warning(f"⚠️ Row {row_num}: UPC {upc} conversion failed but no supplier_data available")
+                                    
+                                    if row_num:
+                                        error_list.append(f"Row {row_num}: Could not convert UPC {upc} to ASIN - product saved for manual entry")
                         
                         # Rate limiting - wait 0.5 seconds between batches (2 requests/sec max)
-                        if batch_start + BATCH_SIZE < len(all_upcs):
+                        if batch_start + UPC_BATCH_SIZE < len(all_upcs):
                             time.sleep(0.5)
                             
                     except Exception as e:
-                        logger.error(f"Error in batch UPC conversion (batch {batch_start // BATCH_SIZE + 1}): {e}", exc_info=True)
+                        logger.error(f"Error in batch UPC conversion (batch {batch_start // UPC_BATCH_SIZE + 1}): {e}", exc_info=True)
                         # Mark all UPCs in this batch as failed
                         for upc in batch_upcs:
                             _, row_num = upc_info_map.get(upc, (None, None))
@@ -618,11 +706,23 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                     new_products = []
                     for parsed in products_with_asin:
                         if parsed["asin"] in missing_asins:
+                            # Get Amazon title from first potential ASIN if available
+                            amazon_title = None
+                            if parsed.get("potential_asins") and len(parsed["potential_asins"]) > 0:
+                                # Use the selected ASIN's title from potential_asins
+                                selected_asin_data = next(
+                                    (a for a in parsed["potential_asins"] if a.get("asin") == parsed["asin"]),
+                                    None
+                                )
+                                if selected_asin_data:
+                                    amazon_title = selected_asin_data.get("title")
+                            
                             product_data = {
                                 "user_id": user_id,
                                 "asin": parsed["asin"],
                                 "upc": parsed.get("upc"),
-                                "title": parsed.get("title"),
+                                "title": amazon_title,  # Amazon title (from SP-API)
+                                "supplier_title": parsed.get("supplier_title") or parsed.get("title"),  # Supplier's title
                                 "brand": parsed.get("brand"),
                                 "status": "pending",
                                 "asin_status": "found"  # ASIN was found via UPC conversion
@@ -642,6 +742,8 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                         for p in (created.data or []):
                             product_cache[p["asin"]] = p["id"]
                             results["products_created"] += 1
+                            results.setdefault("analyzed", 0)
+                            # Note: Will be analyzed later by the auto-analysis job
             
             # Process products WITHOUT ASINs (new logic)
             if products_without_asin:
@@ -652,20 +754,24 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                     if not upc:
                         continue
                     
-                    # Use placeholder ASIN since column is NOT NULL
+                    asin_status = parsed.get("asin_status", "not_found")
+                    potential_asins = parsed.get("potential_asins")
+                    
+                    # Use placeholder ASIN since column is NOT NULL (unless DB allows NULL after migration)
                     # Format: PENDING_{UPC} - will be updated when ASIN is found
                     placeholder_asin = f"PENDING_{upc}"
                     
-                    # Check cache by UPC (we'll need to query by UPC)
-                    # For now, create new product - deduplication can happen later
+                    # Build product data with all new fields
                     product_data = {
                         "user_id": user_id,
-                        "asin": placeholder_asin,  # Placeholder until real ASIN is found
+                        "asin": None if asin_status == "multiple_found" else placeholder_asin,  # NULL if multiple ASINs (user must choose), placeholder otherwise
                         "upc": upc,  # Store UPC for manual lookup
-                        "title": parsed.get("title"),
+                        "title": None,  # Will be filled from Amazon once ASIN is set
+                        "supplier_title": parsed.get("supplier_title") or parsed.get("title"),  # Supplier's name for the product
                         "brand": parsed.get("brand"),
                         "status": "pending",
-                        "asin_status": "not_found"  # Mark for manual entry
+                        "asin_status": asin_status,  # 'not_found' or 'multiple_found'
+                        "potential_asins": potential_asins if potential_asins else None  # JSONB array of ASIN options
                     }
                     new_products_no_asin.append(product_data)
                 
@@ -677,6 +783,14 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                         upc_key = f"upc:{p.get('upc')}"
                         product_cache[upc_key] = p["id"]
                         results["products_created"] += 1
+                        
+                        # Track different result types
+                        if p.get("asin_status") == "multiple_found":
+                            results.setdefault("needs_asin_selection", 0)
+                            results["needs_asin_selection"] += 1
+                        elif p.get("asin_status") == "not_found":
+                            results.setdefault("needs_manual_asin", 0)
+                            results["needs_manual_asin"] += 1
             
             # Build deals for upsert
             # Use dict to deduplicate by (product_id, supplier_id) - keep last occurrence
@@ -712,7 +826,7 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                     "source": "excel" if filename.lower().endswith(('.xlsx', '.xls')) else "csv",
                     "source_detail": filename,
                     "notes": parsed.get("notes"),
-                    "stage": "pending_asin" if not parsed.get("asin") else "new",  # Can't analyze without ASIN
+                    "stage": "pending_asin_selection" if parsed.get("asin_status") == "multiple_found" else ("pending_asin" if not parsed.get("asin") else "new"),  # Can't analyze without ASIN
                     "is_active": True
                 }
             
