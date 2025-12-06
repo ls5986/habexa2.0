@@ -225,15 +225,34 @@ class BatchAnalyzer:
                     if asin in results:
                         results[asin]["fees_total"] = data.get("total")
                         # Store as both names for compatibility
-                        referral_fee = data.get("referral_fee")
+                        referral_fee = data.get("referral_fee") or 0
                         results[asin]["referral_fee"] = referral_fee  # Standard name
                         results[asin]["fees_referral"] = referral_fee  # Legacy name
-                        fba_fee = data.get("fba_fulfillment_fee")
+                        fba_fee = data.get("fba_fulfillment_fee") or 0
                         results[asin]["fba_fee"] = fba_fee  # Standard name
                         results[asin]["fees_fba"] = fba_fee  # Legacy name
                         logger.debug(f"✅ {asin}: Fees - Referral: ${referral_fee}, FBA: ${fba_fee}, Total: ${data.get('total')}")
             except Exception as e:
                 logger.warning(f"SP-API fees batch failed for batch {i//SP_API_BATCH_SIZE + 1}: {e}")
+        
+        # FALLBACK: Calculate referral fees for products that didn't get them from SP-API
+        from app.services.profit_calculator import get_referral_rate
+        for asin in asins:
+            if asin in results and results[asin].get("sell_price") and not results[asin].get("referral_fee"):
+                category = results[asin].get("category")
+                sell_price = results[asin].get("sell_price")
+                referral_rate = get_referral_rate(category)
+                referral_fee = sell_price * referral_rate
+                results[asin]["referral_fee"] = referral_fee
+                results[asin]["fees_referral"] = referral_fee
+                results[asin]["referral_fee_percent"] = round(referral_rate * 100, 2)
+                
+                # Recalculate fees_total if missing
+                if not results[asin].get("fees_total"):
+                    fba_fee = results[asin].get("fba_fee") or results[asin].get("fees_fba") or 0
+                    results[asin]["fees_total"] = referral_fee + fba_fee
+                
+                logger.info(f"📊 {asin}: Calculated referral fee from category: ${referral_fee:.2f} ({referral_rate*100}%)")
         
         # ========== STAGE 2: PROFIT CALCULATION & FILTERING (WITH SHIPPING) ==========
         if buy_costs:
