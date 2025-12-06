@@ -36,6 +36,7 @@ import VariationAnalysis from '../components/features/deals/VariationAnalysis';
 import ListingScore from '../components/features/deals/ListingScore';
 import FavoriteButton from '../components/features/products/FavoriteButton';
 import UploadDetailsPanel from '../components/features/deals/UploadDetailsPanel';
+import ErrorBoundary from '../components/ErrorBoundary';
 
 export default function DealDetail() {
   const { dealId } = useParams();
@@ -831,7 +832,14 @@ export default function DealDetail() {
 
             {/* Price History Tab */}
             {activeTab === 2 && (
-              <PriceHistoryChart asin={deal.asin} buyCost={deal.buy_cost} deal={deal} analysis={analysis} />
+              <ErrorBoundary>
+                <PriceHistoryChart 
+                  asin={deal?.asin} 
+                  buyCost={deal?.buy_cost} 
+                  deal={deal} 
+                  analysis={analysis} 
+                />
+              </ErrorBoundary>
             )}
 
             {/* Competitors Tab */}

@@ -55,10 +55,29 @@ const PriceHistoryChart = ({
   analysis,
 }) => {
   const [chartType, setChartType] = useState('price');
+  const [period, setPeriod] = useState(90);
   
   // Use data from database (analysis object) - no API calls needed!
   // All Keepa data is stored in analysis table after analysis runs
   const hasData = analysis && (analysis.bsr || analysis.sell_price || analysis.fba_lowest_365d);
+  
+  // Safety check - if deal or analysis is null/undefined, show empty state
+  if (!deal && !analysis) {
+    return (
+      <Card>
+        <CardContent>
+          <Alert severity="info">
+            <Typography variant="body2" fontWeight={600} gutterBottom>
+              No Data Available
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Product data is not available. Please refresh the page or navigate back to the products list.
+            </Typography>
+          </Alert>
+        </CardContent>
+      </Card>
+    );
+  }
 
   // Create simple chart data from analysis database fields
   // Note: Full historical price data requires Keepa API calls during analysis
@@ -230,7 +249,7 @@ const PriceHistoryChart = ({
 
         {/* Chart */}
         <Box height={300}>
-          {chartData.length > 0 ? (
+          {chartData && Array.isArray(chartData) && chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
