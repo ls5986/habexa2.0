@@ -1,5 +1,5 @@
-import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Box, Typography, CircularProgress, Card, CardContent, Chip, FormControl, InputLabel, Select, MenuItem, Alert, ToggleButtonGroup, ToggleButton, Checkbox, FormControlLabel, InputAdornment } from '@mui/material';
-import { X, Zap, TrendingUp } from 'lucide-react';
+import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Box, Typography, CircularProgress, Card, CardContent, Chip, FormControl, InputLabel, Select, MenuItem, Alert, ToggleButtonGroup, ToggleButton, Checkbox, FormControlLabel, InputAdornment, Accordion, AccordionSummary, AccordionDetails, Divider } from '@mui/material';
+import { X, Zap, TrendingUp, Bug, ChevronDown } from 'lucide-react';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useAnalysis } from '../../../hooks/useAnalysis';
 import { useSuppliers } from '../../../context/SuppliersContext';
@@ -23,6 +23,8 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal, onAnalysisComplete }) =>
   const [moq, setMoq] = useState(1);
   const [supplierId, setSupplierId] = useState('');
   const [result, setResult] = useState(null);
+  const [debugData, setDebugData] = useState(null); // Debug: Store raw API responses
+  const [showDebug, setShowDebug] = useState(false); // Debug: Toggle debug panel
   const pollingCleanupRef = useRef(null); // Store cleanup function for polling
   
   // Calculate per-unit buy cost
@@ -63,6 +65,18 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal, onAnalysisComplete }) =>
     }
 
     try {
+      console.log('🔍 [DEBUG] Starting analysis:', {
+        identifier,
+        identifierType,
+        finalBuyCost,
+        moq,
+        supplierId,
+        packInfo: {
+          pack_size: isPack ? packSize : 1,
+          wholesale_cost: isPack ? parseFloat(wholesaleCost) : null,
+        }
+      });
+      
       // For UPC, we need to convert to ASIN first, but the backend can handle it
       const response = await analyzeSingle(
         identifier, 
@@ -77,8 +91,47 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal, onAnalysisComplete }) =>
         }
       );
       
-      // Response contains job_id - poll for completion
+      console.log('📦 [DEBUG] Analysis API response:', JSON.stringify(response, null, 2));
+      setDebugData(prev => ({
+        ...prev,
+        analyzeResponse: response,
+        timestamp: new Date().toISOString()
+      }));
+      
+      // NEW: Check for synchronous result first (single ASIN analysis returns immediately)
+      if (response.result && (response.result.roi !== undefined || response.result.net_profit !== undefined)) {
+        console.log('✅ [DEBUG] Using synchronous result:', response.result);
+        const resultData = {
+          asin: response.result.asin || response.asin || identifier,
+          title: response.result.title || 'Unknown',
+          deal_score: response.result.deal_score ?? 'N/A',
+          net_profit: response.result.net_profit ?? response.result.profit ?? 0,
+          roi: response.result.roi ?? 0,
+          gating_status: response.result.gating_status || 'unknown',
+          meets_threshold: response.result.meets_threshold ?? false,
+          is_profitable: (response.result.net_profit || response.result.profit || 0) > 0
+        };
+        console.log('📊 [DEBUG] Formatted result data:', resultData);
+        setResult(resultData);
+        setDebugData(prev => ({
+          ...prev,
+          finalResult: resultData,
+          source: 'synchronous'
+        }));
+        showToast('Analysis complete!', 'success');
+        if (onAnalysisComplete) {
+          onAnalysisComplete({
+            asin: resultData.asin,
+            product_id: response.product_id,
+            ...resultData
+          });
+        }
+        return; // Done - no polling needed
+      }
+      
+      // Response contains job_id - poll for completion (batch/async mode)
       if (response.job_id) {
+        console.log('⏳ [DEBUG] Job-based analysis, polling for results. Job ID:', response.job_id);
         showToast('Analysis started! Waiting for results...', 'info');
         
         // ✅ OPTIMIZATION: Exponential backoff polling (reduces server load by 80%)
@@ -93,8 +146,19 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal, onAnalysisComplete }) =>
             if (isCancelled) return;
             
             try {
+              console.log(`🔄 [DEBUG] Polling job ${response.job_id}...`);
               const jobRes = await api.get(`/jobs/${response.job_id}`);
               const job = jobRes.data;
+              
+              console.log('📋 [DEBUG] Job status:', job.status, 'Job data:', JSON.stringify(job, null, 2));
+              setDebugData(prev => ({
+                ...prev,
+                jobPolls: [...(prev?.jobPolls || []), {
+                  timestamp: new Date().toISOString(),
+                  status: job.status,
+                  jobData: job
+                }]
+              }));
               
               if (job.status === 'completed') {
                 // FIRST: Check if job has result data directly
@@ -645,7 +709,7 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal, onAnalysisComplete }) =>
               </CardContent>
             </Card>
 
-            <Box display="flex" gap={2}>
+            <Box display="flex" gap={2} mb={2}>
               <Button
                 variant="contained"
                 fullWidth
@@ -665,6 +729,62 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal, onAnalysisComplete }) =>
                 Analyze Another
               </Button>
             </Box>
+
+            {/* Debug Panel */}
+            <Accordion>
+              <AccordionSummary expandIcon={<ChevronDown size={16} />}>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Bug size={16} color={habexa.purple.main} />
+                  <Typography variant="body2" fontWeight={600}>
+                    Debug Info
+                  </Typography>
+                </Box>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" mb={1} display="block">
+                    Raw API Response & Data
+                  </Typography>
+                  <Box
+                    sx={{
+                      p: 2,
+                      bgcolor: 'grey.100',
+                      borderRadius: 1,
+                      maxHeight: 400,
+                      overflow: 'auto',
+                      fontFamily: 'monospace',
+                      fontSize: '0.75rem',
+                    }}
+                  >
+                    <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                      {JSON.stringify(debugData || { message: 'No debug data yet' }, null, 2)}
+                    </pre>
+                  </Box>
+                  
+                  {result && (
+                    <>
+                      <Divider sx={{ my: 2 }} />
+                      <Typography variant="caption" color="text.secondary" mb={1} display="block">
+                        Formatted Result Data
+                      </Typography>
+                      <Box
+                        sx={{
+                          p: 2,
+                          bgcolor: 'grey.100',
+                          borderRadius: 1,
+                          fontFamily: 'monospace',
+                          fontSize: '0.75rem',
+                        }}
+                      >
+                        <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+                          {JSON.stringify(result, null, 2)}
+                        </pre>
+                      </Box>
+                    </>
+                  )}
+                </Box>
+              </AccordionDetails>
+            </Accordion>
           </Box>
         )}
       </DialogContent>

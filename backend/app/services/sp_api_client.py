@@ -309,6 +309,9 @@ class SPAPIClient:
                 return None
         
         logger.error(f"❌ SP-API {path}: All {max_retries} retries exhausted")
+        
+        # Log all SP-API calls for debugging
+        logger.info(f"📡 SP-API CALL: {method} {path} | Status: {response.status_code if 'response' in locals() else 'FAILED'} | ASINs: {asin_list if 'asin_list' in locals() else 'N/A'}")
         return None
     
     # ==========================================

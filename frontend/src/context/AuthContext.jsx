@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabase } from '../services/supabase';
 import api from '../services/api';
 
@@ -18,6 +18,7 @@ export const AuthProvider = ({ children }) => {
   const [tier, setTier] = useState(null);
   const [limits, setLimits] = useState(null);
   const [tierLoading, setTierLoading] = useState(false);
+  const loadingRef = useRef(false); // Prevent duplicate calls
 
   // Load user tier and limits
   const loadUserTier = async (userId) => {
@@ -27,11 +28,20 @@ export const AuthProvider = ({ children }) => {
       return;
     }
 
+    // Prevent duplicate concurrent calls
+    if (loadingRef.current) {
+      console.log('[AuthContext] loadUserTier already in progress, skipping...');
+      return;
+    }
+
     try {
+      loadingRef.current = true;
       setTierLoading(true);
+      console.log('[AuthContext] Loading user tier for:', userId);
       const response = await api.get('/auth/me');
       setTier(response.data.tier);
       setLimits(response.data.limits);
+      console.log('[AuthContext] Tier loaded:', response.data.tier);
     } catch (error) {
       console.error('Failed to load user tier:', error);
       // Fallback to free tier on error
@@ -43,6 +53,7 @@ export const AuthProvider = ({ children }) => {
       });
     } finally {
       setTierLoading(false);
+      loadingRef.current = false;
     }
   };
 
