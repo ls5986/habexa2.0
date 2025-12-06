@@ -274,3 +274,63 @@ def validate_mapping(mapping_dict: Dict[str, str], headers: List[str] = None) ->
 
 # Export expected fields as MAPPABLE_FIELDS for backward compatibility
 MAPPABLE_FIELDS = ColumnMapper.EXPECTED_FIELDS
+
+
+def apply_mapping(row: Dict[str, Any], column_mapping: Dict[str, str]) -> Dict[str, Any]:
+    """
+    Apply column mapping to a CSV/Excel row.
+    
+    Args:
+        row: Dict with CSV column names as keys
+        column_mapping: Dict mapping our field names to CSV column names
+            e.g. {'title': 'DESCRIPTION', 'cost': 'WHOLESALE', ...}
+    
+    Returns:
+        Dict with our field names as keys, values from row
+    """
+    mapped = {}
+    
+    # Apply mapping: for each target field, get value from CSV column
+    for target_field, csv_column in column_mapping.items():
+        if csv_column in row:
+            value = row[csv_column]
+            # Convert empty strings to None
+            if isinstance(value, str) and not value.strip():
+                value = None
+            mapped[target_field] = value
+        else:
+            mapped[target_field] = None
+    
+    return mapped
+
+
+def validate_row(mapped: Dict[str, Any]) -> tuple[bool, str]:
+    """
+    Validate a mapped row.
+    
+    Args:
+        mapped: Dict with our field names as keys (from apply_mapping)
+    
+    Returns:
+        (is_valid: bool, error_msg: str)
+    """
+    # Required field: cost
+    if 'cost' not in mapped or mapped['cost'] is None:
+        return False, "Missing required field: cost"
+    
+    # Try to convert cost to float
+    try:
+        cost = float(mapped['cost'])
+        if cost <= 0:
+            return False, "Cost must be greater than 0"
+    except (ValueError, TypeError):
+        return False, f"Invalid cost value: {mapped.get('cost')}"
+    
+    # Optional validation: if ASIN provided, should be valid format
+    if mapped.get('asin'):
+        asin = str(mapped['asin']).strip()
+        if len(asin) != 10 or not asin.startswith('B'):
+            # Not a hard error, just a warning - but we'll allow it
+            pass
+    
+    return True, ""
