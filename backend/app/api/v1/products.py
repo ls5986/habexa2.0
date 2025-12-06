@@ -386,84 +386,36 @@ async def get_deals(
 @router.get("/stats/asin-status")
 @cached(ttl=10)
 async def get_asin_status_stats(current_user = Depends(get_current_user)):
-    """Get counts using proper SQL queries on database side."""
+    """
+    Get ASIN status stats using PostgreSQL RPC function.
+    100% database-side, highly scalable.
+    Uses FILTER clauses for efficient aggregation.
+    """
     user_id = str(current_user.id)
     
     try:
-        # Total products
-        all_result = supabase.table("products")\
-            .select("id", count="exact")\
-            .eq("user_id", user_id)\
-            .execute()
+        # Call PostgreSQL RPC function - single query, single round-trip
+        # This uses FILTER clauses for efficient counting
+        result = supabase.rpc('get_asin_stats', {'p_user_id': user_id}).execute()
         
-        total = all_result.count or 0
+        if result.data:
+            stats = result.data
+            logger.info(f"✅ ASIN Stats (DB-side) for user {user_id}: {stats}")
+            return stats
+        else:
+            # Fallback if RPC returns null
+            logger.warning(f"RPC returned null for user {user_id}, using fallback")
+            return {
+                "all": 0,
+                "asin_found": 0,
+                "needs_selection": 0,
+                "needs_asin": 0,
+                "manual_entry": 0
+            }
         
-        # Products WITH ASIN (not null, not empty string)
-        asin_found_result = supabase.table("products")\
-            .select("id", count="exact")\
-            .eq("user_id", user_id)\
-            .not_.is_("asin", "null")\
-            .neq("asin", "")\
-            .execute()
-        
-        asin_found = asin_found_result.count or 0
-        
-        # Products in needs_selection status
-        needs_selection_result = supabase.table("products")\
-            .select("id", count="exact")\
-            .eq("user_id", user_id)\
-            .eq("status", "needs_selection")\
-            .execute()
-        
-        needs_selection = needs_selection_result.count or 0
-        
-        # Products WITH UPC but NO ASIN
-        # For complex OR conditions, we need to fetch and filter in Python
-        # Supabase doesn't easily support (upc IS NOT NULL AND asin IS NULL)
-        upc_result = supabase.table("products")\
-            .select("id, asin, upc")\
-            .eq("user_id", user_id)\
-            .not_.is_("upc", "null")\
-            .neq("upc", "")\
-            .execute()
-        
-        needs_asin = 0
-        manual_entry = 0
-        
-        for product in (upc_result.data or []):
-            asin = product.get("asin")
-            upc = product.get("upc")
-            
-            # Has UPC but no ASIN
-            if upc and upc.strip() and (not asin or not asin.strip()):
-                needs_asin += 1
-        
-        # Products with NO UPC and NO ASIN (manual entry)
-        # Get all products without UPC, then filter for those without ASIN
-        no_upc_result = supabase.table("products")\
-            .select("id, asin")\
-            .eq("user_id", user_id)\
-            .or_("upc.is.null,upc.eq.")\
-            .execute()
-        
-        for product in (no_upc_result.data or []):
-            asin = product.get("asin")
-            # No UPC and no ASIN = manual entry
-            if not asin or not asin.strip():
-                manual_entry += 1
-        
-        stats = {
-            "all": total,
-            "asin_found": asin_found,
-            "needs_asin": needs_asin,
-            "needs_selection": needs_selection,
-            "manual_entry": manual_entry
-        }
-        
-        logger.info(f"📊 ASIN Status Stats for user {user_id}: {stats}")
-        return stats
     except Exception as e:
-        logger.error(f"Failed to get ASIN status stats: {e}", exc_info=True)
+        logger.error(f"❌ Failed to get ASIN stats via RPC: {e}", exc_info=True)
+        # Fallback to safe defaults
         return {
             "all": 0,
             "asin_found": 0,
