@@ -1,335 +1,223 @@
 """
-Column Mapping Service
-Handles automatic column detection, mapping validation, and data transformation.
+AI-powered column mapping for CSV/Excel imports.
+
+Uses OpenAI to intelligently detect column purposes.
 """
+import os
+import logging
+from typing import Dict, List, Optional
+from openai import OpenAI
+from app.core.config import settings
 
-from typing import Dict, List, Optional, Any
-import re
-from decimal import Decimal, InvalidOperation
+logger = logging.getLogger(__name__)
 
+# Initialize OpenAI client
+client = None
+if settings.OPENAI_API_KEY:
+    client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
-# ============================================================================
-# MAPPABLE FIELDS DEFINITIONS
-# ============================================================================
-
-MAPPABLE_FIELDS = {
-    "upc": {
-        "label": "UPC",
-        "required": True,
-        "data_type": "string",
-        "description": "Universal Product Code (12-14 digit barcode)",
-        "validation": r"^\d{11,14}$",
-        "normalize": True,  # Pad 11-digit to 12
-        "common_names": ["UPC", "GTIN", "Barcode", "Item UPC", "UPC Code", "EAN", "UPC/EAN"],
-    },
-    "buy_cost": {
-        "label": "Buy Cost",
-        "required": True,
-        "data_type": "currency",
-        "description": "Your cost per SINGLE UNIT from supplier (not per case)",
-        "validation": "positive_number",
-        "common_names": ["Unit Cost", "Wholesale", "Cost", "Price Each", "Net Cost", "Supplier Cost", "Wholesale Cost", "Buy Price"],
-    },
-    "promo_buy_cost": {
-        "label": "Promo Buy Cost",
-        "required": False,
-        "data_type": "currency",
-        "description": "Temporary promotional price (optional)",
-        "validation": "positive_number",
-        "common_names": ["Promo Cost", "Sale Price", "Deal Price", "Special Price", "Promo", "Promo Price", "TOTAL PROMO %"],
-    },
-    "pack_size": {
-        "label": "Pack Size",
-        "required": False,
-        "data_type": "integer",
-        "default": 1,
-        "description": "Units per case/pack from supplier",
-        "validation": "positive_integer",
-        "common_names": ["Case Qty", "Pack Size", "Units/Case", "Case Pack", "Inner Pack", "Qty", "PACK", "Pack Qty"],
-    },
-    "moq": {
-        "label": "MOQ",
-        "required": False,
-        "data_type": "integer",
-        "default": 1,
-        "description": "Minimum order quantity (in cases)",
-        "validation": "positive_integer",
-        "common_names": ["MOQ", "Min Order", "Minimum", "Min Qty", "Order Min", "Minimum Order"],
-    },
-    "title": {
-        "label": "Product Title",
-        "required": False,
-        "data_type": "string",
-        "description": "Product name/description from supplier",
-        "common_names": ["Description", "Product Name", "Item Name", "Title", "Name", "DESCRIPTION", "Product Desc"],
-    },
-    "brand": {
-        "label": "Brand",
-        "required": False,
-        "data_type": "string",
-        "description": "Product brand/manufacturer",
-        "common_names": ["Brand", "Manufacturer", "Brand Name", "Vendor", "Mfr", "BRAND", "Manufacturer Name"],
-    },
-    "supplier_sku": {
-        "label": "Supplier SKU",
-        "required": False,
-        "data_type": "string",
-        "description": "Supplier's internal product code",
-        "common_names": ["SKU", "Item Number", "Item #", "Product Code", "Supplier SKU", "ITEM", "Item Code"],
-    },
-}
-
-
-# ============================================================================
-# AUTO-MAPPING LOGIC
-# ============================================================================
-
-def auto_map_columns(file_columns: List[str]) -> Dict[str, str]:
+class ColumnMapper:
     """
-    Attempt to automatically map columns based on common names.
-    
-    Args:
-        file_columns: List of column names from the uploaded file
-        
-    Returns:
-        Dictionary mapping field keys to column names
-        Example: {"upc": "Item UPC", "buy_cost": "Wholesale Cost"}
+    Maps CSV/Excel columns to expected product fields.
     """
-    mapping = {}
-    mapped_columns = set()
     
-    # Normalize file columns for comparison
-    file_columns_lower = {col.lower().strip(): col for col in file_columns}
-    
-    for field_key, field_config in MAPPABLE_FIELDS.items():
-        if field_key in mapping:  # Already mapped
-            continue
-            
-        common_names = [n.lower() for n in field_config.get("common_names", [])]
-        
-        # Try exact match first
-        for common in common_names:
-            if common in file_columns_lower:
-                original_col = file_columns_lower[common]
-                if original_col not in mapped_columns:
-                    mapping[field_key] = original_col
-                    mapped_columns.add(original_col)
-                    break
-        
-        # If not found, try partial match
-        if field_key not in mapping:
-            for file_col_lower, original_col in file_columns_lower.items():
-                if original_col in mapped_columns:
-                    continue
-                    
-                # Check if any common name is contained in column name or vice versa
-                for common in common_names:
-                    if common in file_col_lower or file_col_lower in common:
-                        # Additional check: ensure it's a meaningful match (not just "a" in "brand")
-                        if len(common) >= 3 and len(file_col_lower) >= 3:
-                            mapping[field_key] = original_col
-                            mapped_columns.add(original_col)
-                            break
-                
-                if field_key in mapping:
-                    break
-    
-    return mapping
-
-
-# ============================================================================
-# MAPPING VALIDATION
-# ============================================================================
-
-def validate_mapping(mapping: Dict[str, str], file_columns: List[str]) -> Dict[str, Any]:
-    """
-    Validate column mapping before processing.
-    
-    Args:
-        mapping: Dictionary mapping field keys to column names
-        file_columns: List of actual column names in the file
-        
-    Returns:
-        Dictionary with validation results:
-        {
-            "valid": bool,
-            "errors": List[Dict],
-            "warnings": List[Dict]
-        }
-    """
-    errors = []
-    warnings = []
-    
-    # Check required fields
-    for field_key, config in MAPPABLE_FIELDS.items():
-        if config.get("required") and field_key not in mapping:
-            errors.append({
-                "field": field_key,
-                "message": f"{config['label']} is required but not mapped"
-            })
-    
-    # Check for duplicate mappings (same column mapped twice)
-    mapped_cols = list(mapping.values())
-    duplicates = [col for col in mapped_cols if mapped_cols.count(col) > 1]
-    if duplicates:
-        errors.append({
-            "field": "general",
-            "message": f"Column '{duplicates[0]}' is mapped to multiple fields"
-        })
-    
-    # Validate mapped columns exist in file
-    file_columns_set = set(file_columns)
-    for field_key, col_name in mapping.items():
-        if col_name not in file_columns_set:
-            errors.append({
-                "field": field_key,
-                "message": f"Column '{col_name}' not found in file"
-            })
-    
-    return {
-        "valid": len(errors) == 0,
-        "errors": errors,
-        "warnings": warnings
+    # Expected fields for product import
+    EXPECTED_FIELDS = {
+        'asin': 'Amazon ASIN identifier',
+        'upc': 'Universal Product Code (barcode)',
+        'sku': 'Stock Keeping Unit',
+        'title': 'Product name/title/description',
+        'brand': 'Brand name/manufacturer',
+        'category': 'Product category',
+        'cost': 'Buy cost/wholesale price/unit cost',
+        'moq': 'Minimum order quantity',
+        'case_pack': 'Items per case/pack size',
+        'wholesale_cost_case': 'Wholesale cost per case',
+        'supplier_name': 'Supplier name'
     }
-
-
-# ============================================================================
-# DATA NORMALIZATION
-# ============================================================================
-
-def normalize_upc(upc: str) -> Optional[str]:
-    """Normalize UPC: strip whitespace, remove dashes, pad to 12 digits if needed."""
-    if not upc:
-        return None
     
-    # Remove whitespace and dashes
-    upc_clean = re.sub(r'[\s-]', '', str(upc))
+    def __init__(self):
+        self.has_openai = bool(client)
+        if not self.has_openai:
+            logger.warning("⚠️ OpenAI API key not set - AI column mapping disabled")
     
-    # Remove leading zeros for validation
-    upc_digits = upc_clean.lstrip('0')
-    
-    # Validate length
-    if not re.match(r'^\d{11,14}$', upc_clean):
-        return None
-    
-    # Pad 11-digit UPCs to 12 digits (add leading zero)
-    if len(upc_clean) == 11:
-        upc_clean = '0' + upc_clean
-    
-    return upc_clean
-
-
-def normalize_currency(value: Any) -> Optional[float]:
-    """Convert currency string to float, handling $, commas, etc."""
-    if value is None:
-        return None
-    
-    if isinstance(value, (int, float)):
-        return float(value) if value > 0 else None
-    
-    # Convert to string and clean
-    value_str = str(value).strip()
-    
-    # Remove currency symbols, commas, whitespace
-    value_str = re.sub(r'[$,\s]', '', value_str)
-    
-    try:
-        value_float = float(value_str)
-        return value_float if value_float > 0 else None
-    except (ValueError, TypeError):
-        return None
-
-
-def normalize_integer(value: Any) -> Optional[int]:
-    """Convert value to integer, handling strings with commas."""
-    if value is None:
-        return None
-    
-    if isinstance(value, int):
-        return value if value > 0 else None
-    
-    if isinstance(value, float):
-        return int(value) if value > 0 else None
-    
-    # Convert to string and clean
-    value_str = str(value).strip()
-    value_str = re.sub(r'[,]', '', value_str)
-    
-    try:
-        value_int = int(float(value_str))  # Handle "12.0" -> 12
-        return value_int if value_int > 0 else None
-    except (ValueError, TypeError):
-        return None
-
-
-# ============================================================================
-# APPLY MAPPING TO ROW
-# ============================================================================
-
-def apply_mapping(row: Dict[str, Any], column_mapping: Dict[str, str]) -> Dict[str, Any]:
-    """
-    Apply column mapping to a single row of data.
-    
-    Args:
-        row: Dictionary with original column names as keys
-        column_mapping: Dictionary mapping field keys to column names
+    async def map_columns_ai(
+        self, 
+        columns: List[str],
+        sample_data: Optional[Dict] = None
+    ) -> Dict[str, str]:
+        """
+        Use OpenAI to intelligently map columns.
         
-    Returns:
-        Dictionary with normalized field keys and values
-    """
-    mapped_row = {}
-    
-    for field_key, column_name in column_mapping.items():
-        if column_name not in row:
-            # Use default if available
-            field_config = MAPPABLE_FIELDS.get(field_key, {})
-            if "default" in field_config:
-                mapped_row[field_key] = field_config["default"]
-            continue
+        Args:
+            columns: List of column names from CSV/Excel
+            sample_data: Optional dict of sample data (first row)
         
-        raw_value = row[column_name]
-        field_config = MAPPABLE_FIELDS.get(field_key, {})
-        data_type = field_config.get("data_type", "string")
+        Returns:
+            Dict mapping our fields to CSV columns
+            e.g. {'title': 'DESCRIPTION', 'cost': 'WHOLESALE', ...}
+        """
         
-        # Normalize based on data type
-        if field_key == "upc":
-            mapped_row[field_key] = normalize_upc(raw_value)
-        elif data_type == "currency":
-            mapped_row[field_key] = normalize_currency(raw_value)
-        elif data_type == "integer":
-            mapped_row[field_key] = normalize_integer(raw_value)
-        else:  # string
-            mapped_row[field_key] = str(raw_value).strip() if raw_value else None
-    
-    return mapped_row
-
-
-# ============================================================================
-# VALIDATE ROW DATA
-# ============================================================================
-
-def validate_row(row: Dict[str, Any]) -> tuple[bool, Optional[str]]:
-    """
-    Validate a single mapped row.
-    
-    Args:
-        row: Mapped row with normalized values
+        if not self.has_openai:
+            logger.warning("OpenAI not available, using fallback mapping")
+            return self.map_columns_fallback(columns)
         
-    Returns:
-        Tuple of (is_valid, error_message)
-    """
-    # Check required fields
-    if not row.get("upc"):
-        return False, "UPC is required"
+        try:
+            # Build prompt for OpenAI
+            prompt = self._build_mapping_prompt(columns, sample_data)
+            
+            logger.info("🤖 Asking OpenAI to map columns...")
+            
+            # Call OpenAI
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are a data mapping expert. Map CSV/Excel columns to product fields. Return ONLY valid JSON."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                temperature=0,
+                response_format={"type": "json_object"}
+            )
+            
+            # Parse response
+            mapping_json = response.choices[0].message.content
+            import json
+            mapping = json.loads(mapping_json)
+            
+            logger.info(f"✅ AI column mapping: {mapping}")
+            
+            return mapping.get('mapping', {})
+            
+        except Exception as e:
+            logger.error(f"❌ OpenAI mapping failed: {e}")
+            return self.map_columns_fallback(columns)
     
-    # Validate UPC format
-    upc = row.get("upc")
-    if not re.match(r'^\d{12,14}$', str(upc)):
-        return False, f"Invalid UPC format: {upc}"
-    
-    # Check required buy_cost
-    if not row.get("buy_cost") or row.get("buy_cost") <= 0:
-        return False, "Buy cost is required and must be positive"
-    
-    return True, None
+    def _build_mapping_prompt(
+        self, 
+        columns: List[str],
+        sample_data: Optional[Dict] = None
+    ) -> str:
+        """Build prompt for OpenAI column mapping."""
+        
+        prompt = f"""You are mapping CSV/Excel columns to product fields.
 
+CSV COLUMNS:
+{chr(10).join(f"- {col}" for col in columns)}
+"""
+        
+        if sample_data:
+            prompt += f"""
+
+SAMPLE DATA (first row):
+{chr(10).join(f"- {col}: {sample_data.get(col, 'N/A')}" for col in list(columns)[:10])}
+"""
+        
+        prompt += f"""
+
+TARGET FIELDS TO MAP:
+{chr(10).join(f"- {field}: {desc}" for field, desc in self.EXPECTED_FIELDS.items())}
+
+INSTRUCTIONS:
+1. Map each CSV column to the most appropriate target field
+2. Only include mappings where you're confident
+3. A CSV column can only map to ONE target field
+4. Common patterns:
+   - "UPC" → upc
+   - "DESCRIPTION" or "PRODUCT NAME" → title
+   - "BRAND" → brand
+   - "WHOLESALE" or "COST" or "PRICE" → cost
+   - "PACK" or "CASE PACK" → case_pack
+5. Return ONLY valid JSON in this format:
+
+{{
+  "mapping": {{
+    "title": "DESCRIPTION",
+    "cost": "WHOLESALE",
+    "brand": "BRAND",
+    ...
+  }}
+}}
+
+Return the JSON mapping now:"""
+        
+        return prompt
+    
+    def map_columns_fallback(self, columns: List[str]) -> Dict[str, str]:
+        """
+        Fallback column mapping using simple rules.
+        Used when OpenAI is unavailable.
+        """
+        
+        mapping = {}
+        
+        # Convert to lowercase for matching
+        columns_lower = {col.lower(): col for col in columns}
+        
+        # Simple mapping rules
+        rules = {
+            'asin': ['asin', 'amazon asin', 'amazon_asin'],
+            'upc': ['upc', 'barcode', 'upc code', 'upc_code'],
+            'sku': ['sku', 'item', 'item number', 'item_number', 'product code'],
+            'title': ['title', 'name', 'product name', 'description', 'product_name', 'product description'],
+            'brand': ['brand', 'manufacturer', 'mfg', 'vendor'],
+            'category': ['category', 'cat', 'cat1', 'department', 'dept'],
+            'cost': ['cost', 'price', 'wholesale', 'unit cost', 'buy cost', 'wholesale price'],
+            'moq': ['moq', 'minimum order', 'min qty', 'min_qty'],
+            'case_pack': ['case pack', 'pack', 'pack size', 'units per case', 'case_pack'],
+            'wholesale_cost_case': ['wholesale cost case', 'case cost', 'total deal cost'],
+            'supplier_name': ['supplier', 'supplier name', 'vendor', 'vendor name']
+        }
+        
+        for field, patterns in rules.items():
+            for pattern in patterns:
+                if pattern in columns_lower:
+                    mapping[field] = columns_lower[pattern]
+                    break
+        
+        logger.info(f"📋 Fallback mapping: {mapping}")
+        
+        return mapping
+    
+    def validate_mapping(self, mapping: Dict[str, str]) -> Dict:
+        """
+        Validate column mapping.
+        
+        Returns:
+            {
+                'valid': bool,
+                'missing_required': List[str],
+                'warnings': List[str]
+            }
+        """
+        
+        # Required fields
+        required = ['cost']  # Only cost is truly required
+        
+        # Recommended fields
+        recommended = ['title', 'brand', 'upc', 'asin']
+        
+        missing_required = [f for f in required if f not in mapping]
+        missing_recommended = [f for f in recommended if f not in mapping]
+        
+        warnings = []
+        if missing_recommended:
+            warnings.append(
+                f"Missing recommended fields: {', '.join(missing_recommended)}"
+            )
+        
+        return {
+            'valid': len(missing_required) == 0,
+            'missing_required': missing_required,
+            'missing_recommended': missing_recommended,
+            'warnings': warnings
+        }
+
+
+# Singleton instance
+column_mapper = ColumnMapper()

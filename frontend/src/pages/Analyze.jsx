@@ -421,38 +421,77 @@ const Analyze = () => {
   };
 
   const handleAddToProducts = async () => {
+    // Validate we have analysis result
     if (!result) {
-      showToast('No analysis result to add.', 'warning');
+      showToast('No analysis result to add', 'error');
       return;
     }
     
     setAddingToProducts(true);
     
     try {
-      // Product is already created during analysis - no need to update
-      // Just navigate to products page
-      showToast('Product is in your list! Redirecting...', 'success');
+      console.log('🔄 Adding product to database...', result);
       
-      // Navigate to products page - filter by ASIN if available
-      setTimeout(() => {
-        if (result.asin) {
-          navigate(`/products?asin=${result.asin}`);
-        } else {
-          navigate('/products');
-        }
-      }, 1000);
+      // Build request payload
+      const productData = {
+        // Identifiers
+        asin: result.asin || asin,
+        upc: result.upc || null,
+        sku: result.sku || null,
+        
+        // Product info
+        title: result.title || null,
+        brand: result.brand || null,
+        image_url: result.image_url || result.image || null,
+        category: result.category || null,
+        
+        // Pricing
+        buy_cost: parseFloat(buyCost),
+        sell_price: result.sell_price || result.price || null,
+        fees: result.fees || result.fees_total || null,
+        profit: result.profit || null,
+        roi: result.roi || null,
+        
+        // Other
+        moq: parseInt(moq) || 1,
+        supplier_id: supplierId || null,
+        
+        // Keepa data
+        bsr: result.bsr || null,
+        sales_estimate: result.sales_estimate || null,
+        parent_asin: result.parent_asin || null
+      };
       
-    } catch (err) {
-      console.error('Failed to navigate to product:', err);
-      // Still navigate even if there's an error
-      showToast('Redirecting to products page...', 'info');
-      setTimeout(() => {
-        if (result.asin) {
-          navigate(`/products?asin=${result.asin}`);
-        } else {
-          navigate('/products');
-        }
-      }, 500);
+      console.log('📦 Product payload:', productData);
+      
+      // Make API call
+      const response = await api.post('/products', productData);
+      
+      console.log('📡 API response status:', response.status);
+      console.log('✅ Product created:', response.data);
+      
+      // Show success message
+      showToast('Product added successfully!', 'success');
+      
+      // Wait a moment before redirecting
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Navigate to products page
+      if (result.asin || asin) {
+        navigate(`/products?asin=${result.asin || asin}`);
+      } else {
+        navigate('/products');
+      }
+      
+    } catch (error) {
+      console.error('❌ Failed to add product:', error);
+      
+      const errorMessage = error.response?.data?.detail || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          'Failed to add product. Please try again.';
+      
+      showToast(errorMessage, 'error');
     } finally {
       setAddingToProducts(false);
     }
@@ -811,7 +850,7 @@ const Analyze = () => {
                   variant="contained"
                   startIcon={<Plus size={16} />}
                   onClick={handleAddToProducts}
-                  disabled={addingToProducts || !result?.product_id}
+                  disabled={addingToProducts || !result}
                   sx={{
                     backgroundColor: habexa.purple.main,
                     '&:hover': { backgroundColor: habexa.purple.dark },

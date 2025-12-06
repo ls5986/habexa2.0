@@ -7,6 +7,7 @@ import io
 import re
 import base64
 import traceback
+from datetime import datetime
 from typing import Optional, List, Dict, Tuple
 from app.core.celery_app import celery_app
 from app.services.supabase_client import supabase
@@ -202,6 +203,7 @@ def parse_supplier_row(row: dict) -> Optional[Dict]:
             "promo_wholesale_cost": promo_wholesale_cost,
             "promo_buy_cost": promo_buy_cost,
             "has_promo": has_promo,
+            "original_row": row,  # Store entire original row for later storage
             "brand": brand,
             "title": title,
             "description": title,  # Alias for compatibility
@@ -430,6 +432,7 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                     
                     parsed_rows.append({
                         "asin": asin,
+                        "upc": supplier_data.get("upc"),
                         "buy_cost": supplier_data.get("buy_cost"),
                         "pack_size": supplier_data.get("pack_size", 1),
                         "wholesale_cost": supplier_data.get("wholesale_cost"),
@@ -437,7 +440,9 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                         "promo_qty": supplier_data.get("promo_qty"),
                         "moq": supplier_data.get("moq", 1),
                         "notes": supplier_data.get("notes"),
-                        "brand": supplier_data.get("brand")
+                        "brand": supplier_data.get("brand"),
+                        "title": supplier_data.get("title"),
+                        "original_row": supplier_data.get("original_row", row)  # Store original row
                     })
                     asins.append(asin)
                 else:
@@ -459,9 +464,11 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                     
                     parsed_rows.append({
                         "asin": asin,
+                        "upc": parse_upc(row),
                         "buy_cost": parse_cost(row),
                         "moq": parse_moq(row),
-                        "notes": parse_notes(row)
+                        "notes": parse_notes(row),
+                        "original_row": row  # Store entire original row
                     })
                     asins.append(asin)
             
@@ -522,6 +529,7 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                                 if is_kehe and supplier_data:
                                     parsed_rows.append({
                                         "asin": asin_result,
+                                        "upc": upc,
                                         "buy_cost": supplier_data.get("buy_cost"),
                                         "pack_size": supplier_data.get("pack_size", 1),
                                         "wholesale_cost": supplier_data.get("wholesale_cost"),
@@ -530,16 +538,19 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                                         "promo_qty": supplier_data.get("promo_qty"),
                                         "moq": supplier_data.get("moq", 1),
                                         "notes": supplier_data.get("notes"),
-                                        "brand": supplier_data.get("brand")
+                                        "brand": supplier_data.get("brand"),
+                                        "original_row": supplier_data.get("original_row", row)
                                     })
                                 else:
                                     # For standard format, use stored row data
                                     if supplier_data:
                                         parsed_rows.append({
                                             "asin": asin_result,
+                                            "upc": upc,
                                             "buy_cost": supplier_data.get("buy_cost"),
                                             "moq": supplier_data.get("moq", 1),
-                                            "notes": supplier_data.get("notes")
+                                            "notes": supplier_data.get("notes"),
+                                            "original_row": supplier_data.get("original_row", row)
                                         })
                                     else:
                                         # Fallback: try to find original row
@@ -552,9 +563,11 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                                         if original_row:
                                             parsed_rows.append({
                                                 "asin": asin_result,
+                                                "upc": upc,
                                                 "buy_cost": parse_cost(original_row),
                                                 "moq": parse_moq(original_row),
-                                                "notes": parse_notes(original_row)
+                                                "notes": parse_notes(original_row),
+                                                "original_row": original_row
                                             })
                                 asins.append(asin_result)
                             else:
@@ -584,7 +597,8 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                                             "promo_qty": supplier_data.get("promo_qty"),
                                             "moq": supplier_data.get("moq", 1),
                                             "notes": supplier_data.get("notes"),
-                                            "brand": supplier_data.get("brand")
+                                            "brand": supplier_data.get("brand"),
+                                            "original_row": supplier_data.get("original_row", row)
                                         })
                                     else:
                                         original_row = None
@@ -601,7 +615,8 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                                             "supplier_title": original_row.get("title") if original_row else None,
                                             "buy_cost": supplier_data.get("buy_cost") if supplier_data else parse_cost(original_row) if original_row else None,
                                             "moq": supplier_data.get("moq", 1) if supplier_data else parse_moq(original_row) if original_row else 1,
-                                            "notes": supplier_data.get("notes") if supplier_data else parse_notes(original_row) if original_row else None
+                                            "notes": supplier_data.get("notes") if supplier_data else parse_notes(original_row) if original_row else None,
+                                            "original_row": original_row if original_row else (supplier_data.get("original_row") if supplier_data else row)
                                         })
                                     
                                     if row_num:
@@ -616,6 +631,7 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                                         if is_kehe and supplier_data:
                                             parsed_rows.append({
                                                 "asin": asin_result,
+                                                "upc": upc,
                                                 "buy_cost": supplier_data.get("buy_cost"),
                                                 "pack_size": supplier_data.get("pack_size", 1),
                                                 "wholesale_cost": supplier_data.get("wholesale_cost"),
@@ -624,7 +640,8 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                                                 "promo_qty": supplier_data.get("promo_qty"),
                                                 "moq": supplier_data.get("moq", 1),
                                                 "notes": supplier_data.get("notes"),
-                                                "brand": supplier_data.get("brand")
+                                                "brand": supplier_data.get("brand"),
+                                                "original_row": supplier_data.get("original_row", row)
                                             })
                                         else:
                                             original_row = None
@@ -636,9 +653,11 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                                             if original_row:
                                                 parsed_rows.append({
                                                     "asin": asin_result,
+                                                    "upc": upc,
                                                     "buy_cost": parse_cost(original_row),
                                                     "moq": parse_moq(original_row),
-                                                    "notes": parse_notes(original_row)
+                                                    "notes": parse_notes(original_row),
+                                                    "original_row": original_row
                                                 })
                                         asins.append(asin_result)
                                 else:
@@ -657,6 +676,7 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                                             "supplier_title": supplier_data.get("title"),
                                             "promo_qty": supplier_data.get("promo_qty"),
                                             "moq": supplier_data.get("moq", 1),
+                                            "original_row": supplier_data.get("original_row", row),
                                             "notes": supplier_data.get("notes"),
                                             "brand": supplier_data.get("brand")
                                         })
@@ -717,15 +737,26 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                                 if selected_asin_data:
                                     amazon_title = selected_asin_data.get("title")
                             
+                            # Extract all CSV columns from original row
+                            original_row = parsed.get("original_row", {})
+                            
                             product_data = {
                                 "user_id": user_id,
                                 "asin": parsed["asin"],
                                 "upc": parsed.get("upc"),
+                                "sku": original_row.get("sku") or original_row.get("SKU"),
                                 "title": amazon_title,  # Amazon title (from SP-API)
                                 "supplier_title": parsed.get("supplier_title") or parsed.get("title"),  # Supplier's title
+                                "uploaded_title": original_row.get("title") or original_row.get("product_name") or original_row.get("name") or original_row.get("DESCRIPTION") or original_row.get("description"),
+                                "uploaded_brand": original_row.get("brand") or original_row.get("BRAND") or parsed.get("brand"),
+                                "uploaded_category": original_row.get("category") or original_row.get("CATEGORY"),
                                 "brand": parsed.get("brand"),
                                 "status": "pending",
-                                "asin_status": "found"  # ASIN was found via UPC conversion
+                                "asin_status": "found",  # ASIN was found via UPC conversion
+                                "upload_source": "csv" if filename.lower().endswith('.csv') else "excel",
+                                "source_filename": filename,
+                                "uploaded_at": datetime.utcnow().isoformat(),
+                                "original_upload_data": original_row  # Store entire CSV row as JSON
                             }
                             new_products.append(product_data)
                     
@@ -761,17 +792,28 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                     # Format: PENDING_{UPC} - will be updated when ASIN is found
                     placeholder_asin = f"PENDING_{upc}"
                     
+                    # Extract all CSV columns from original row
+                    original_row = parsed.get("original_row", {})
+                    
                     # Build product data with all new fields
                     product_data = {
                         "user_id": user_id,
                         "asin": None if asin_status == "multiple_found" else placeholder_asin,  # NULL if multiple ASINs (user must choose), placeholder otherwise
                         "upc": upc,  # Store UPC for manual lookup
+                        "sku": original_row.get("sku") or original_row.get("SKU") or original_row.get("ITEM") or original_row.get("item"),
                         "title": None,  # Will be filled from Amazon once ASIN is set
                         "supplier_title": parsed.get("supplier_title") or parsed.get("title"),  # Supplier's name for the product
+                        "uploaded_title": original_row.get("title") or original_row.get("product_name") or original_row.get("name") or original_row.get("DESCRIPTION") or original_row.get("description"),
+                        "uploaded_brand": original_row.get("brand") or original_row.get("BRAND") or parsed.get("brand"),
+                        "uploaded_category": original_row.get("category") or original_row.get("CATEGORY"),
                         "brand": parsed.get("brand"),
                         "status": "pending",
                         "asin_status": asin_status,  # 'not_found' or 'multiple_found'
-                        "potential_asins": potential_asins if potential_asins else None  # JSONB array of ASIN options
+                        "potential_asins": potential_asins if potential_asins else None,  # JSONB array of ASIN options
+                        "upload_source": "csv" if filename.lower().endswith('.csv') else "excel",
+                        "source_filename": filename,
+                        "uploaded_at": datetime.utcnow().isoformat(),
+                        "original_upload_data": original_row  # Store entire CSV row as JSON
                     }
                     new_products_no_asin.append(product_data)
                 

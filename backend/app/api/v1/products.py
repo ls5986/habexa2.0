@@ -42,6 +42,35 @@ class AddProductRequest(BaseModel):
     source: Optional[str] = "manual"
     source_detail: Optional[str] = None
 
+class CreateProductRequest(BaseModel):
+    """Request model for creating a product from analysis results."""
+    # Identifiers
+    asin: str
+    upc: Optional[str] = None
+    sku: Optional[str] = None
+    
+    # Product info
+    title: Optional[str] = None
+    brand: Optional[str] = None
+    image_url: Optional[str] = None
+    category: Optional[str] = None
+    
+    # Pricing (required for analysis)
+    buy_cost: float
+    sell_price: Optional[float] = None
+    fees: Optional[float] = None
+    profit: Optional[float] = None
+    roi: Optional[float] = None
+    
+    # Other
+    moq: Optional[int] = 1
+    supplier_id: Optional[str] = None
+    
+    # Keepa data
+    bsr: Optional[int] = None
+    sales_estimate: Optional[int] = None
+    parent_asin: Optional[str] = None
+
 class UpdateDealRequest(BaseModel):
     buy_cost: Optional[float] = None
     moq: Optional[int] = None
@@ -422,10 +451,89 @@ async def get_deals_for_asin(asin: str, current_user = Depends(get_current_user)
         raise HTTPException(500, str(e))
 
 @router.post("")
+async def create_product(
+    request: CreateProductRequest,
+    current_user = Depends(get_current_user)
+):
+    """
+    Create a new product from analysis results.
+    This endpoint is called when user clicks "Add to Products" after analysis.
+    """
+    user_id = str(current_user.id)
+    
+    logger.info(f"📝 Creating product for user {user_id}: ASIN={request.asin}")
+    
+    try:
+        asin = request.asin.strip().upper()
+        if len(asin) != 10:
+            raise HTTPException(400, "ASIN must be 10 characters")
+        
+        # Get or create product
+        product_result = get_or_create_product(user_id, asin, request.brand)
+        product = product_result["product"]
+        
+        if not product:
+            raise HTTPException(500, "Failed to create product")
+        
+        # Update product with analysis data
+        update_data = {
+            "title": request.title or product.get("title"),
+            "brand": request.brand or product.get("brand"),
+            "image_url": request.image_url or product.get("image_url"),
+            "category": request.category or product.get("category"),
+            "upc": request.upc or product.get("upc"),
+            "sku": request.sku or product.get("sku"),
+            "bsr": request.bsr or product.get("bsr"),
+            "sales_estimate": request.sales_estimate or product.get("sales_estimate"),
+            "parent_asin": request.parent_asin or product.get("parent_asin"),
+            "status": "analyzed",
+            "updated_at": datetime.utcnow().isoformat()
+        }
+        
+        # Remove None values
+        update_data = {k: v for k, v in update_data.items() if v is not None}
+        
+        if update_data:
+            updated_product = supabase.table("products")\
+                .update(update_data)\
+                .eq("id", product["id"])\
+                .execute()
+            
+            if updated_product.data:
+                product = updated_product.data[0]
+        
+        # Create or update product_source (deal)
+        deal_result = upsert_deal(product["id"], request.supplier_id, {
+            "buy_cost": request.buy_cost,
+            "moq": request.moq or 1,
+            "source": "quick_analyze",
+            "source_detail": "Added from analysis",
+            "stage": "reviewed"  # Already analyzed, so mark as reviewed
+        })
+        
+        # If we have analysis data (profit, ROI, etc.), we should also create/update an analysis record
+        # But for now, the product_source contains the key data
+        
+        logger.info(f"✅ Product created: {product['id']}, Deal: {deal_result.get('deal', {}).get('id')}")
+        
+        return {
+            "success": True,
+            "product": product,
+            "deal": deal_result.get("deal"),
+            "message": "Product added successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Failed to create product: {e}", exc_info=True)
+        raise HTTPException(500, f"Failed to create product: {str(e)}")
+
+@router.post("/add-deal")
 async def add_deal(req: AddProductRequest, current_user = Depends(get_current_user)):
     """
     Add a deal (creates product if needed, then creates/updates deal).
-    This is the main entry point for adding products.
+    This is the main entry point for adding products manually.
     """
     user_id = str(current_user.id)
     
@@ -1932,3 +2040,322 @@ async def set_manual_asin(
     except Exception as e:
         logger.error(f"Error setting manual ASIN for product {product_id}: {e}", exc_info=True)
         raise HTTPException(500, str(e))
+
+
+class MoveToOrdersRequest(BaseModel):
+    quantity: Optional[int] = None  # If not provided, use MOQ
+
+
+class BulkActionRequest(BaseModel):
+    action: str  # 'favorite', 'unfavorite', 'move_to_orders', 'delete'
+    product_ids: List[str]
+
+
+@router.patch("/deal/{deal_id}/favorite")
+async def toggle_favorite(
+    deal_id: str,
+    current_user=Depends(get_current_user)
+):
+    """
+    Toggle product favorite status via deal_id.
+    """
+    user_id = str(current_user.id)
+    
+    # Get product_source (deal) to find product_id
+    deal_result = supabase.table('product_sources') \
+        .select('product_id') \
+        .eq('id', deal_id) \
+        .execute()
+    
+    if not deal_result.data:
+        raise HTTPException(404, "Deal not found")
+    
+    product_id = deal_result.data[0]['product_id']
+    
+    # Get current product
+    result = supabase.table('products') \
+        .select('id, is_favorite') \
+        .eq('id', product_id) \
+        .eq('user_id', user_id) \
+        .single() \
+        .execute()
+    
+    if not result.data:
+        raise HTTPException(404, "Product not found")
+    
+    current_favorite = result.data.get('is_favorite', False)
+    
+    # Toggle favorite
+    supabase.table('products').update({
+        'is_favorite': not current_favorite,
+        'updated_at': datetime.utcnow().isoformat()
+    }).eq('id', product_id).execute()
+    
+    logger.info(f"{'⭐ Added to' if not current_favorite else '❌ Removed from'} favorites: {product_id}")
+    
+    return {
+        'success': True,
+        'is_favorite': not current_favorite
+    }
+
+
+@router.post("/deal/{deal_id}/move-to-orders")
+async def move_to_orders(
+    deal_id: str,
+    request: MoveToOrdersRequest,
+    current_user=Depends(get_current_user)
+):
+    """
+    Move product to orders (ready to order from supplier).
+    Creates an order item or updates existing order.
+    """
+    user_id = str(current_user.id)
+    
+    # Get deal (product_source) with product and supplier info
+    deal_result = supabase.table('product_sources') \
+        .select('*, product:products(*), supplier:suppliers(*)') \
+        .eq('id', deal_id) \
+        .execute()
+    
+    if not deal_result.data:
+        raise HTTPException(404, "Deal not found")
+    
+    deal = deal_result.data[0]
+    product = deal.get('product', {})
+    supplier_id = deal.get('supplier_id')
+    
+    if not supplier_id:
+        raise HTTPException(400, "Product must have a supplier to add to orders")
+    
+    # Check if there's an active order for this supplier
+    active_order = None
+    order_result = supabase.table('orders') \
+        .select('*') \
+        .eq('user_id', user_id) \
+        .eq('supplier_id', supplier_id) \
+        .eq('status', 'draft') \
+        .execute()
+    
+    if order_result.data:
+        active_order = order_result.data[0]
+    
+    # Create order if needed
+    if not active_order:
+        order_data = {
+            'user_id': user_id,
+            'supplier_id': supplier_id,
+            'status': 'draft',
+            'created_at': datetime.utcnow().isoformat()
+        }
+        
+        order_result = supabase.table('orders').insert(order_data).execute()
+        active_order = order_result.data[0]
+        
+        logger.info(f"📦 Created new order: {active_order['id']}")
+    
+    # Add product to order (or update quantity)
+    order_item_result = supabase.table('order_items') \
+        .select('*') \
+        .eq('order_id', active_order['id']) \
+        .eq('product_id', product['id']) \
+        .execute()
+    
+    if order_item_result.data:
+        # Update quantity
+        current_qty = order_item_result.data[0]['quantity']
+        new_qty = request.quantity if request.quantity else current_qty + (deal.get('moq', 1))
+        
+        supabase.table('order_items').update({
+            'quantity': new_qty,
+            'updated_at': datetime.utcnow().isoformat()
+        }).eq('id', order_item_result.data[0]['id']).execute()
+        
+        logger.info(f"✅ Updated order item quantity: {current_qty} → {new_qty}")
+    else:
+        # Create new order item
+        order_item_data = {
+            'order_id': active_order['id'],
+            'product_id': product['id'],
+            'quantity': request.quantity or deal.get('moq', 1),
+            'unit_cost': deal.get('buy_cost', 0),
+            'created_at': datetime.utcnow().isoformat()
+        }
+        
+        supabase.table('order_items').insert(order_item_data).execute()
+        
+        logger.info(f"✅ Added to order: {product['id']}")
+    
+    # Update deal stage
+    supabase.table('product_sources').update({
+        'stage': 'ordered',
+        'updated_at': datetime.utcnow().isoformat()
+    }).eq('id', deal_id).execute()
+    
+    supplier_name = deal.get('supplier', {}).get('name', 'supplier') if deal.get('supplier') else 'supplier'
+    
+    return {
+        'success': True,
+        'order_id': active_order['id'],
+        'message': f'Added to order for {supplier_name}'
+    }
+
+
+@router.post("/bulk-action")
+async def bulk_action(
+    request: BulkActionRequest,
+    current_user=Depends(get_current_user)
+):
+    """
+    Perform bulk action on multiple products.
+    Actions: favorite, unfavorite, move_to_orders, delete
+    """
+    user_id = str(current_user.id)
+    
+    action = request.action
+    deal_ids = request.product_ids  # These are actually deal_ids (product_source.id)
+    
+    if not deal_ids:
+        raise HTTPException(400, "No products selected")
+    
+    # Get all deals with products and suppliers
+    deals_result = supabase.table('product_sources') \
+        .select('*, product:products(*), supplier:suppliers(*)') \
+        .in_('id', deal_ids) \
+        .execute()
+    
+    if not deals_result.data or len(deals_result.data) != len(deal_ids):
+        raise HTTPException(403, "Some products don't belong to you or not found")
+    
+    # Verify all products belong to user
+    product_ids = [d.get('product', {}).get('id') for d in deals_result.data if d.get('product')]
+    products_result = supabase.table('products') \
+        .select('*') \
+        .in_('id', product_ids) \
+        .eq('user_id', user_id) \
+        .execute()
+    
+    if len(products_result.data) != len(product_ids):
+        raise HTTPException(403, "Some products don't belong to you")
+    
+    results = {
+        'success': 0,
+        'failed': 0,
+        'errors': []
+    }
+    
+    if action == 'favorite':
+        # Add to favorites
+        supabase.table('products').update({
+            'is_favorite': True,
+            'updated_at': datetime.utcnow().isoformat()
+        }).in_('id', product_ids).execute()
+        
+        results['success'] = len(product_ids)
+        
+    elif action == 'unfavorite':
+        # Remove from favorites
+        supabase.table('products').update({
+            'is_favorite': False,
+            'updated_at': datetime.utcnow().isoformat()
+        }).in_('id', product_ids).execute()
+        
+        results['success'] = len(product_ids)
+        
+    elif action == 'move_to_orders':
+        # Group by supplier
+        by_supplier = {}
+        for deal in deals_result.data:
+            supplier_id = deal.get('supplier_id', 'no_supplier')
+            if supplier_id not in by_supplier:
+                by_supplier[supplier_id] = []
+            by_supplier[supplier_id].append(deal)
+        
+        # Create/update orders for each supplier
+        for supplier_id, supplier_deals in by_supplier.items():
+            try:
+                # Get or create order
+                if supplier_id != 'no_supplier':
+                    order_result = supabase.table('orders') \
+                        .select('*') \
+                        .eq('user_id', user_id) \
+                        .eq('supplier_id', supplier_id) \
+                        .eq('status', 'draft') \
+                        .execute()
+                    
+                    if order_result.data:
+                        order = order_result.data[0]
+                    else:
+                        order_data = {
+                            'user_id': user_id,
+                            'supplier_id': supplier_id,
+                            'status': 'draft',
+                            'created_at': datetime.utcnow().isoformat()
+                        }
+                        order_result = supabase.table('orders').insert(order_data).execute()
+                        order = order_result.data[0]
+                else:
+                    # Create order without supplier
+                    order_data = {
+                        'user_id': user_id,
+                        'status': 'draft',
+                        'created_at': datetime.utcnow().isoformat()
+                    }
+                    order_result = supabase.table('orders').insert(order_data).execute()
+                    order = order_result.data[0]
+                
+                # Add products to order
+                for deal in supplier_deals:
+                    product = deal.get('product', {})
+                    if not product or not product.get('id'):
+                        continue
+                    
+                    # Check if item already exists
+                    existing_item = supabase.table('order_items') \
+                        .select('*') \
+                        .eq('order_id', order['id']) \
+                        .eq('product_id', product['id']) \
+                        .execute()
+                    
+                    if existing_item.data:
+                        # Update quantity
+                        current_qty = existing_item.data[0]['quantity']
+                        new_qty = current_qty + deal.get('moq', 1)
+                        supabase.table('order_items').update({
+                            'quantity': new_qty,
+                            'updated_at': datetime.utcnow().isoformat()
+                        }).eq('id', existing_item.data[0]['id']).execute()
+                    else:
+                        # Create new order item
+                        order_item_data = {
+                            'order_id': order['id'],
+                            'product_id': product['id'],
+                            'quantity': deal.get('moq', 1),
+                            'unit_cost': deal.get('buy_cost', 0),
+                            'created_at': datetime.utcnow().isoformat()
+                        }
+                        supabase.table('order_items').insert(order_item_data).execute()
+                    
+                    # Update deal stage
+                    supabase.table('product_sources').update({
+                        'stage': 'ordered',
+                        'updated_at': datetime.utcnow().isoformat()
+                    }).eq('id', deal['id']).execute()
+                
+                results['success'] += len(supplier_deals)
+                
+            except Exception as e:
+                logger.error(f"Failed to add products to order: {e}")
+                results['failed'] += len(supplier_deals)
+                results['errors'].append(str(e))
+        
+    elif action == 'delete':
+        # Delete product_sources (deals) - products remain
+        supabase.table('product_sources').delete().in_('id', deal_ids).execute()
+        results['success'] = len(deal_ids)
+    
+    else:
+        raise HTTPException(400, f"Invalid action: {action}")
+    
+    logger.info(f"✅ Bulk action '{action}': {results['success']} succeeded, {results['failed']} failed")
+    
+    return results

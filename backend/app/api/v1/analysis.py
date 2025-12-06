@@ -10,6 +10,10 @@ from app.services.supabase_client import supabase
 from app.services.stripe_service import StripeService
 from app.services.feature_gate import feature_gate, require_feature, require_limit
 from app.services.upc_converter import upc_converter
+from app.services.product_data_service import product_data_service
+from app.services.asin_ranking_service import asin_ranking_service
+from app.services.asin_comparison_service import asin_comparison_service
+from app.services.sp_api_client import sp_api_client
 from app.tasks.analysis import analyze_single_product, batch_analyze_products, get_user_cost_settings
 from app.tasks.base import run_async
 from app.services.cost_calculator import (
@@ -84,51 +88,104 @@ async def analyze_single(
         if not upc_clean:
             raise HTTPException(400, "Invalid UPC format. Must be 12-14 digits.")
         
-        logger.info(f"Converting UPC {upc_clean} to ASIN(s)...")
-        potential_asins, asin_status = await upc_converter.upc_to_asins(upc_clean)
+        # IMPROVEMENT 1: Check for previous user selection
+        previous_selection = supabase.table('upc_asin_selections') \
+            .select('*') \
+            .eq('user_id', user_id) \
+            .eq('upc', upc_clean) \
+            .execute()
         
-        if asin_status == "not_found":
-            raise HTTPException(404, f"Could not find ASIN for UPC {upc_clean}. Product may not be available on Amazon.")
-        
-        if asin_status == "error":
-            raise HTTPException(500, f"Error converting UPC {upc_clean} to ASIN.")
-        
-        # Handle multiple ASINs - save product with multiple_found status
-        if asin_status == "multiple" and len(potential_asins) > 1:
-            logger.warning(f"⚠️ Multiple ASINs found for UPC {upc_clean}: {len(potential_asins)} matches")
+        if previous_selection.data and len(previous_selection.data) > 0:
+            # Use previously selected ASIN
+            selected = previous_selection.data[0]
+            request.asin = selected['asin']
+            logger.info(f"✅ Using previously selected ASIN {request.asin} for UPC {upc_clean}")
+        else:
+            # New UPC, find all ASINs
+            logger.info(f"Converting UPC {upc_clean} to ASIN(s)...")
+            potential_asins, asin_status = await upc_converter.upc_to_asins(upc_clean)
             
-            # Create product with multiple_found status
-            new_prod = supabase.table("products").insert({
-                "user_id": user_id,
-                "asin": None,  # No ASIN selected yet
-                "upc": upc_clean,
-                "status": "pending",
-                "asin_status": "multiple_found",
-                "potential_asins": [a.get("asin") for a in potential_asins]  # Store ASIN list
-            }).execute()
+            if asin_status == "not_found":
+                raise HTTPException(404, f"Could not find ASIN for UPC {upc_clean}. Product may not be available on Amazon.")
             
-            product_id = new_prod.data[0]["id"] if new_prod.data else None
+            if asin_status == "error":
+                raise HTTPException(500, f"Error converting UPC {upc_clean} to ASIN.")
             
-            if not product_id:
-                raise HTTPException(500, "Failed to create product")
+            # Handle multiple ASINs - enhance with quality indicators and ranking
+            if asin_status == "multiple" and len(potential_asins) > 1:
+                logger.warning(f"⚠️ Multiple ASINs found for UPC {upc_clean}: {len(potential_asins)} matches")
+                
+                # IMPROVEMENT 3 & 5: Get parent ASIN info and quality indicators
+                potential_asins_enhanced = []
+                for asin_data in potential_asins:
+                    asin = asin_data.get('asin')
+                    
+                    # Check for parent ASIN
+                    parent_asin = await sp_api_client.get_parent_asin(asin)
+                    is_parent = parent_asin is None or parent_asin == asin
+                    
+                    # Get quality indicators
+                    quality = await sp_api_client.get_asin_quality_indicators(asin)
+                    
+                    # Get product data with fallback
+                    product_data = await product_data_service.get_product_data(asin)
+                    
+                    enhanced_asin = {
+                        **asin_data,
+                        'is_parent': is_parent,
+                        'parent_asin': parent_asin,
+                        'quality_indicators': quality,
+                        'title': product_data.get('title') or asin_data.get('title'),
+                        'image': product_data.get('image') or asin_data.get('image'),
+                        'brand': product_data.get('brand') or asin_data.get('brand'),
+                        'category': product_data.get('category') or asin_data.get('category'),
+                    }
+                    
+                    # Add warning if child variation
+                    if parent_asin and parent_asin != asin:
+                        enhanced_asin['warning'] = f"This is a variation. Parent ASIN: {parent_asin}"
+                    
+                    potential_asins_enhanced.append(enhanced_asin)
+                
+                # IMPROVEMENT 9: Find differences between ASINs
+                asins_with_differences = asin_comparison_service.find_differences(potential_asins_enhanced)
+                
+                # IMPROVEMENT 8: Rank ASINs by quality
+                ranked_asins = asin_ranking_service.rank_asins(asins_with_differences)
+                
+                # Create product with multiple_found status
+                new_prod = supabase.table("products").insert({
+                    "user_id": user_id,
+                    "asin": None,  # No ASIN selected yet
+                    "upc": upc_clean,
+                    "status": "pending",
+                    "asin_status": "multiple_found",
+                    "potential_asins": [a.get("asin") for a in ranked_asins]  # Store ASIN list
+                }).execute()
+                
+                product_id = new_prod.data[0]["id"] if new_prod.data else None
+                
+                if not product_id:
+                    raise HTTPException(500, "Failed to create product")
+                
+                # Return response with enhanced ASIN data
+                return {
+                    "product_id": product_id,
+                    "asin": None,
+                    "status": "multiple_asins_found",
+                    "asin_status": "multiple_found",
+                    "potential_asins": ranked_asins,  # Ranked and enhanced ASIN info
+                    "recommended_asin": ranked_asins[0]['asin'] if ranked_asins else None,
+                    "upc": upc_clean,
+                    "message": f"Found {len(ranked_asins)} products for this UPC. Please select which one to analyze."
+                }
             
-            # Return response indicating multiple ASINs found
-            return {
-                "product_id": product_id,
-                "asin": None,
-                "status": "multiple_asins_found",
-                "asin_status": "multiple_found",
-                "potential_asins": potential_asins,  # Full ASIN info with title, image, etc.
-                "upc": upc_clean,
-                "message": f"Found {len(potential_asins)} products for this UPC. Please select which one to analyze."
-            }
-        
-        # Single ASIN found - use it
-        if not potential_asins or len(potential_asins) == 0:
-            raise HTTPException(404, f"Could not find ASIN for UPC {upc_clean}.")
-        
-        asin = potential_asins[0].get("asin")
-        logger.info(f"✅ Converted UPC {upc_clean} to ASIN {asin}")
+            # Single ASIN found - use it
+            if not potential_asins or len(potential_asins) == 0:
+                raise HTTPException(404, f"Could not find ASIN for UPC {upc_clean}.")
+            
+            asin = potential_asins[0].get("asin")
+            logger.info(f"✅ Converted UPC {upc_clean} to ASIN {asin}")
         
         # Store UPC and quantity for reference
         upc_value = upc_clean
@@ -787,6 +844,64 @@ async def test_upc_conversion(upc: str, current_user=Depends(get_current_user)):
     except Exception as e:
         logger.error(f"Error testing UPC conversion: {e}", exc_info=True)
         raise HTTPException(500, f"Error converting UPC: {str(e)}")
+
+
+class SaveAsinSelectionRequest(BaseModel):
+    upc: str
+    selected_asin: str
+
+
+@router.post("/save-asin-selection")
+async def save_asin_selection(
+    request: SaveAsinSelectionRequest,
+    current_user=Depends(get_current_user)
+):
+    """
+    Save user's ASIN selection for a UPC.
+    Next time same UPC is analyzed, auto-use this ASIN.
+    """
+    user_id = str(current_user.id)
+    
+    # Normalize UPC
+    upc_clean = upc_converter.normalize_upc(request.upc)
+    if not upc_clean:
+        raise HTTPException(400, "Invalid UPC format")
+    
+    # Get all ASINs for this UPC to store alternatives
+    potential_asins, asin_status = await upc_converter.upc_to_asins(upc_clean)
+    alternative_asins = [a.get('asin') for a in potential_asins if a.get('asin') != request.selected_asin]
+    
+    # Check if selection exists
+    existing = supabase.table('upc_asin_selections') \
+        .select('*') \
+        .eq('user_id', user_id) \
+        .eq('upc', upc_clean) \
+        .execute()
+    
+    if existing.data and len(existing.data) > 0:
+        # Update existing
+        supabase.table('upc_asin_selections').update({
+            'asin': request.selected_asin,
+            'alternative_asins': alternative_asins,
+            'selected_at': datetime.utcnow().isoformat(),
+            'selection_count': existing.data[0].get('selection_count', 1) + 1,
+            'updated_at': datetime.utcnow().isoformat()
+        }).eq('user_id', user_id).eq('upc', upc_clean).execute()
+    else:
+        # Insert new
+        selection_data = {
+            'user_id': user_id,
+            'upc': upc_clean,
+            'asin': request.selected_asin,
+            'alternative_asins': alternative_asins,
+            'selected_at': datetime.utcnow().isoformat(),
+            'selection_count': 1
+        }
+        supabase.table('upc_asin_selections').insert(selection_data).execute()
+    
+    logger.info(f"✅ Saved ASIN selection: UPC {upc_clean} → ASIN {request.selected_asin}")
+    
+    return {'success': True, 'message': 'ASIN selection saved'}
 
 
 class ManualPriceRequest(BaseModel):

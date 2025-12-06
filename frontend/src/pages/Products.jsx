@@ -951,7 +951,7 @@ export default function Products() {
           {/* Table Header */}
           <Box sx={{ 
             display: { xs: 'none', md: 'grid' },
-            gridTemplateColumns: '40px 50px 140px 1fr 120px 70px 80px 80px 90px 80px 80px 60px',
+            gridTemplateColumns: '40px 50px 140px 1fr 120px 70px 60px 80px 80px 90px 80px 80px 60px',
             p: 1.5, 
             borderBottom: '1px solid',
             borderColor: 'divider',

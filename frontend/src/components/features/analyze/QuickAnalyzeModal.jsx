@@ -1,5 +1,5 @@
-import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Box, Typography, CircularProgress, Card, CardContent, Chip, FormControl, InputLabel, Select, MenuItem, Alert, ToggleButtonGroup, ToggleButton, Checkbox, FormControlLabel, InputAdornment, Accordion, AccordionSummary, AccordionDetails, Divider } from '@mui/material';
-import { X, Zap, TrendingUp, Bug, ChevronDown } from 'lucide-react';
+import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Box, Typography, CircularProgress, Card, CardContent, Chip, FormControl, InputLabel, Select, MenuItem, Alert, ToggleButtonGroup, ToggleButton, Checkbox, FormControlLabel, InputAdornment, Accordion, AccordionSummary, AccordionDetails, Divider, Tooltip } from '@mui/material';
+import { X, Zap, TrendingUp, Bug, ChevronDown, Star, AlertTriangle, Info, ThumbUp, LocalShipping, Award } from 'lucide-react';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useAnalysis } from '../../../hooks/useAnalysis';
 import { useSuppliers } from '../../../context/SuppliersContext';
@@ -26,6 +26,7 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal, onAnalysisComplete }) =>
   const [debugData, setDebugData] = useState(null); // Debug: Store raw API responses
   const [showDebug, setShowDebug] = useState(false); // Debug: Toggle debug panel
   const [multipleAsins, setMultipleAsins] = useState(null); // Multiple ASINs found from UPC
+  const [countdown, setCountdown] = useState(5); // Auto-select countdown
   const pollingCleanupRef = useRef(null); // Store cleanup function for polling
   
   // Calculate per-unit buy cost
@@ -44,6 +45,106 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal, onAnalysisComplete }) =>
   // Get analysis limit info from backend
   const analysisLimit = checkLimit('analyses_per_month');
   const limitReached = isLimitReached('analyses_per_month');
+  
+  // IMPROVEMENT 1 & 8: Handle ASIN selection with saving and auto-select
+  const handleSelectAsin = async (selectedAsin) => {
+    // IMPROVEMENT 1: Save user's selection for next time
+    if (multipleAsins && multipleAsins.upc) {
+      try {
+        await api.post('/analyze/save-asin-selection', {
+          upc: multipleAsins.upc,
+          selected_asin: selectedAsin
+        });
+        showToast('ASIN preference saved for future uploads', { 
+          variant: 'success',
+          autoHideDuration: 2000
+        });
+      } catch (error) {
+        console.error('Failed to save ASIN selection:', error);
+        // Don't block the flow if saving fails
+      }
+    }
+    
+    console.log('✅ [DEBUG] User selected ASIN:', selectedAsin);
+    
+    setMultipleAsins(null);
+    setCountdown(5); // Reset countdown
+    setAsin(selectedAsin);
+    setIdentifierType('asin');
+    
+    // Re-run analysis with selected ASIN
+    const finalBuyCost = isPack 
+      ? parseFloat(wholesaleCost) / packSize 
+      : parseFloat(buyCost);
+    
+    try {
+      const analyzeResponse = await analyzeSingle(
+        selectedAsin,
+        finalBuyCost,
+        moq,
+        supplierId || null,
+        'asin',
+        1,
+        {
+          pack_size: isPack ? packSize : 1,
+          wholesale_cost: isPack ? parseFloat(wholesaleCost) : null,
+        }
+      );
+      
+      // Handle the analysis response (same as normal flow)
+      if (analyzeResponse.result && (analyzeResponse.result.roi !== undefined || analyzeResponse.result.net_profit !== undefined)) {
+        const resultData = {
+          asin: analyzeResponse.result.asin || selectedAsin,
+          title: analyzeResponse.result.title || 'Unknown',
+          deal_score: analyzeResponse.result.deal_score ?? 'N/A',
+          net_profit: analyzeResponse.result.net_profit ?? analyzeResponse.result.profit ?? 0,
+          roi: analyzeResponse.result.roi ?? 0,
+          gating_status: analyzeResponse.result.gating_status || 'unknown',
+          meets_threshold: analyzeResponse.result.meets_threshold ?? false,
+          is_profitable: (analyzeResponse.result.net_profit || analyzeResponse.result.profit || 0) > 0
+        };
+        setResult(resultData);
+        showToast('Analysis complete!', 'success');
+        if (onAnalysisComplete) {
+          onAnalysisComplete({
+            asin: resultData.asin,
+            product_id: analyzeResponse.product_id,
+            ...resultData
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Failed to analyze selected ASIN:', err);
+      showToast(err.message || 'Failed to analyze selected product', 'error');
+    }
+  };
+  
+  // IMPROVEMENT 8: Auto-select recommended ASIN after countdown
+  useEffect(() => {
+    if (!multipleAsins || !multipleAsins.asins || multipleAsins.asins.length === 0) {
+      setCountdown(5);
+      return;
+    }
+    
+    // Find recommended ASIN
+    const recommended = multipleAsins.asins.find(a => a.is_recommended);
+    if (!recommended) {
+      return;
+    }
+    
+    const timer = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          // Auto-select recommended ASIN
+          handleSelectAsin(recommended.asin);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, [multipleAsins]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -429,6 +530,15 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal, onAnalysisComplete }) =>
               </Typography>
             </Alert>
             
+            {/* IMPROVEMENT 8: Auto-select countdown */}
+            {multipleAsins.asins.some(a => a.is_recommended) && countdown > 0 && (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                <Typography variant="body2">
+                  Top recommendation will be selected automatically in {countdown}s, or click to choose
+                </Typography>
+              </Alert>
+            )}
+            
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, maxHeight: 400, overflow: 'auto' }}>
               {multipleAsins.asins.map((asinOption, idx) => (
                 <Card
@@ -436,73 +546,60 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal, onAnalysisComplete }) =>
                   sx={{
                     p: 2,
                     cursor: 'pointer',
-                    border: '1px solid',
-                    borderColor: 'divider',
+                    border: asinOption.is_recommended ? '3px solid' : '1px solid',
+                    borderColor: asinOption.is_recommended ? habexa.success.main : 'divider',
+                    position: 'relative',
                     '&:hover': { borderColor: habexa.purple.main, bgcolor: 'action.hover' }
                   }}
                   onClick={async () => {
-                    // User selected an ASIN - analyze it
-                    const selectedAsin = asinOption.asin;
-                    console.log('✅ [DEBUG] User selected ASIN:', selectedAsin);
-                    
-                    setMultipleAsins(null);
-                    setAsin(selectedAsin);
-                    setIdentifierType('asin');
-                    
-                    // Re-run analysis with selected ASIN
-                    const finalBuyCost = isPack 
-                      ? parseFloat(wholesaleCost) / packSize 
-                      : parseFloat(buyCost);
-                    
-                    try {
-                      const analyzeResponse = await analyzeSingle(
-                        selectedAsin,
-                        finalBuyCost,
-                        moq,
-                        supplierId || null,
-                        'asin',
-                        1,
-                        {
-                          pack_size: isPack ? packSize : 1,
-                          wholesale_cost: isPack ? parseFloat(wholesaleCost) : null,
-                        }
-                      );
-                      
-                      // Handle the analysis response (same as normal flow)
-                      if (analyzeResponse.result && (analyzeResponse.result.roi !== undefined || analyzeResponse.result.net_profit !== undefined)) {
-                        const resultData = {
-                          asin: analyzeResponse.result.asin || selectedAsin,
-                          title: analyzeResponse.result.title || asinOption.title || 'Unknown',
-                          deal_score: analyzeResponse.result.deal_score ?? 'N/A',
-                          net_profit: analyzeResponse.result.net_profit ?? analyzeResponse.result.profit ?? 0,
-                          roi: analyzeResponse.result.roi ?? 0,
-                          gating_status: analyzeResponse.result.gating_status || 'unknown',
-                          meets_threshold: analyzeResponse.result.meets_threshold ?? false,
-                          is_profitable: (analyzeResponse.result.net_profit || analyzeResponse.result.profit || 0) > 0
-                        };
-                        setResult(resultData);
-                        showToast('Analysis complete!', 'success');
-                        if (onAnalysisComplete) {
-                          onAnalysisComplete({
-                            asin: resultData.asin,
-                            product_id: analyzeResponse.product_id,
-                            ...resultData
-                          });
-                        }
-                      }
-                    } catch (err) {
-                      console.error('Failed to analyze selected ASIN:', err);
-                      showToast(err.message || 'Failed to analyze selected product', 'error');
-                    }
+                    await handleSelectAsin(asinOption.asin);
                   }}
                 >
-                  <Box sx={{ display: 'flex', gap: 2, alignItems: 'start' }}>
+                  {/* IMPROVEMENT 8: Recommended badge */}
+                  {asinOption.is_recommended && (
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        top: 10,
+                        right: 10,
+                        bgcolor: habexa.success.main,
+                        color: 'white',
+                        px: 2,
+                        py: 0.5,
+                        borderRadius: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5
+                      }}
+                    >
+                      <Star size={14} />
+                      <Typography variant="caption" fontWeight="bold">
+                        RECOMMENDED
+                      </Typography>
+                    </Box>
+                  )}
+                  
+                  {/* IMPROVEMENT 8: Score badge */}
+                  {asinOption.recommendation_score !== undefined && (
+                    <Chip 
+                      label={`Score: ${asinOption.recommendation_score}`}
+                      size="small"
+                      sx={{ 
+                        position: 'absolute', 
+                        top: 10, 
+                        left: 10,
+                        bgcolor: asinOption.recommendation_score > 20 ? habexa.success.light : 'default'
+                      }}
+                    />
+                  )}
+                  
+                  <Box sx={{ display: 'flex', gap: 2, alignItems: 'start', mt: asinOption.recommendation_score !== undefined ? 4 : 0 }}>
                     {asinOption.image && (
                       <Box
                         component="img"
                         src={asinOption.image}
                         alt={asinOption.title}
-                        sx={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 1, flexShrink: 0 }}
+                        sx={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 1, flexShrink: 0 }}
                       />
                     )}
                     <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -512,8 +609,30 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal, onAnalysisComplete }) =>
                       <Typography variant="caption" fontFamily="monospace" color="text.secondary" display="block" mb={0.5}>
                         {asinOption.asin}
                       </Typography>
+                      
+                      {/* IMPROVEMENT 3: Variation warning */}
+                      {asinOption.warning && (
+                        <Chip 
+                          label="Variation" 
+                          color="warning" 
+                          size="small"
+                          icon={<AlertTriangle size={14} />}
+                          sx={{ mb: 1, mr: 1 }}
+                        />
+                      )}
+                      
+                      {/* IMPROVEMENT 3: Parent ASIN badge */}
+                      {asinOption.is_parent && (
+                        <Chip 
+                          label="Parent ASIN" 
+                          color="success" 
+                          size="small"
+                          sx={{ mb: 1 }}
+                        />
+                      )}
+                      
                       {asinOption.brand && (
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" color="text.secondary" display="block">
                           Brand: {asinOption.brand}
                         </Typography>
                       )}
@@ -522,14 +641,93 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal, onAnalysisComplete }) =>
                           {asinOption.category}
                         </Typography>
                       )}
+                      
+                      {/* IMPROVEMENT 9: Show differences */}
+                      {asinOption.differences && asinOption.differences.length > 0 && (
+                        <Box sx={{ mt: 1 }}>
+                          <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
+                            Variation:
+                          </Typography>
+                          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                            {asinOption.differences.map((diff, diffIdx) => (
+                              <Chip 
+                                key={diffIdx}
+                                label={diff}
+                                size="small"
+                                color="primary"
+                                variant="outlined"
+                              />
+                            ))}
+                          </Box>
+                        </Box>
+                      )}
+                      
+                      {/* IMPROVEMENT 5: Quality indicators */}
+                      {asinOption.quality_indicators && (
+                        <Box sx={{ display: 'flex', gap: 0.5, mt: 1, flexWrap: 'wrap' }}>
+                          {asinOption.quality_indicators.bsr && (
+                            <Chip 
+                              label={`BSR: ${asinOption.quality_indicators.bsr.toLocaleString()}`}
+                              size="small"
+                              color={asinOption.quality_indicators.bsr < 10000 ? 'success' : 'default'}
+                            />
+                          )}
+                          
+                          {asinOption.quality_indicators.has_prime && (
+                            <Chip 
+                              label="Prime"
+                              size="small"
+                              color="primary"
+                              icon={<LocalShipping size={14} />}
+                            />
+                          )}
+                          
+                          {asinOption.quality_indicators.is_buybox_winner && (
+                            <Chip 
+                              label="Buybox Winner"
+                              size="small"
+                              color="success"
+                            />
+                          )}
+                          
+                          {asinOption.quality_indicators.review_count > 0 && (
+                            <Chip 
+                              label={`${asinOption.quality_indicators.review_count} reviews`}
+                              size="small"
+                            />
+                          )}
+                          
+                          {asinOption.quality_indicators.rating && (
+                            <Chip 
+                              label={`★ ${asinOption.quality_indicators.rating}`}
+                              size="small"
+                            />
+                          )}
+                        </Box>
+                      )}
+                      
+                      {/* IMPROVEMENT 3: Show warning message */}
+                      {asinOption.warning && (
+                        <Alert severity="warning" sx={{ mt: 1 }}>
+                          {asinOption.warning}
+                        </Alert>
+                      )}
+                      
+                      {/* IMPROVEMENT 3: Suggest parent if this is child */}
+                      {!asinOption.is_parent && asinOption.parent_asin && (
+                        <Button 
+                          size="small"
+                          startIcon={<Info size={14} />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSelectAsin(asinOption.parent_asin);
+                          }}
+                          sx={{ mt: 1 }}
+                        >
+                          Analyze Parent Instead
+                        </Button>
+                      )}
                     </Box>
-                    <Button
-                      variant="contained"
-                      size="small"
-                      sx={{ backgroundColor: habexa.purple.main }}
-                    >
-                      Select
-                    </Button>
                   </Box>
                 </Card>
               ))}

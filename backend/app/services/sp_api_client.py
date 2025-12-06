@@ -545,9 +545,22 @@ class SPAPIClient:
         return data
     
     async def get_catalog_item(self, asin: str, marketplace_id: str = "ATVPDKIKX0DER") -> Optional[dict]:
-        """Get catalog item details - PUBLIC DATA."""
+        """Get catalog item details - PUBLIC DATA with caching."""
         if not self.app_configured:
             return None
+        
+        # IMPROVEMENT 4: Check cache first
+        try:
+            from app.cache import cache
+            cache_key = f"catalog:{asin}:{marketplace_id}"
+            cached_data = cache.get(cache_key)
+            if cached_data:
+                logger.info(f"✅ Cache hit for catalog:{asin}")
+                return cached_data
+        except Exception as e:
+            logger.debug(f"Cache check failed: {e}")
+        
+        logger.info(f"📡 Cache miss, fetching from SP-API: {asin}")
         
         data = await self._request(
             "GET",
@@ -584,14 +597,80 @@ class SPAPIClient:
                     bsr = display_ranks[0].get("rank")
                     break
         
-        return {
+        result = {
             "asin": asin,
             "title": summary.get("itemName"),
             "brand": summary.get("brand"),
             "image_url": main_image,
             "sales_rank": bsr,
-            "sales_rank_category": summary.get("websiteDisplayGroup")
+            "sales_rank_category": summary.get("websiteDisplayGroup"),
+            "parentAsin": summary.get("parentAsin"),  # For variation detection
+            "isPrimeEligible": summary.get("isPrimeEligible", False)
         }
+        
+        # Cache for 24 hours
+        try:
+            from app.cache import cache
+            cache.set(cache_key, result, ttl=86400)
+        except Exception as e:
+            logger.debug(f"Cache set failed: {e}")
+        
+        return result
+    
+    async def get_parent_asin(self, asin: str, marketplace_id: str = "ATVPDKIKX0DER") -> Optional[str]:
+        """
+        Get parent ASIN for a variation.
+        Returns None if ASIN is already parent or has no parent.
+        """
+        try:
+            # Use catalog API to get variation info
+            response = await self.get_catalog_item(asin, marketplace_id)
+            
+            if response and response.get('parentAsin'):
+                return response['parentAsin']
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Failed to get parent ASIN for {asin}: {e}")
+            return None
+    
+    async def get_asin_quality_indicators(self, asin: str, marketplace_id: str = "ATVPDKIKX0DER") -> Dict:
+        """
+        Get quality indicators for ASIN selection.
+        """
+        indicators = {
+            'bsr': None,
+            'review_count': None,
+            'rating': None,
+            'has_prime': False,
+            'is_buybox_winner': False,
+            'condition': 'new'
+        }
+        
+        try:
+            # Get catalog data
+            catalog = await self.get_catalog_item(asin, marketplace_id)
+            if catalog:
+                indicators['bsr'] = catalog.get('sales_rank')
+                indicators['has_prime'] = catalog.get('isPrimeEligible', False)
+            
+            # Get pricing (check buybox)
+            try:
+                pricing = await self.get_competitive_pricing([asin], marketplace_id)
+                if pricing and pricing.get(asin):
+                    price_data = pricing[asin]
+                    indicators['is_buybox_winner'] = price_data.get('isBuyBoxWinner', False)
+            except Exception as e:
+                logger.debug(f"Could not get pricing for quality indicators: {e}")
+            
+            # Note: Review count and rating would require additional API calls
+            # For now, we'll leave them as None and can be filled by Keepa if available
+            
+        except Exception as e:
+            logger.error(f"Failed to get quality indicators for {asin}: {e}")
+        
+        return indicators
     
     async def get_item_offers(self, asin: str, marketplace_id: str = "ATVPDKIKX0DER") -> Optional[dict]:
         """Get all offers for a product - PUBLIC DATA."""
@@ -1010,10 +1089,12 @@ class SPAPIClient:
     async def get_catalog_items_batch(
         self,
         asins: List[str],
-        marketplace_id: str = "ATVPDKIKX0DER"
+        marketplace_id: str = "ATVPDKIKX0DER",
+        rate_limit: int = 5  # SP-API limit: 5 req/sec
     ) -> Dict[str, dict]:
         """
-        Get catalog items for multiple ASINs.
+        Get catalog items for multiple ASINs with rate limiting.
+        IMPROVEMENT 6: Rate limiting for batch catalog calls.
         Note: SP-API catalog doesn't support batching, so we parallelize with semaphore.
         """
         if not self.app_configured or not asins:
@@ -1022,12 +1103,19 @@ class SPAPIClient:
         asin_list = asins[:20]  # Limit to 20 for reasonable parallelization
         results = {}
         
-        # Use semaphore to respect rate limits (2/sec for catalog)
-        sem = asyncio.Semaphore(2)
+        # IMPROVEMENT 6: Use semaphore to respect rate limits (5 req/sec for SP-API)
+        sem = asyncio.Semaphore(rate_limit)
         
         async def get_catalog_with_semaphore(asin: str):
             async with sem:
-                return asin, await self.get_catalog_item(asin, marketplace_id)
+                # 200ms delay between requests (5 req/sec)
+                await asyncio.sleep(0.2)
+                try:
+                    catalog = await self.get_catalog_item(asin, marketplace_id)
+                    return asin, catalog
+                except Exception as e:
+                    logger.error(f"Failed to fetch catalog for {asin}: {e}")
+                    return asin, None
         
         tasks = [get_catalog_with_semaphore(asin) for asin in asin_list]
         catalog_results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -1038,6 +1126,8 @@ class SPAPIClient:
             asin, catalog = result
             if catalog:
                 results[asin] = catalog
+        
+        logger.info(f"✅ Fetched {len(results)} catalog items (rate-limited)")
         
         logger.info(f"✅ Batch catalog: {len(results)}/{len(asin_list)} ASINs")
         return results
