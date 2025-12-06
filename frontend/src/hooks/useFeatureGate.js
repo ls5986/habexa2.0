@@ -8,7 +8,7 @@ export function useFeatureGate() {
   const { showToast } = useToast();
   
   // ✅ Get tier and limits from AuthContext (no polling, instant access)
-  const { tier, limits, tierLoading } = useAuth();
+  const { tier, limits, tierLoading, refreshTier } = useAuth();
   
   // Map AuthContext data to match old format for backward compatibility
   const limitsData = limits ? {
@@ -176,15 +176,13 @@ export function useFeatureGate() {
 
   /**
    * Refresh limits from backend
+   * Uses AuthContext.refreshTier() which calls /auth/me (includes tier and limits)
    */
   const refetch = useCallback(async () => {
-    try {
-      const response = await api.get('/billing/user/limits');
-      setLimitsData(response.data);
-    } catch (err) {
-      console.error('Failed to refresh limits:', err);
+    if (refreshTier) {
+      await refreshTier();
     }
-  }, []);
+  }, [refreshTier]);
 
   // Safe default limits structure
   const defaultLimits = {
