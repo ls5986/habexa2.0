@@ -48,8 +48,8 @@ async def analyze_single(
     current_user=Depends(get_current_user)
 ):
     """
-    Analyze a single ASIN - queues to Celery and returns job_id.
-    Frontend should poll /jobs/{job_id} for results.
+    Analyze a single ASIN - runs synchronously and returns results immediately.
+    No job needed for single ASIN analysis (completes in ~5-10 seconds).
     """
     user_id = str(current_user.id)
     
@@ -136,68 +136,189 @@ async def analyze_single(
         # buy_cost is per pack, calculate per unit for analysis
         adjusted_buy_cost = request.buy_cost / pack_quantity
     
-    # Create job record
-    job_id = str(uuid.uuid4())
-    supabase.table("jobs").insert({
-        "id": job_id,
-        "user_id": user_id,
-        "type": "single_analyze",
-        "status": "pending",
-        "total_items": 1,
-        "metadata": {
-            "asin": asin,
-            "upc": upc_value,
-            "identifier_type": identifier_type,
-            "pack_quantity": pack_quantity,
-            "product_id": product_id,
-            "buy_cost": adjusted_buy_cost,
-            "original_buy_cost": request.buy_cost,
-            "moq": request.moq,
-            "supplier_id": request.supplier_id
-        }
-    }).execute()
+    # Calculate pack info if provided
+    pack_size = getattr(request, 'pack_size', None) or (pack_quantity if identifier_type == "upc" and pack_quantity > 1 else 1)
+    wholesale_cost = getattr(request, 'wholesale_cost', None)
+    if wholesale_cost and pack_size > 1:
+        adjusted_buy_cost = wholesale_cost / pack_size
     
-    # Queue to Celery (buy_cost is retrieved from job metadata in the task)
+    logger.info(f"🔍 Analyzing ASIN {asin} synchronously (no job needed)")
+    
     try:
-        logger.info(f"🚀 Queuing analysis task for job {job_id}, product {product_id}, ASIN {asin}")
-        task_result = analyze_single_product.delay(job_id, user_id, product_id, asin)
-        logger.info(f"✅ Task queued successfully: {task_result.id} for job {job_id}")
+        # Run analysis synchronously - no job, no Celery, just do it
+        from app.services.batch_analyzer import batch_analyzer
+        from app.tasks.analysis import get_user_cost_settings
+        
+        # Build buy_costs, promo_costs, and source_data dicts
+        buy_costs = {asin: adjusted_buy_cost}
+        promo_costs = {}
+        source_data = {
+            asin: {
+                "supplier_ships_direct": False,
+            }
+        }
+        
+        # Get user cost settings
+        user_settings = await get_user_cost_settings(user_id)
+        
+        # Run analysis directly
+        results = await batch_analyzer.analyze_products(
+            [asin],
+            buy_costs=buy_costs,
+            promo_costs=promo_costs,
+            source_data=source_data,
+            user_settings=user_settings
+        )
+        
+        result = results.get(asin, {})
+        
+        if not result:
+            raise HTTPException(500, "Analysis returned no data")
+        
+        # Create/update product_source
+        if adjusted_buy_cost:
+            try:
+                existing_source = supabase.table("product_sources")\
+                    .select("id")\
+                    .eq("product_id", product_id)\
+                    .eq("user_id", user_id)\
+                    .limit(1)\
+                    .execute()
+                
+                if existing_source.data:
+                    supabase.table("product_sources").update({
+                        "buy_cost": adjusted_buy_cost,
+                        "moq": request.moq,
+                        "supplier_id": request.supplier_id,
+                        "stage": "reviewed",
+                        "updated_at": datetime.utcnow().isoformat()
+                    }).eq("id", existing_source.data[0]["id"]).execute()
+                else:
+                    supabase.table("product_sources").insert({
+                        "user_id": user_id,
+                        "product_id": product_id,
+                        "supplier_id": request.supplier_id,
+                        "buy_cost": adjusted_buy_cost,
+                        "moq": request.moq,
+                        "stage": "reviewed",
+                        "source": "quick_analyze"
+                    }).execute()
+            except Exception as e:
+                logger.warning(f"Could not create product_source: {e}")
+        
+        # Get supplier_id if not set
+        supplier_id = request.supplier_id
+        if not supplier_id:
+            try:
+                sources = supabase.table("product_sources")\
+                    .select("supplier_id")\
+                    .eq("product_id", product_id)\
+                    .limit(1)\
+                    .execute()
+                if sources.data and sources.data[0].get("supplier_id"):
+                    supplier_id = sources.data[0]["supplier_id"]
+            except:
+                pass
+        
+        # Save analysis to database
+        analysis_data = {
+            "user_id": user_id,
+            "asin": asin,
+            "supplier_id": supplier_id,
+            "analysis_data": {},
+            "pricing_status": result.get("pricing_status", "complete"),
+            "pricing_status_reason": result.get("pricing_status_reason"),
+            "needs_review": result.get("needs_review", False),
+            "sell_price": result.get("sell_price"),
+            "buy_cost": result.get("buy_cost") or adjusted_buy_cost,
+            "referral_fee": result.get("referral_fee"),
+            "referral_fee_percent": result.get("referral_fee_percent"),
+            "fba_fee": result.get("fees_fba") or result.get("fba_fee"),
+            "variable_closing_fee": result.get("variable_closing_fee"),
+            "fees_total": result.get("fees_total"),
+            "inbound_shipping": result.get("inbound_shipping"),
+            "prep_cost": result.get("prep_cost"),
+            "total_landed_cost": result.get("total_landed_cost"),
+            "net_profit": result.get("net_profit"),
+            "roi": result.get("roi"),
+            "profit_margin": result.get("profit_margin"),
+            "analysis_stage": result.get("analysis_stage", "stage3"),
+            "passed_stage2": result.get("passed_stage2", True),
+            "stage2_roi": result.get("stage2_roi"),
+        }
+        
+        # Upsert analysis
+        existing_analysis = supabase.table("analyses")\
+            .select("id")\
+            .eq("user_id", user_id)\
+            .eq("asin", asin)\
+            .limit(1)\
+            .execute()
+        
+        if existing_analysis.data:
+            supabase.table("analyses").update(analysis_data).eq("id", existing_analysis.data[0]["id"]).execute()
+        else:
+            supabase.table("analyses").insert(analysis_data).execute()
+        
+        # Update product status
+        supabase.table("products").update({
+            "status": "analyzed",
+            "updated_at": datetime.utcnow().isoformat()
+        }).eq("id", product_id).execute()
+        
+        # Get usage info
+        try:
+            check = await feature_gate.check_limit(current_user, "analyses_per_month")
+            usage = {
+                "analyses_remaining": check.get("remaining", 999),
+                "analyses_limit": check.get("limit", 999),
+                "unlimited": check.get("unlimited", False)
+            }
+        except Exception as e:
+            logger.warning(f"Usage tracking failed: {e}")
+            usage = {
+                "analyses_remaining": 999,
+                "analyses_limit": 999,
+                "unlimited": True
+            }
+        
+        logger.info(f"✅ Analysis complete for ASIN {asin}")
+        
+        # Return results directly - no job needed!
+        return {
+            "product_id": product_id,
+            "asin": asin,
+            "status": "completed",
+            "result": {
+                "title": result.get("title"),
+                "brand": result.get("brand"),
+                "image_url": result.get("image_url"),
+                "sell_price": result.get("sell_price"),
+                "buy_cost": result.get("buy_cost") or adjusted_buy_cost,
+                "net_profit": result.get("net_profit"),
+                "roi": result.get("roi"),
+                "profit_margin": result.get("profit_margin"),
+                "deal_score": result.get("deal_score"),
+                "gating_status": result.get("gating_status"),
+                "meets_threshold": result.get("meets_threshold", False),
+                "category": result.get("category"),
+                "bsr": result.get("bsr"),
+                "sales_estimate": result.get("sales_estimate"),
+            },
+            "usage": usage
+        }
+        
     except Exception as e:
-        logger.error(f"❌ FAILED to queue Celery task for job {job_id}: {e}", exc_info=True)
-        # Update job status to failed
-        supabase.table("jobs").update({
-            "status": "failed",
-            "error_message": f"Failed to queue task: {str(e)}"
-        }).eq("id", job_id).execute()
+        logger.error(f"❌ Analysis failed for ASIN {asin}: {e}", exc_info=True)
+        # Update product status to error
+        supabase.table("products").update({
+            "status": "error",
+            "updated_at": datetime.utcnow().isoformat()
+        }).eq("id", product_id).execute()
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to queue analysis task: {str(e)}"
+            detail=f"Analysis failed: {str(e)}"
         )
-    
-    # Get usage info
-    try:
-        check = await feature_gate.check_limit(current_user, "analyses_per_month")
-        usage = {
-            "analyses_remaining": check.get("remaining", 999),
-            "analyses_limit": check.get("limit", 999),
-            "unlimited": check.get("unlimited", False)
-        }
-    except Exception as e:
-        logger.warning(f"Usage tracking failed: {e}")
-        usage = {
-            "analyses_remaining": 999,
-            "analyses_limit": 999,
-            "unlimited": True
-        }
-    
-    return {
-        "job_id": job_id,
-        "product_id": product_id,
-        "asin": asin,
-        "status": "queued",
-        "message": "Analysis queued. Poll /jobs/{job_id} for results.",
-        "usage": usage
-    }
 
 
 @router.post("/batch")

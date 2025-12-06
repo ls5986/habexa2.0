@@ -84,9 +84,35 @@ const Analyze = () => {
       
       console.log('✅ Analysis API response:', response); // DEBUG
       
-      // Handle job-based response (async analysis) - POLL FOR RESULTS
+      // NEW: Single ASIN is now synchronous - results returned immediately!
+      if (response && response.result && response.status === 'completed') {
+        console.log('✅ Analysis completed synchronously:', response.result); // DEBUG
+        const resultData = {
+          asin: response.asin,
+          title: response.result.title || 'Unknown',
+          deal_score: response.result.deal_score ?? 'N/A',
+          net_profit: response.result.net_profit ?? 0,
+          roi: response.result.roi ?? 0,
+          gating_status: response.result.gating_status || 'unknown',
+          meets_threshold: response.result.meets_threshold ?? false,
+          is_profitable: (response.result.net_profit || 0) > 0,
+          sell_price: response.result.sell_price,
+          buy_cost: response.result.buy_cost || parseFloat(buyCost),
+          product_id: response.product_id,
+          image_url: response.result.image_url,
+          brand: response.result.brand,
+          category: response.result.category,
+        };
+        setResult(resultData);
+        setAnalyzing(false);
+        showToast('Analysis complete!', 'success');
+        setRecentAnalyses(prev => [resultData, ...prev].slice(0, 10));
+        return;
+      }
+      
+      // LEGACY: Handle job-based response (only for batch operations now)
       if (response && response.job_id) {
-        console.log('✅ Starting job polling for job_id:', response.job_id); // DEBUG
+        console.log('⚠️ Got job_id response (should only happen for batch):', response.job_id); // DEBUG
         showToast('Analysis started! Waiting for results...', 'info');
         
         // ✅ OPTIMIZATION: Exponential backoff polling (same as QuickAnalyzeModal)
