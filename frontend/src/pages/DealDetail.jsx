@@ -35,6 +35,7 @@ import CompetitorAnalysis from '../components/features/deals/CompetitorAnalysis'
 import VariationAnalysis from '../components/features/deals/VariationAnalysis';
 import ListingScore from '../components/features/deals/ListingScore';
 import FavoriteButton from '../components/features/products/FavoriteButton';
+import UploadDetailsPanel from '../components/features/deals/UploadDetailsPanel';
 
 export default function DealDetail() {
   const { dealId } = useParams();
@@ -171,6 +172,7 @@ export default function DealDetail() {
     { icon: Users, label: 'Competitors' },
     { icon: Layers, label: 'Variations' },
     { icon: FileText, label: 'Listing' },
+    { icon: Package, label: 'Upload Details' },
   ];
 
   return (
@@ -817,6 +819,11 @@ export default function DealDetail() {
             {/* Listing Quality Tab */}
             {activeTab === 5 && (
               <ListingScore analysis={analysis} deal={deal} />
+            )}
+
+            {/* Upload Details Tab */}
+            {activeTab === 6 && (
+              <UploadDetailsPanel deal={deal} />
             )}
           </Box>
         </Grid>
