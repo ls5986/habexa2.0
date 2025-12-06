@@ -165,19 +165,34 @@ class KeepaClient:
                         await asyncio.sleep(60)
                     
                     if "error" in data:
-                        logger.error(f"Keepa error: {data['error']}")
+                        logger.error(f"Keepa API error in response: {data['error']}")
                         continue
                     
+                    # Log raw response for debugging
+                    # Keepa may return products as None, so handle that case
+                    products_array = data.get("products") or []
+                    
+                    logger.info(f"🔍 Keepa API response: {len(products_array)} products returned for {len(batch)} ASINs")
+                    
+                    if len(products_array) == 0:
+                        logger.warning(f"⚠️ Keepa returned empty products array for ASINs: {batch}")
+                        # Log the full response for debugging (truncated)
+                        logger.debug(f"Keepa full response keys: {list(data.keys())}")
+                        # Log if products key exists but is None
+                        if "products" in data and data["products"] is None:
+                            logger.warning(f"⚠️ Keepa explicitly returned products: null for ASINs: {batch}")
+                    
                     # Parse products
-                    for product in data.get("products", []):
+                    for product in products_array:
                         asin = product.get("asin")
                         if not asin:
+                            logger.warning(f"⚠️ Keepa product missing ASIN: {list(product.keys())[:5]}")
                             continue
                         
                         parsed = self._parse_product(product)
                         fetched[asin] = parsed
                     
-                    logger.info(f"✅ Keepa API: {len(fetched)}/{len(batch)} products")
+                    logger.info(f"✅ Keepa API: {len(fetched)}/{len(batch)} products parsed successfully")
                     
             except Exception as e:
                 logger.error(f"Keepa API request error: {e}")
@@ -258,12 +273,15 @@ class KeepaClient:
                         await asyncio.sleep(60)
                     
                     # Store raw product data
-                    for product in data.get("products", []):
+                    # Keepa may return products as None, so handle that case
+                    products_array = data.get("products") or []
+                    
+                    for product in products_array:
                         asin = product.get("asin")
                         if asin:
                             results[asin] = product  # Raw, unparsed data
                     
-                    logger.info(f"✅ Keepa raw: fetched {len(batch)} products, got {len(data.get('products', []))} results")
+                    logger.info(f"✅ Keepa raw: fetched {len(batch)} products, got {len(products_array)} results")
                         
             except httpx.TimeoutException:
                 logger.error(f"Keepa timeout for batch starting at {i}")
@@ -338,8 +356,8 @@ class KeepaClient:
     
     def _parse_product(self, product: dict) -> dict:
         """Parse Keepa product response into our format."""
-        stats = product.get("stats", {})
-        current_stats = stats.get("current", [])
+        stats = product.get("stats") or {}
+        current_stats = stats.get("current") or [] if stats else []
         
         # Get image URL
         images_csv = product.get("imagesCSV", "")

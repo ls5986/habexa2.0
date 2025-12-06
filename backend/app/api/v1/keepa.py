@@ -78,10 +78,10 @@ async def get_keepa_product(
         
         if not data:
             # Return structured empty response instead of error
-            logger.warning(f"Keepa returned no data for {asin}")
+            logger.warning(f"Keepa returned no data for {asin}. API key configured: {bool(keepa_client.api_key)}")
             return {
                 "asin": asin,
-                "error": "No data available from Keepa",
+                "error": "No data available from Keepa. This may mean: (1) Keepa doesn't track this ASIN, (2) The ASIN doesn't exist, or (3) Check backend logs for API errors.",
                 "stats": {},
                 "price_history": [],
                 "rank_history": [],
