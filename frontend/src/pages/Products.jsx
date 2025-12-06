@@ -87,7 +87,7 @@ const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, on
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: '40px 50px 140px 1fr 120px 70px 80px 80px 90px 80px 80px 60px',
+        gridTemplateColumns: '40px 50px 140px 1fr 120px 70px 60px 80px 80px 90px 80px 80px 60px',
         p: 1.5,
         borderBottom: '1px solid',
         borderColor: 'divider',
@@ -268,16 +268,25 @@ const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, on
             sx={{ 
               minWidth: 40,
               cursor: 'pointer',
-              bgcolor: 'transparent',
+              bgcolor: 'background.paper',
               borderColor: 'divider',
               color: 'text.primary',
+              fontWeight: 500,
               '&:hover': { 
                 bgcolor: 'action.hover',
-                borderColor: habexa.purple.main
+                borderColor: habexa.purple.main,
+                color: habexa.purple.main
               }
             }}
           />
         )}
+      </Box>
+      
+      {/* Pack Size */}
+      <Box sx={{ textAlign: 'center' }}>
+        <Typography variant="body2" color="text.secondary">
+          {deal.case_pack || deal.pack_size || '-'}
+        </Typography>
       </Box>
       
       {/* Unit Cost */}
@@ -961,6 +970,7 @@ export default function Products() {
             <Typography variant="caption" color="text.secondary" fontWeight={600}>Product</Typography>
             <Typography variant="caption" color="text.secondary" fontWeight={600}>Supplier</Typography>
             <Typography variant="caption" color="text.secondary" align="center" fontWeight={600}>MOQ</Typography>
+            <Typography variant="caption" color="text.secondary" align="center" fontWeight={600}>Pack</Typography>
             <Typography variant="caption" color="text.secondary" align="right" fontWeight={600}>Unit $</Typography>
             <Typography variant="caption" color="text.secondary" align="right" fontWeight={600}>Total $</Typography>
             <Typography variant="caption" color="text.secondary" align="right" fontWeight={600}>ROI</Typography>
