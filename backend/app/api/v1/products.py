@@ -309,19 +309,23 @@ async def get_deals(
             query = query.ilike("asin", f"%{search}%")
         if asin_status:
             # Map frontend filter values to database filtering
-            # ALL filtering done database-side for scalability
+            # Basic filtering done database-side, PENDING_* exclusion done in Python
+            # (Supabase doesn't easily support NOT LIKE, so we filter after fetch)
             if asin_status == "asin_found":
-                # Has ASIN (not null, not empty)
+                # Has real ASIN (not null, not empty, not PENDING_*)
+                # First filter database-side for non-null/non-empty
                 query = query.not_.is_("asin", "null").neq("asin", "")
             elif asin_status == "needs_selection":
                 # Products in needs_selection status
                 query = query.eq("asin_status", "needs_selection")
             elif asin_status == "needs_asin":
-                # Has UPC but no ASIN - use PostgreSQL IS NULL syntax
-                query = query.not_.is_("upc", "null").neq("upc", "").is_("asin", "null")
+                # Has UPC but no real ASIN (includes PENDING_* as needing ASIN)
+                # Filter for products with UPC
+                query = query.not_.is_("upc", "null").neq("upc", "")
             elif asin_status == "manual_entry":
-                # No UPC and no ASIN
-                query = query.is_("upc", "null").is_("asin", "null")
+                # No UPC and no real ASIN
+                # Filter for products without UPC
+                query = query.is_("upc", "null")
         if min_roi is not None:
             query = query.gte("roi", min_roi)
         if min_profit is not None:
@@ -332,6 +336,42 @@ async def get_deals(
         
         result = query.execute()
         deals = result.data or []
+        
+        # Apply PENDING_* exclusion filter in Python (matches RPC function logic)
+        # This is minimal Python filtering - most work done database-side
+        if asin_status == "asin_found":
+            # Exclude PENDING_* and Unknown placeholders (real ASINs only)
+            deals = [
+                d for d in deals 
+                if d.get("asin") 
+                and d["asin"].strip()
+                and not d["asin"].startswith("PENDING_")
+                and not d["asin"].startswith("Unknown")
+            ]
+        elif asin_status == "needs_asin":
+            # Include products with UPC but no real ASIN (PENDING_* counts as needing ASIN)
+            deals = [
+                d for d in deals
+                if d.get("upc") and d["upc"].strip()
+                and (
+                    not d.get("asin")
+                    or not d["asin"].strip()
+                    or d["asin"].startswith("PENDING_")
+                    or d["asin"].startswith("Unknown")
+                )
+            ]
+        elif asin_status == "manual_entry":
+            # No UPC and no real ASIN
+            deals = [
+                d for d in deals
+                if (not d.get("upc") or not d["upc"].strip())
+                and (
+                    not d.get("asin")
+                    or not d["asin"].strip()
+                    or d["asin"].startswith("PENDING_")
+                    or d["asin"].startswith("Unknown")
+                )
+            ]
         
         # Get counts for each status (for UI filters) - only if no filters applied
         counts = {}

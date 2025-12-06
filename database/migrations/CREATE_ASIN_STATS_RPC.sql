@@ -16,22 +16,36 @@ DECLARE
 BEGIN
   -- Single aggregation query with FILTER clauses
   -- This is highly optimized and scales to millions of rows
+  -- Excludes PENDING_* and Unknown placeholders from "asin_found"
   SELECT json_build_object(
     'all', COUNT(*),
     'asin_found', COUNT(*) FILTER (
-      WHERE asin IS NOT NULL AND asin != ''
+      WHERE asin IS NOT NULL 
+        AND asin != ''
+        AND asin NOT LIKE 'PENDING_%'
+        AND asin NOT LIKE 'Unknown%'
     ),
     'needs_selection', COUNT(*) FILTER (
       WHERE status = 'needs_selection'
     ),
     'needs_asin', COUNT(*) FILTER (
-      WHERE (asin IS NULL OR asin = '') 
-        AND upc IS NOT NULL 
+      WHERE upc IS NOT NULL 
         AND upc != ''
+        AND (
+          asin IS NULL 
+          OR asin = ''
+          OR asin LIKE 'PENDING_%'
+          OR asin LIKE 'Unknown%'
+        )
     ),
     'manual_entry', COUNT(*) FILTER (
-      WHERE (asin IS NULL OR asin = '') 
-        AND (upc IS NULL OR upc = '')
+      WHERE (upc IS NULL OR upc = '')
+        AND (
+          asin IS NULL 
+          OR asin = ''
+          OR asin LIKE 'PENDING_%'
+          OR asin LIKE 'Unknown%'
+        )
     )
   )
   INTO result
