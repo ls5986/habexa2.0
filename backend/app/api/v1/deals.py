@@ -540,6 +540,12 @@ async def get_deal(deal_id: str, current_user=Depends(get_current_user)):
                 "supplier_name": deal.get("supplier_name"),
                 "source": deal.get("source"),
                 "source_detail": deal.get("source_detail"),
+                "message_id": deal.get("message_id"),  # For Telegram messages
+                "job_id": deal.get("job_id"),  # For CSV uploads
+                "source_filename": deal.get("source_filename"),  # CSV filename
+                "uploaded_title": deal.get("uploaded_title"),  # Title from CSV
+                "uploaded_brand": deal.get("uploaded_brand"),  # Brand from CSV
+                "original_upload_data": deal.get("original_upload_data"),  # Raw CSV row
                 "analysis_id": deal.get("analysis_id"),
                 "analyzed_at": analysis.get("created_at") if analysis else deal.get("deal_created_at"),
                 "created_at": deal.get("deal_created_at"),
