@@ -1,482 +1,302 @@
 """
-Keepa API client with BATCH cache lookups and BATCH API calls.
+Keepa API Client - Direct REST API
+Matches working curl: curl "https://api.keepa.com/product?key=KEY&domain=1&asin=ASIN&stats=90&offers=20"
 """
-import asyncio
+import os
 import httpx
 import logging
-import os
-from typing import Optional, List, Dict, Any
-from app.services.supabase_client import supabase
-from app.core.config import settings
+from typing import Optional, Dict, List, Any
 from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
-KEEPA_API_KEY = os.getenv("KEEPA_API_KEY")
-KEEPA_API_URL = "https://api.keepa.com"
+KEEPA_API_URL = "https://api.keepa.com/product"
 
+# Price indices - prices in CENTS, divide by 100
+# Negative values: -1=no data, -2=out of stock, -3=too old, -4=never tracked
+PRICE_INDEX = {
+    "amazon": 0, "new": 1, "used": 2, "sales_rank": 3, "list_price": 4,
+    "collectible": 5, "refurbished": 6, "new_fba": 10, "lightning_deal": 11,
+    "warehouse": 12, "new_fbm": 13, "buy_box": 18,
+}
 
-class KeepaError(Exception):
-    """Custom exception for Keepa API errors."""
-    pass
+DOMAINS = {"US": 1, "UK": 2, "DE": 3, "FR": 4, "JP": 5, "CA": 6}
 
 
 class KeepaClient:
-    """
-    Keepa client with BATCH cache lookups and BATCH API calls.
-    """
-    
     def __init__(self):
-        self.api_key = KEEPA_API_KEY
-        self.base_url = KEEPA_API_URL
-        self.cache_hours = settings.KEEPA_CACHE_HOURS
+        self.api_key = os.getenv("KEEPA_API_KEY")
+        if self.api_key:
+            logger.info(f"✅ Keepa configured (key length: {len(self.api_key)})")
+        else:
+            logger.warning("⚠️ KEEPA_API_KEY not set")
     
-    # ==========================================
-    # BATCH CACHE LOOKUP - One query for all ASINs
-    # ==========================================
+    def is_configured(self) -> bool:
+        return bool(self.api_key)
     
-    async def _get_cached_batch(self, asins: List[str]) -> Dict[str, dict]:
-        """Get cached products in ONE query."""
-        if not asins:
-            return {}
-        
-        try:
-            expires_after = datetime.utcnow().isoformat()
-            
-            # BATCH query - all ASINs at once
-            result = supabase.table("keepa_cache")\
-                .select("asin, data")\
-                .in_("asin", asins)\
-                .gt("expires_at", expires_after)\
-                .execute()
-            
-            cached = {}
-            for row in result.data or []:
-                asin = row.get("asin")
-                data = row.get("data")
-                if asin and data:
-                    cached[asin] = data
-            
-            if cached:
-                logger.info(f"📦 Keepa cache hit: {len(cached)}/{len(asins)} ASINs")
-            
-            return cached
-            
-        except Exception as e:
-            logger.warning(f"Cache batch read error: {e}")
-            return {}
-    
-    async def _set_cached_batch(self, products: Dict[str, dict]):
-        """Cache multiple products in ONE upsert."""
-        if not products:
-            return
-        
-        try:
-            expires_at = (datetime.utcnow() + timedelta(hours=self.cache_hours)).isoformat()
-            
-            rows = [
-                {
-                    "asin": asin,
-                    "marketplace_id": "ATVPDKIKX0DER",
-                    "data": data,
-                    "expires_at": expires_at
-                }
-                for asin, data in products.items()
-            ]
-            
-            supabase.table("keepa_cache")\
-                .upsert(rows, on_conflict="asin,marketplace_id")\
-                .execute()
-            
-            logger.info(f"💾 Cached {len(rows)} products to Keepa cache")
-                
-        except Exception as e:
-            logger.warning(f"Cache batch write error: {e}")
-    
-    # ==========================================
-    # BATCH API CALL - Up to 100 ASINs per request
-    # ==========================================
-    
-    async def get_products_batch(
-        self,
-        asins: List[str],
-        domain: int = 1,
-        history: bool = False,
-        days: int = 90
-    ) -> Dict[str, dict]:
-        """
-        Get product data for up to 100 ASINs.
-        
-        1. Check cache for all ASINs (ONE query)
-        2. Fetch uncached ASINs from Keepa API (ONE call per 100)
-        3. Cache new results
-        
-        Returns: Dict[asin, product_data]
-        """
-        if not asins or not self.api_key:
-            return {}
-        
-        # Deduplicate
-        asins = list(set(asins))
-        
-        # STEP 1: Batch cache lookup (ONE query)
-        cached = await self._get_cached_batch(asins)
-        uncached_asins = [a for a in asins if a not in cached]
-        
-        if not uncached_asins:
-            logger.info(f"✅ All {len(asins)} ASINs found in cache")
-            return cached
-        
-        logger.info(f"🔍 {len(cached)} cached, {len(uncached_asins)} need Keepa API")
-        
-        # STEP 2: Fetch from Keepa API in batches of 100
-        fetched = {}
-        
-        for i in range(0, len(uncached_asins), 100):
-            batch = uncached_asins[i:i + 100]
-            
-            try:
-                async with httpx.AsyncClient(timeout=60) as client:
-                    response = await client.get(
-                        f"{self.base_url}/product",
-                        params={
-                            "key": self.api_key,
-                            "domain": domain,
-                            "asin": ",".join(batch),
-                            "stats": days,
-                            "history": 1 if history else 0,
-                            "rating": 1,
-                        }
-                    )
-                    
-                    if response.status_code != 200:
-                        logger.error(f"Keepa API error: {response.status_code} - {response.text[:200]}")
-                        continue
-                    
-                    data = response.json()
-                    
-                    # Check tokens remaining
-                    tokens_left = data.get("tokensLeft", 0)
-                    logger.info(f"🎟️ Keepa tokens remaining: {tokens_left}")
-                    
-                    # If low on tokens, wait
-                    if tokens_left < 10:
-                        logger.warning(f"⚠️ Low Keepa tokens: {tokens_left}, waiting 60s")
-                        await asyncio.sleep(60)
-                    
-                    if "error" in data:
-                        logger.error(f"Keepa API error in response: {data['error']}")
-                        continue
-                    
-                    # Log raw response for debugging
-                    # Keepa may return products as None, so handle that case
-                    products_array = data.get("products") or []
-                    
-                    # Enhanced logging to diagnose Keepa responses
-                    logger.info(f"🔍 Keepa API response: {len(products_array)} products returned for {len(batch)} ASINs")
-                    logger.info(f"🔍 Keepa response keys: {list(data.keys())}")
-                    
-                    if len(products_array) == 0:
-                        logger.warning(f"⚠️ Keepa returned empty products array for ASINs: {batch}")
-                        # Log if products key exists but is None
-                        if "products" in data:
-                            if data["products"] is None:
-                                logger.warning(f"⚠️ Keepa explicitly returned products: null for ASINs: {batch}")
-                            elif isinstance(data["products"], list) and len(data["products"]) == 0:
-                                logger.warning(f"⚠️ Keepa returned empty list [] for ASINs: {batch}")
-                        else:
-                            logger.warning(f"⚠️ Keepa response missing 'products' key for ASINs: {batch}")
-                        
-                        # Log full response structure for debugging (truncated to avoid huge logs)
-                        logger.info(f"🔍 Keepa full response (first 500 chars): {str(data)[:500]}")
-                    
-                    # Parse products
-                    for product in products_array:
-                        asin = product.get("asin")
-                        if not asin:
-                            logger.warning(f"⚠️ Keepa product missing ASIN: {list(product.keys())[:5]}")
-                            continue
-                        
-                        parsed = self._parse_product(product)
-                        fetched[asin] = parsed
-                    
-                    logger.info(f"✅ Keepa API: {len(fetched)}/{len(batch)} products parsed successfully")
-                    
-            except Exception as e:
-                logger.error(f"Keepa API request error: {e}")
-        
-        # STEP 3: Cache new results
-        if fetched:
-            await self._set_cached_batch(fetched)
-        
-        # Merge cached + fetched
-        results = {**cached, **fetched}
-        
-        logger.info(f"✅ Keepa total: {len(results)}/{len(asins)} products")
-        return results
-    
-    async def get_products_raw(
-        self,
-        asins: List[str],
-        domain: int = 1,
-        days: int = 365
-    ) -> Dict[str, dict]:
-        """
-        Get raw Keepa product data without parsing.
-        Used for 365-day stats extraction (stats.365, offers array).
-        
-        Unlike get_products_batch, this returns the raw Keepa API response
-        so we can extract fba_lowest_365d, fbm_lowest_365d, FBA/FBM seller counts, etc.
-        
-        Args:
-            asins: List of ASINs to fetch
-            domain: Keepa domain (1 = US)
-            days: Stats period (365 for yearly analysis)
-        
-        Returns:
-            Dict mapping ASIN to raw Keepa product data
-        """
-        if not asins:
-            return {}
-        
-        if not self.api_key:
-            logger.warning("Keepa API key not configured")
-            return {}
-        
-        results = {}
-        batch_size = 100  # Keepa allows up to 100 ASINs per request
-        
-        for i in range(0, len(asins), batch_size):
-            batch = asins[i:i + batch_size]
-            
-            try:
-                async with httpx.AsyncClient(timeout=60) as client:
-                    response = await client.get(
-                        f"{self.base_url}/product",
-                        params={
-                            "key": self.api_key,
-                            "domain": domain,
-                            "asin": ",".join(batch),
-                            "stats": days,    # Get stats for X days (includes stats.365)
-                            "history": 0,     # Don't need full CSV history (saves tokens)
-                            "offers": 20,     # Get offers for FBA/FBM seller counts
-                            "rating": 1,      # Include rating/reviews
-                        }
-                    )
-                    response.raise_for_status()
-                    data = response.json()
-                    
-                    # Check for errors
-                    if "error" in data:
-                        logger.error(f"Keepa API error: {data['error']}")
-                        continue
-                    
-                    # Check tokens remaining
-                    tokens_left = data.get("tokensLeft", 0)
-                    logger.info(f"🎟️ Keepa tokens remaining: {tokens_left}")
-                    
-                    # If low on tokens, wait
-                    if tokens_left < 10:
-                        logger.warning(f"⚠️ Low Keepa tokens: {tokens_left}, waiting 60s")
-                        await asyncio.sleep(60)
-                    
-                    # Store raw product data
-                    # Keepa may return products as None, so handle that case
-                    products_array = data.get("products") or []
-                    
-                    for product in products_array:
-                        asin = product.get("asin")
-                        if asin:
-                            results[asin] = product  # Raw, unparsed data
-                    
-                    logger.info(f"✅ Keepa raw: fetched {len(batch)} products, got {len(products_array)} results")
-                        
-            except httpx.TimeoutException:
-                logger.error(f"Keepa timeout for batch starting at {i}")
-            except httpx.HTTPStatusError as e:
-                logger.error(f"Keepa HTTP error: {e.response.status_code}")
-            except Exception as e:
-                logger.error(f"Keepa raw fetch error: {e}")
-            
-            # Rate limiting - Keepa allows ~1 request per second
-            if i + batch_size < len(asins):
-                await asyncio.sleep(1)
-        
-        return results
-    
-    async def get_product(
-        self,
-        asin: str,
-        domain: int = 1,
-        days: int = 90,
-        history: bool = False
-    ) -> Optional[dict]:
-        """
-        Get product data for a single ASIN.
-        Wrapper around get_products_batch for convenience.
-        
-        Args:
-            asin: Amazon ASIN
-            domain: Keepa domain (1 = US)
-            days: Days of history/stats
-            history: Whether to include full price history (CSV)
-            
-        Returns:
-            Product data dict or None if not found
-        """
-        if not self.api_key:
-            logger.warning("Keepa API key not configured")
+    async def get_product(self, asin: str, days: int = 90, domain: str = "US") -> Optional[Dict]:
+        """Fetch product from Keepa REST API."""
+        if not self.is_configured():
             return None
         
-        results = await self.get_products_batch(
-            asins=[asin],
-            domain=domain,
-            days=days,
-            history=history
-        )
-        
-        return results.get(asin)
+        try:
+            params = {
+                "key": self.api_key,
+                "domain": DOMAINS.get(domain, 1),
+                "asin": asin,
+                "stats": days,
+                "offers": 20,
+            }
+            
+            logger.info(f"🔍 Keepa API: {asin}")
+            
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                resp = await client.get(KEEPA_API_URL, params=params)
+                
+                if resp.status_code == 403:
+                    logger.error("❌ Keepa: Invalid API key")
+                    return None
+                if resp.status_code == 429:
+                    logger.error("❌ Keepa: Rate limited")
+                    return None
+                if resp.status_code != 200:
+                    logger.error(f"❌ Keepa: {resp.status_code}")
+                    return None
+                
+                data = resp.json()
+                logger.info(f"🎟️ Tokens left: {data.get('tokensLeft', '?')}")
+                
+                products = data.get("products", [])
+                if not products:
+                    logger.warning(f"⚠️ No Keepa data for {asin}")
+                    return None
+                
+                return self._parse_product(products[0], asin, days)
+                
+        except Exception as e:
+            logger.error(f"❌ Keepa error: {e}")
+            return None
     
-    async def get_token_status(self) -> dict:
-        """Get current Keepa API token balance."""
-        if not self.api_key:
-            return {"tokens_left": 0, "error": "API key not configured"}
+    async def get_products_batch(self, asins: List[str], days: int = 90) -> Dict[str, Any]:
+        """Fetch multiple ASINs (max 100)."""
+        if not self.is_configured() or not asins:
+            return {}
         
         try:
-            async with httpx.AsyncClient(timeout=10) as client:
-                response = await client.get(
-                    f"{self.base_url}/token",
-                    params={"key": self.api_key}
-                )
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    return {
-                        "tokens_left": data.get("tokensLeft", 0),
-                        "refill_rate": data.get("refillRate", 0),
-                        "refill_in": data.get("refillIn", 0)
-                    }
-                else:
-                    return {"tokens_left": 0, "error": f"HTTP {response.status_code}"}
-        except Exception as e:
-            logger.error(f"Error getting Keepa token status: {e}")
-            return {"tokens_left": 0, "error": str(e)}
-    
-    def _parse_product(self, product: dict) -> dict:
-        """Parse Keepa product response into our format."""
-        stats = product.get("stats") or {}
-        current_stats = stats.get("current") or [] if stats else []
-        
-        # Get image URL
-        images_csv = product.get("imagesCSV", "")
-        image_url = None
-        if images_csv:
-            first_image = images_csv.split(",")[0]
-            if first_image:
-                image_url = f"https://images-na.ssl-images-amazon.com/images/I/{first_image}"
-        
-        # Get category
-        category_tree = product.get("categoryTree", [])
-        category = category_tree[-1].get("name") if category_tree else None
-        
-        # Get BSR from stats (index 3 in current array)
-        bsr = None
-        if len(current_stats) > 3 and current_stats[3] and current_stats[3] > 0:
-            bsr = current_stats[3]
-        
-        # Get current price from stats (index 1 in current array = Amazon price)
-        # Keepa stats array format: [timestamp, Amazon, New, Used, SalesRank, ...]
-        current_price = None
-        if len(current_stats) > 1 and current_stats[1] and current_stats[1] > 0:
-            # Price is in cents, convert to dollars
-            current_price = current_stats[1] / 100.0
-        
-        # Get rating
-        rating = product.get("rating")
-        if isinstance(rating, list):
-            rating = (rating[0] / 10) if rating and rating[0] else None
-        elif rating:
-            rating = rating / 10
-        
-        # Get review count
-        review_count = product.get("reviewCount")
-        if isinstance(review_count, list):
-            review_count = review_count[0] if review_count else None
-        
-        # Parse price history if available
-        price_history = []
-        rank_history = []
-        
-        # Keepa CSV format: [timestamp, Amazon, New, Used, SalesRank, ...]
-        csv = product.get("csv", [])
-        if csv and len(csv) > 0:
-            for entry in csv:
-                if len(entry) >= 5:
-                    timestamp = entry[0]
-                    amazon_price = entry[1] if entry[1] > 0 else None
-                    sales_rank = entry[4] if entry[4] > 0 else None
-                    
-                    if amazon_price:
-                        price_history.append({
-                            "date": timestamp,
-                            "price": amazon_price / 100.0  # Convert cents to dollars
-                        })
-                    
-                    if sales_rank:
-                        rank_history.append({
-                            "date": timestamp,
-                            "rank": sales_rank
-                        })
-        
-        # Get averages from stats
-        averages = {
-            "price_30d": None,
-            "price_90d": None,
-            "rank_30d": None,
-            "rank_90d": None
-        }
-        
-        # Keepa stats format: stats.min[10] = FBA lowest 365d, stats.min[11] = FBM lowest 365d
-        # stats.avg[1] = average Amazon price
-        if stats:
-            avg_prices = stats.get("avg", [])
-            if len(avg_prices) > 1:
-                averages["price_30d"] = avg_prices[1] / 100.0 if avg_prices[1] > 0 else None
-            if len(avg_prices) > 1:
-                averages["price_90d"] = avg_prices[1] / 100.0 if avg_prices[1] > 0 else None
-            
-            avg_ranks = stats.get("avg", [])
-            if len(avg_ranks) > 4:
-                averages["rank_30d"] = avg_ranks[4] if avg_ranks[4] > 0 else None
-                averages["rank_90d"] = avg_ranks[4] if avg_ranks[4] > 0 else None
-        
-        return {
-            "asin": product.get("asin"),
-            "title": product.get("title"),
-            "brand": product.get("brand"),
-            "image_url": image_url,
-            "bsr": bsr,
-            "category": category,
-            "current_price": current_price,
-            "buy_box_price": current_price,
-            "sales_drops_30": stats.get("salesRankDrops30"),
-            "sales_drops_90": stats.get("salesRankDrops90"),
-            "sales_drops_180": stats.get("salesRankDrops180"),
-            "variation_count": len(product.get("variations", [])) if product.get("variations") else 0,
-            "amazon_in_stock": product.get("availabilityAmazon", -1) == 0,
-            "rating": rating,
-            "review_count": review_count,
-            "price_history": price_history,
-            "rank_history": rank_history,
-            "averages": averages,
-            "current": {
-                "price": current_price,
-                "bsr": bsr,
-                "rating": rating,
-                "review_count": review_count
+            params = {
+                "key": self.api_key,
+                "domain": 1,
+                "asin": ",".join(asins[:100]),
+                "stats": days,
+                "offers": 20,
             }
-        }
+            
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                resp = await client.get(KEEPA_API_URL, params=params)
+                if resp.status_code != 200:
+                    return {}
+                
+                data = resp.json()
+                result = {}
+                for p in data.get("products", []):
+                    if p and p.get("asin"):
+                        result[p["asin"]] = self._parse_product(p, p["asin"], days)
+                return result
+        except:
+            return {}
+    
+    def _parse_product(self, p: dict, asin: str, days: int) -> Dict[str, Any]:
+        """Parse Keepa product - ALL fields."""
+        try:
+            stats = p.get("stats") or {}
+            current = stats.get("current") or []
+            avg90 = stats.get("avg90") or stats.get("avg") or []
+            avg30 = stats.get("avg30") or []
+            min_v = stats.get("min") or []
+            max_v = stats.get("max") or []
+            
+            # Current prices (cents -> dollars)
+            cur_amazon = self._price(current, 0)
+            cur_new = self._price(current, 1)
+            cur_used = self._price(current, 2)
+            cur_bsr = self._rank(current, 3)
+            cur_fba = self._price(current, 10)
+            cur_fbm = self._price(current, 13)
+            cur_buybox = self._price(current, 18)
+            
+            # Averages
+            avg_amazon = self._price(avg90, 0)
+            avg_new = self._price(avg90, 1)
+            avg_bsr = self._rank(avg90, 3)
+            avg_buybox = self._price(avg90, 18)
+            
+            # Min/Max
+            min_price = self._price(min_v, 0) or self._price(min_v, 1)
+            max_price = self._price(max_v, 0) or self._price(max_v, 1)
+            min_bsr = self._rank(min_v, 3)
+            max_bsr = self._rank(max_v, 3)
+            
+            # Sellers & Drops
+            fba = stats.get("offerCountFBA") or 0
+            fbm = stats.get("offerCountFBM") or 0
+            drops30 = stats.get("salesRankDrops30") or 0
+            drops90 = stats.get("salesRankDrops90") or 0
+            drops180 = stats.get("salesRankDrops180") or 0
+            
+            # Category
+            cats = p.get("categoryTree") or []
+            root_cat = cats[0].get("name") if cats else None
+            
+            # History for charts
+            price_hist = self._history(p, 0, days) or self._history(p, 1, days) or self._history(p, 18, days)
+            rank_hist = self._history(p, 3, days)
+            
+            # Images
+            imgs = p.get("imagesCSV") or ""
+            images = [f"https://images-na.ssl-images-amazon.com/images/I/{i}" for i in imgs.split(",") if i]
+            
+            # Offers
+            offers = self._parse_offers(p.get("offers") or [])
+            
+            return {
+                "asin": asin,
+                "title": p.get("title"),
+                "brand": p.get("brand"),
+                "manufacturer": p.get("manufacturer"),
+                "productGroup": p.get("productGroup"),
+                "parentAsin": p.get("parentAsin"),
+                "rootCategory": root_cat,
+                "categoryTree": cats,
+                "images": images,
+                "hazmat": p.get("hazardousMaterials"),
+                
+                "current": {
+                    "amazon_price": cur_amazon,
+                    "new_price": cur_new,
+                    "used_price": cur_used,
+                    "fba_price": cur_fba,
+                    "fbm_price": cur_fbm,
+                    "buy_box_price": cur_buybox,
+                    "sales_rank": cur_bsr,
+                    "fba_sellers": fba,
+                    "fbm_sellers": fbm,
+                    "total_sellers": fba + fbm,
+                },
+                
+                "stats": {
+                    "avg_price": avg_amazon or avg_new or avg_buybox,
+                    "avg_rank": avg_bsr,
+                    "min_price": min_price,
+                    "max_price": max_price,
+                    "min_rank": min_bsr,
+                    "max_rank": max_bsr,
+                    "drops_30": drops30,
+                    "drops_90": drops90,
+                    "drops_180": drops180,
+                    "fba_sellers": fba,
+                    "fbm_sellers": fbm,
+                },
+                
+                "averages": {
+                    "avg_price_90": avg_amazon or avg_new,
+                    "avg_rank_90": avg_bsr,
+                    "drops_90": drops90,
+                },
+                
+                "price_history": price_hist,
+                "rank_history": rank_hist,
+                "offers": offers,
+                "offerCount": len(offers),
+            }
+        except Exception as e:
+            logger.error(f"Parse error {asin}: {e}")
+            return {"asin": asin, "error": str(e)}
+    
+    def _price(self, arr, idx) -> Optional[float]:
+        try:
+            if arr and len(arr) > idx and arr[idx] is not None and arr[idx] >= 0:
+                return arr[idx] / 100.0
+        except:
+            pass
+        return None
+    
+    def _rank(self, arr, idx) -> Optional[int]:
+        try:
+            if arr and len(arr) > idx and arr[idx] is not None and arr[idx] >= 0:
+                return int(arr[idx])
+        except:
+            pass
+        return None
+    
+    def _parse_offers(self, offers) -> List[Dict]:
+        result = []
+        for o in (offers or [])[:20]:
+            try:
+                stock = None
+                csv = o.get("stockCSV") or []
+                if len(csv) >= 2 and csv[-1] >= 0:
+                    stock = csv[-1]
+                
+                result.append({
+                    "seller_id": o.get("sellerId"),
+                    "seller_name": o.get("sellerName"),
+                    "is_amazon": o.get("isAmazon", False),
+                    "is_fba": o.get("isFBA", False),
+                    "is_prime": o.get("isPrime", False),
+                    "condition": o.get("condition", 1),
+                    "stock": stock,
+                })
+            except:
+                pass
+        return result
+    
+    def _history(self, p, idx, days) -> List[Dict]:
+        history = []
+        try:
+            csv = p.get("csv")
+            if not csv or len(csv) <= idx or not csv[idx]:
+                return history
+            
+            data = csv[idx]
+            epoch = datetime(2011, 1, 1)
+            cutoff = datetime.utcnow() - timedelta(days=days)
+            div = 100.0 if idx != 3 else 1
+            
+            i = 0
+            while i < len(data) - 1:
+                ts, val = data[i], data[i+1]
+                i += 2
+                if ts is None or val is None or val < 0:
+                    continue
+                dt = epoch + timedelta(minutes=int(ts))
+                if dt < cutoff:
+                    continue
+                history.append({
+                    "date": dt.strftime("%Y-%m-%d"),
+                    "timestamp": int(dt.timestamp() * 1000),
+                    "value": val / div if div != 1 else val
+                })
+            history.sort(key=lambda x: x["timestamp"])
+        except:
+            pass
+        return history
+    
+    async def get_tokens_left(self) -> Dict:
+        if not self.is_configured():
+            return {"configured": False}
+        try:
+            params = {"key": self.api_key, "domain": 1, "asin": "B000000000", "stats": 0}
+            async with httpx.AsyncClient(timeout=10) as c:
+                r = await c.get(KEEPA_API_URL, params=params)
+                d = r.json()
+                return {"configured": True, "tokens_left": d.get("tokensLeft", 0)}
+        except Exception as e:
+            return {"configured": True, "error": str(e)}
 
 
-# Singleton instance
-keepa_client = KeepaClient()
+_client = None
+def get_keepa_client() -> KeepaClient:
+    global _client
+    if _client is None:
+        _client = KeepaClient()
+    return _client
