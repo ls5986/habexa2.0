@@ -189,20 +189,20 @@ async def analyze_single(
         supplier_id = request.supplier_id
         
         # Get existing records (optimized - single query for product_source with supplier_id)
+        # Always check for existing product_source (needed for Products page display)
         existing_source_result = None
-        if adjusted_buy_cost:
-            try:
-                existing_source_result = supabase.table("product_sources")\
-                    .select("id, supplier_id")\
-                    .eq("product_id", product_id)\
-                    .eq("user_id", user_id)\
-                    .limit(1)\
-                    .execute()
-                # Get supplier_id from source if not provided
-                if not supplier_id and existing_source_result.data:
-                    supplier_id = existing_source_result.data[0].get("supplier_id")
-            except Exception as e:
-                logger.warning(f"Could not fetch product_source: {e}")
+        try:
+            existing_source_result = supabase.table("product_sources")\
+                .select("id, supplier_id")\
+                .eq("product_id", product_id)\
+                .eq("user_id", user_id)\
+                .limit(1)\
+                .execute()
+            # Get supplier_id from source if not provided
+            if not supplier_id and existing_source_result.data:
+                supplier_id = existing_source_result.data[0].get("supplier_id")
+        except Exception as e:
+            logger.warning(f"Could not fetch product_source: {e}")
         
         # Check existing analysis
         existing_analysis_result = supabase.table("analyses")\
