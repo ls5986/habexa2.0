@@ -212,27 +212,42 @@ async def analyze_single(
             .limit(1)\
             .execute()
         
-        # Update/insert product_source
-        if adjusted_buy_cost:
-            try:
-                source_update_data = {
-                    "buy_cost": adjusted_buy_cost,
-                    "moq": request.moq,
-                    "supplier_id": supplier_id,
-                    "stage": "reviewed",
-                    "updated_at": datetime.utcnow().isoformat()
+        # Update/insert product_source - ALWAYS create/update after analysis
+        # This ensures the product appears in the Products page (product_deals view requires product_source)
+        try:
+            source_update_data = {
+                "moq": request.moq,
+                "supplier_id": supplier_id,
+                "stage": "reviewed",  # Analyzed products go to "reviewed" stage
+                "updated_at": datetime.utcnow().isoformat()
+            }
+            
+            # Only set buy_cost if provided (can be 0 or None)
+            if adjusted_buy_cost is not None:
+                source_update_data["buy_cost"] = adjusted_buy_cost
+            
+            if existing_source_result and existing_source_result.data:
+                # Update existing product_source
+                supabase.table("product_sources").update(source_update_data).eq("id", existing_source_result.data[0]["id"]).execute()
+                logger.info(f"✅ Updated product_source for product {product_id}")
+            else:
+                # Create new product_source - required for product to appear in Products page
+                source_insert_data = {
+                    "user_id": user_id,
+                    "product_id": product_id,
+                    **source_update_data,
+                    "source": "quick_analyze"
                 }
-                if existing_source_result and existing_source_result.data:
-                    supabase.table("product_sources").update(source_update_data).eq("id", existing_source_result.data[0]["id"]).execute()
-                else:
-                    supabase.table("product_sources").insert({
-                        "user_id": user_id,
-                        "product_id": product_id,
-                        **source_update_data,
-                        "source": "quick_analyze"
-                    }).execute()
-            except Exception as e:
-                logger.warning(f"Could not create/update product_source: {e}")
+                # Ensure buy_cost is set (default to 0 if not provided)
+                if "buy_cost" not in source_insert_data:
+                    source_insert_data["buy_cost"] = adjusted_buy_cost if adjusted_buy_cost is not None else 0.0
+                
+                supabase.table("product_sources").insert(source_insert_data).execute()
+                logger.info(f"✅ Created product_source for product {product_id} (stage: reviewed)")
+        except Exception as e:
+            logger.error(f"❌ Failed to create/update product_source: {e}", exc_info=True)
+            # Don't fail the entire analysis, but log the error
+            # Product will still be created, just won't show in Products page
         
         # Prepare analysis data
         analysis_data = {
