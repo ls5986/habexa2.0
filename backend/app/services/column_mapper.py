@@ -5,7 +5,7 @@ Uses OpenAI to intelligently detect column purposes.
 """
 import os
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 from openai import OpenAI
 from app.core.config import settings
 
