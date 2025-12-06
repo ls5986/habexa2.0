@@ -12,11 +12,13 @@ export function StripeProvider({ children }) {
   const [error, setError] = useState(null);
   
   // Helper to refresh tier in AuthContext (called after subscription changes)
+  // Note: This requires AuthContext to be available, so we'll trigger a page reload
+  // or use a custom event to notify AuthContext to refresh
   const refreshAuthTier = async () => {
     try {
-      // Call /auth/me to refresh tier in AuthContext
-      // This will be picked up by AuthContext's loadUserTier
-      await api.get('/auth/me');
+      // Dispatch custom event to trigger AuthContext refresh
+      // AuthContext will listen for this event and refresh tier
+      window.dispatchEvent(new CustomEvent('refreshTier'));
     } catch (err) {
       console.warn('Failed to refresh tier after subscription change:', err);
     }

@@ -83,8 +83,19 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    // ✅ Listen for tier refresh events (from StripeContext after subscription changes)
+    const handleRefreshTier = () => {
+      if (user?.id) {
+        loadUserTier(user.id);
+      }
+    };
+    window.addEventListener('refreshTier', handleRefreshTier);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('refreshTier', handleRefreshTier);
+    };
+  }, [user?.id]);
 
   const signUp = async (email, password, fullName) => {
     try {
