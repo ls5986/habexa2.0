@@ -1,69 +1,28 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import api from '../services/api';
-import { useAuth } from './AuthContext';
+import { createContext, useContext, useMemo } from 'react';
+import {
+  useSuppliers as useSuppliersQuery,
+  useCreateSupplier,
+  useUpdateSupplier,
+  useDeleteSupplier,
+} from '../hooks/useSuppliersQuery';
 
 const SuppliersContext = createContext(null);
 
+/**
+ * SuppliersProvider - Wraps React Query hooks for suppliers
+ * Provides backward-compatible API for existing components
+ */
 export function SuppliersProvider({ children }) {
-  const { user } = useAuth();
-  const [suppliers, setSuppliers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(null);
-  const [lastFetch, setLastFetch] = useState(null);
+  // React Query hooks
+  const { suppliers, loading, error, refetch } = useSuppliersQuery();
+  const { createSupplier: createSupplierMutation, isCreating } = useCreateSupplier();
+  const { updateSupplier: updateSupplierMutation, isUpdating } = useUpdateSupplier();
+  const { deleteSupplier: deleteSupplierMutation, isDeleting } = useDeleteSupplier();
 
-  // Fetch suppliers from API
-  const fetchSuppliers = useCallback(async () => {
-    if (!user) {
-      setSuppliers([]);
-      setLoading(false);
-      return;
-    }
-
+  // Wrap mutations with error handling
+  const createSupplier = async (supplierData) => {
     try {
-      setLoading(true);
-      setError(null);
-      const response = await api.get('/suppliers');
-      
-      // Handle different response formats safely
-      let suppliersData = [];
-      if (Array.isArray(response.data)) {
-        suppliersData = response.data;
-      } else if (Array.isArray(response.data?.suppliers)) {
-        suppliersData = response.data.suppliers;
-      } else if (Array.isArray(response.data?.data)) {
-        suppliersData = response.data.data;
-      }
-      
-      setSuppliers(suppliersData);
-      setLastFetch(Date.now());
-    } catch (err) {
-      setError(err.message);
-      console.error('Failed to fetch suppliers:', err);
-      setSuppliers([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
-
-  // Initial fetch on mount
-  useEffect(() => {
-    if (user) {
-      fetchSuppliers();
-    }
-  }, [user, fetchSuppliers]);
-
-  // Create supplier
-  const createSupplier = useCallback(async (supplierData) => {
-    try {
-      setSaving(true);
-      setError(null);
-      const response = await api.post('/suppliers', supplierData);
-      const newSupplier = response.data?.supplier || response.data;
-      
-      // Update local state
-      setSuppliers(prev => [...prev, newSupplier]);
-      return newSupplier;
+      return await createSupplierMutation(supplierData);
     } catch (err) {
       const errorDetail = err.response?.data?.detail;
       let errorMessage = 'Failed to create supplier';
@@ -82,69 +41,45 @@ export function SuppliersProvider({ children }) {
         errorMessage = err.message;
       }
       
-      setError(errorMessage);
-      console.error('Failed to create supplier:', err);
       throw new Error(errorMessage);
-    } finally {
-      setSaving(false);
     }
-  }, []);
+  };
 
-  // Update supplier
-  const updateSupplier = useCallback(async (id, supplierData) => {
+  const updateSupplier = async (id, supplierData) => {
     try {
-      setSaving(true);
-      setError(null);
-      const response = await api.put(`/suppliers/${id}`, supplierData);
-      const updatedSupplier = response.data;
-      
-      // Update local state
-      setSuppliers(prev => prev.map(s => s.id === id ? updatedSupplier : s));
-      return updatedSupplier;
+      return await updateSupplierMutation({ id, ...supplierData });
     } catch (err) {
       const errorMessage = err.response?.data?.detail || err.response?.data?.message || err.message || 'Failed to update supplier';
-      setError(errorMessage);
-      console.error('Failed to update supplier:', err);
       throw new Error(errorMessage);
-    } finally {
-      setSaving(false);
     }
-  }, []);
+  };
 
-  // Delete supplier
-  const deleteSupplier = useCallback(async (id) => {
+  const deleteSupplier = async (id) => {
     try {
-      setSaving(true);
-      await api.delete(`/suppliers/${id}`);
-      
-      // Update local state
-      setSuppliers(prev => prev.filter(s => s.id !== id));
+      await deleteSupplierMutation(id);
     } catch (err) {
       const errorMessage = err.response?.data?.detail || err.response?.data?.message || err.message || 'Failed to delete supplier';
-      setError(errorMessage);
-      console.error('Failed to delete supplier:', err);
       throw new Error(errorMessage);
-    } finally {
-      setSaving(false);
     }
-  }, []);
-
-  // Manual refresh
-  const refreshSuppliers = useCallback(async () => {
-    await fetchSuppliers();
-  }, [fetchSuppliers]);
-
-  const value = {
-    suppliers,
-    loading,
-    saving,
-    error,
-    createSupplier,
-    updateSupplier,
-    deleteSupplier,
-    refreshSuppliers,
-    lastFetch,
   };
+
+  // Combine saving states
+  const saving = isCreating || isUpdating || isDeleting;
+
+  const value = useMemo(
+    () => ({
+      suppliers,
+      loading,
+      saving,
+      error,
+      createSupplier,
+      updateSupplier,
+      deleteSupplier,
+      refreshSuppliers: refetch,
+      lastFetch: null, // React Query manages this internally
+    }),
+    [suppliers, loading, saving, error, refetch]
+  );
 
   return (
     <SuppliersContext.Provider value={value}>
@@ -153,6 +88,10 @@ export function SuppliersProvider({ children }) {
   );
 }
 
+/**
+ * Hook to use suppliers - backward compatible with existing code
+ * Now powered by React Query with 5-minute cache
+ */
 export function useSuppliers() {
   const context = useContext(SuppliersContext);
   if (!context) {
