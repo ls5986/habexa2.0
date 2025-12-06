@@ -102,3 +102,19 @@ async def debug_keepa(asin: str):
         }
     except Exception as e:
         return {"error": str(e)}
+
+
+@router.get("/test/{asin}")
+async def test_product(asin: str, days: int = Query(default=90)):
+    """Test endpoint - NO AUTH REQUIRED. For testing only."""
+    client = get_keepa_client()
+    
+    if not client.is_configured():
+        return {"error": "Keepa not configured"}
+    
+    data = await client.get_product(asin, days)
+    
+    if not data:
+        return {"error": "No data", "asin": asin}
+    
+    return data

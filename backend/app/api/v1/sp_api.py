@@ -397,3 +397,44 @@ async def get_sales_estimate(
         logger.error(f"Error getting sales estimate for {asin}: {e}")
         raise HTTPException(500, str(e))
 
+
+@router.get("/test/{asin}")
+async def test_sp_api(asin: str):
+    """Test endpoint - NO AUTH. For testing only."""
+    try:
+        marketplace_id = "ATVPDKIKX0DER"
+        
+        # Fetch catalog data (title, brand, image, BSR)
+        catalog = await sp_api_client.get_catalog_item(asin, marketplace_id)
+        
+        # Fetch pricing data (buy box price)
+        pricing = await sp_api_client.get_competitive_pricing(asin, marketplace_id)
+        
+        # Combine data
+        result = {
+            "asin": asin,
+            "title": catalog.get("title") if catalog else None,
+            "brand": catalog.get("brand") if catalog else None,
+            "image_url": catalog.get("image_url") if catalog else None,
+            "sales_rank": catalog.get("sales_rank") if catalog else None,
+            "buy_box_price": pricing.get("buy_box_price") if pricing else None,
+            "lowest_price": pricing.get("lowest_price") if pricing else None,
+            "offer_count": pricing.get("offer_count", 0) if pricing else 0,
+            "source": "sp-api"
+        }
+        
+        return result or {"error": "No data", "asin": asin}
+    except Exception as e:
+        return {"error": str(e), "asin": asin}
+
+
+@router.get("/test/{asin}/fees")
+async def test_fees(asin: str, price: float = Query(default=20.0)):
+    """Test fees endpoint - NO AUTH."""
+    try:
+        marketplace_id = "ATVPDKIKX0DER"
+        result = await sp_api_client.get_fee_estimate(asin, price, marketplace_id)
+        return result or {"error": "No data"}
+    except Exception as e:
+        return {"error": str(e)}
+
