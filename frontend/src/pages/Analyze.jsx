@@ -1,16 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Box, Typography, TextField, Button, Card, CardContent, 
   RadioGroup, FormControlLabel, Radio, Select, MenuItem, 
-  FormControl, InputLabel, Alert, Chip, Divider 
+  FormControl, InputLabel, Alert, Chip, Divider, CircularProgress, Grid
 } from '@mui/material';
-import { Zap, ExternalLink, TrendingUp, DollarSign, RefreshCw } from 'lucide-react';
+import { Zap, ExternalLink, TrendingUp, DollarSign, RefreshCw, Plus } from 'lucide-react';
 import { useAnalysis } from '../hooks/useAnalysis';
 import { useSuppliers } from '../hooks/useSuppliers';
 import { useToast } from '../context/ToastContext';
 import { handleApiError } from '../utils/errorHandler';
 import { habexa } from '../theme';
+import api from '../services/api';
 
 const Analyze = () => {
   const navigate = useNavigate();
@@ -21,9 +22,46 @@ const Analyze = () => {
   const [supplierId, setSupplierId] = useState('');
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [addingToProducts, setAddingToProducts] = useState(false);
+  const [recentAnalyses, setRecentAnalyses] = useState([]);
+  const pollingCleanupRef = useRef(null);
   const { analyzeSingle, loading } = useAnalysis();
   const { suppliers } = useSuppliers();
   const { showToast } = useToast();
+
+  // Load recent analyses from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('recentAnalyses');
+      if (stored) {
+        setRecentAnalyses(JSON.parse(stored));
+      }
+    } catch (err) {
+      console.error('Failed to load recent analyses:', err);
+    }
+  }, []);
+
+  // Save recent analyses to localStorage
+  useEffect(() => {
+    if (recentAnalyses.length > 0) {
+      try {
+        localStorage.setItem('recentAnalyses', JSON.stringify(recentAnalyses.slice(0, 10)));
+      } catch (err) {
+        console.error('Failed to save recent analyses:', err);
+      }
+    }
+  }, [recentAnalyses]);
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingCleanupRef.current) {
+        pollingCleanupRef.current();
+        pollingCleanupRef.current = null;
+      }
+    };
+  }, []);
 
   const handleAnalyze = async () => {
     if (!asin || !buyCost) {
@@ -33,47 +71,275 @@ const Analyze = () => {
     
     setResult(null);
     setError(null);
+    setAnalyzing(true);
+    
+    // Stop any existing polling
+    if (pollingCleanupRef.current) {
+      pollingCleanupRef.current();
+      pollingCleanupRef.current = null;
+    }
     
     try {
       const data = await analyzeSingle(asin, parseFloat(buyCost), moq, supplierId || null);
       
-      // Handle job-based response (async analysis)
+      // Handle job-based response (async analysis) - POLL FOR RESULTS
       if (data.job_id) {
-        showToast('Analysis started! Check Products page for results.', 'info');
-        // Could add polling here, but for now just notify user
+        showToast('Analysis started! Waiting for results...', 'info');
+        
+        // ✅ OPTIMIZATION: Exponential backoff polling (same as QuickAnalyzeModal)
+        const pollJob = () => {
+          let pollInterval = 1000; // Start at 1 second
+          const maxInterval = 10000; // Max 10 seconds
+          let timeoutId;
+          let isCancelled = false;
+          
+          const checkJob = async () => {
+            if (isCancelled) return;
+            
+            try {
+              const jobRes = await api.get(`/jobs/${data.job_id}`);
+              const job = jobRes.data;
+              
+              if (job.status === 'completed') {
+                // Job completed - fetch product/deal data
+                try {
+                  const productId = data.product_id || job.metadata?.product_id;
+                  const jobAsin = data.asin || job.metadata?.asin;
+                  
+                  // Try fetching from deals endpoint first (has full analysis data)
+                  try {
+                    const dealRes = await api.get(`/deals?asin=${jobAsin}`);
+                    const deals = Array.isArray(dealRes.data) ? dealRes.data : 
+                                  Array.isArray(dealRes.data?.deals) ? dealRes.data.deals : [];
+                    const deal = deals.find(d => d.asin === jobAsin);
+                    
+                    if (deal && (deal.deal_score !== undefined || deal.roi !== undefined)) {
+                      const resultData = {
+                        asin: deal.asin,
+                        title: deal.title || deal.product_title || 'Unknown',
+                        deal_score: deal.deal_score ?? 'N/A',
+                        net_profit: deal.net_profit ?? deal.profit ?? 0,
+                        roi: deal.roi ?? 0,
+                        gating_status: deal.gating_status || 'unknown',
+                        meets_threshold: deal.meets_threshold ?? false,
+                        is_profitable: (deal.net_profit || deal.profit || 0) > 0,
+                        sell_price: deal.sell_price,
+                        buy_cost: deal.buy_cost || parseFloat(buyCost),
+                        product_id: productId,
+                        image_url: deal.image_url,
+                        brand: deal.brand,
+                        category: deal.category,
+                      };
+                      setResult(resultData);
+                      setAnalyzing(false);
+                      showToast('Analysis complete!', 'success');
+                      
+                      // Add to recent analyses
+                      setRecentAnalyses(prev => [resultData, ...prev].slice(0, 10));
+                      return;
+                    }
+                  } catch (dealErr) {
+                    console.warn('Could not fetch from deals endpoint:', dealErr);
+                  }
+                  
+                  // Fallback to products endpoint
+                  if (productId) {
+                    const productRes = await api.get(`/products/${productId}`);
+                    const product = productRes.data;
+                    
+                    const resultData = {
+                      asin: product.asin,
+                      title: product.title || 'Unknown',
+                      deal_score: product.deal_score || 'N/A',
+                      net_profit: product.net_profit || product.profit || 0,
+                      roi: product.roi || 0,
+                      gating_status: product.gating_status || 'unknown',
+                      meets_threshold: product.meets_threshold ?? false,
+                      is_profitable: (product.net_profit || product.profit || 0) > 0,
+                      sell_price: product.sell_price,
+                      buy_cost: product.buy_cost || parseFloat(buyCost),
+                      product_id: productId,
+                      image_url: product.image_url,
+                      brand: product.brand,
+                      category: product.category,
+                    };
+                    setResult(resultData);
+                    setAnalyzing(false);
+                    showToast('Analysis complete!', 'success');
+                    
+                    // Add to recent analyses
+                    setRecentAnalyses(prev => [resultData, ...prev].slice(0, 10));
+                    return;
+                  }
+                  
+                  // If we can't fetch product, show job result if available
+                  if (job.result) {
+                    const resultData = {
+                      asin: job.result.asin || job.metadata?.asin || asin,
+                      title: job.result.title || job.result.product_title || 'Unknown',
+                      deal_score: job.result.deal_score ?? 'N/A',
+                      net_profit: job.result.net_profit ?? job.result.profit ?? 0,
+                      roi: job.result.roi ?? 0,
+                      gating_status: job.result.gating_status || 'unknown',
+                      meets_threshold: job.result.meets_threshold ?? false,
+                      is_profitable: (job.result.net_profit || job.result.profit || 0) > 0,
+                      product_id: data.product_id,
+                    };
+                    setResult(resultData);
+                    setAnalyzing(false);
+                    showToast('Analysis complete!', 'success');
+                    setRecentAnalyses(prev => [resultData, ...prev].slice(0, 10));
+                    return;
+                  }
+                  
+                  // Last resort - show basic info
+                  setResult({
+                    asin: data.asin || asin,
+                    title: 'Analysis completed - check Products page for details',
+                    product_id: data.product_id,
+                  });
+                  setAnalyzing(false);
+                  showToast('Analysis complete! Check Products page for full details.', 'success');
+                  
+                } catch (fetchErr) {
+                  console.error('Failed to fetch analysis results:', fetchErr);
+                  setAnalyzing(false);
+                  showToast('Analysis completed but could not load results. Check Products page.', 'warning');
+                }
+                return; // Job completed, stop polling
+              } else if (job.status === 'failed') {
+                setAnalyzing(false);
+                showToast('Analysis failed. Please try again.', 'error');
+                setError('Analysis job failed');
+                return; // Job failed, stop polling
+              }
+              
+              // Job still processing - schedule next poll with exponential backoff
+              pollInterval = Math.min(pollInterval * 2, maxInterval);
+              timeoutId = setTimeout(checkJob, pollInterval);
+              
+            } catch (err) {
+              console.error('Error polling job:', err);
+              
+              // If job not found (404), stop polling gracefully
+              if (err.response?.status === 404) {
+                setAnalyzing(false);
+                showToast('Job not found', 'warning');
+                setError('Analysis job not found');
+                return;
+              }
+              
+              // On error, retry with current interval
+              timeoutId = setTimeout(checkJob, pollInterval);
+            }
+          };
+          
+          // Start first poll immediately
+          checkJob();
+          
+          // Return cleanup function
+          return () => {
+            isCancelled = true;
+            if (timeoutId) {
+              clearTimeout(timeoutId);
+            }
+          };
+        };
+        
+        // Store cleanup function
+        pollingCleanupRef.current = pollJob();
         return;
       }
       
-      // Handle direct result response
+      // Handle direct result response (shouldn't happen with async jobs)
       if (data.asin || data.product_id) {
         setResult(data);
+        setAnalyzing(false);
         showToast('Analysis complete!', 'success');
+        setRecentAnalyses(prev => [data, ...prev].slice(0, 10));
       } else {
-        // If response structure is different, try to extract what we can
-        setResult({
-          asin: data.asin || asin,
-          title: data.title || data.product_title || 'Product Analysis',
-          roi: data.roi || data.analysis?.roi || 0,
-          net_profit: data.net_profit || data.analysis?.net_profit || 0,
-          deal_score: data.deal_score || data.analysis?.deal_score || null,
-          gating_status: data.gating_status || 'unknown',
-          meets_threshold: data.meets_threshold || false,
-        });
-        showToast('Analysis complete!', 'success');
+        setAnalyzing(false);
+        setError('Unexpected response format from analysis API');
       }
     } catch (err) {
+      setAnalyzing(false);
       const errorMessage = handleApiError(err, showToast);
       setError(errorMessage);
     }
   };
 
   const handleAnalyzeAnother = () => {
+    // Stop polling
+    if (pollingCleanupRef.current) {
+      pollingCleanupRef.current();
+      pollingCleanupRef.current = null;
+    }
+    
     setResult(null);
     setError(null);
+    setAnalyzing(false);
     setAsin('');
     setBuyCost('');
     setMoq(1);
     setSupplierId('');
+  };
+
+  const handleAddToProducts = async () => {
+    if (!result) {
+      showToast('No analysis result to add.', 'warning');
+      return;
+    }
+    
+    setAddingToProducts(true);
+    
+    try {
+      // Product is already created during analysis, just navigate to products page
+      // Optionally update product source stage if needed
+      if (result.product_id) {
+        try {
+          // Try to update product source stage to make it visible
+          // This is optional - if it fails, we still navigate
+          await api.patch(`/products/deal/${result.product_id}`, {
+            stage: 'new',
+            ...(supplierId && { supplier_id: supplierId }),
+          }).catch(() => {
+            // Ignore errors - product is already created
+          });
+        } catch (updateErr) {
+          // Ignore update errors - product exists and can be viewed
+          console.log('Product already exists, navigating to view it');
+        }
+      }
+      
+      showToast('Product is in your list! Redirecting...', 'success');
+      
+      // Navigate to products page - filter by ASIN if available
+      setTimeout(() => {
+        if (result.asin) {
+          navigate(`/products?asin=${result.asin}`);
+        } else {
+          navigate('/products');
+        }
+      }, 1000);
+      
+    } catch (err) {
+      console.error('Failed to navigate to product:', err);
+      // Still navigate even if there's an error
+      showToast('Redirecting to products page...', 'info');
+      setTimeout(() => {
+        if (result.asin) {
+          navigate(`/products?asin=${result.asin}`);
+        } else {
+          navigate('/products');
+        }
+      }, 500);
+    } finally {
+      setAddingToProducts(false);
+    }
+  };
+
+  const handleViewRecent = (analysis) => {
+    setResult(analysis);
   };
 
   const handleViewDetails = () => {
@@ -128,16 +394,16 @@ const Analyze = () => {
               />
               <Button
                 variant="contained"
-                startIcon={<Zap size={16} />}
+                startIcon={analyzing ? <CircularProgress size={16} color="inherit" /> : <Zap size={16} />}
                 onClick={handleAnalyze}
-                disabled={loading || !asin || !buyCost || !!result}
+                disabled={loading || analyzing || !asin || !buyCost || !!result}
                 sx={{
                   backgroundColor: habexa.purple.main,
                   '&:hover': { backgroundColor: habexa.purple.dark },
                   minWidth: 150,
                 }}
               >
-                {loading ? 'Analyzing...' : 'Analyze'}
+                {analyzing ? 'Analyzing...' : loading ? 'Starting...' : 'Analyze'}
               </Button>
             </Box>
 
@@ -320,13 +586,22 @@ const Analyze = () => {
               <Box display="flex" gap={2} mt={3}>
                 <Button
                   variant="contained"
-                  startIcon={<ExternalLink size={16} />}
-                  onClick={handleViewDetails}
+                  startIcon={<Plus size={16} />}
+                  onClick={handleAddToProducts}
+                  disabled={addingToProducts || !result?.product_id}
                   sx={{
                     backgroundColor: habexa.purple.main,
                     '&:hover': { backgroundColor: habexa.purple.dark },
                     flex: 1,
                   }}
+                >
+                  {addingToProducts ? 'Adding...' : 'Add to Products'}
+                </Button>
+                <Button
+                  variant="outlined"
+                  startIcon={<ExternalLink size={16} />}
+                  onClick={handleViewDetails}
+                  sx={{ flex: 1 }}
                 >
                   View Full Details
                 </Button>
@@ -345,13 +620,76 @@ const Analyze = () => {
       )}
 
       {/* Recent Analyses Section - Only show when no result */}
-      {!result && !error && (
+      {!result && !error && !analyzing && (
         <>
           <Typography variant="h6" fontWeight={600} mb={2}>
             📋 Recent Analyses
           </Typography>
-          <Typography color="text.secondary">No recent analyses</Typography>
+          {recentAnalyses.length === 0 ? (
+            <Typography color="text.secondary">No recent analyses</Typography>
+          ) : (
+            <Grid container spacing={2}>
+              {recentAnalyses.slice(0, 6).map((analysis, index) => (
+                <Grid item xs={12} md={6} key={index}>
+                  <Card sx={{ cursor: 'pointer', '&:hover': { boxShadow: 3 } }} onClick={() => handleViewRecent(analysis)}>
+                    <CardContent>
+                      <Box display="flex" gap={2} alignItems="center">
+                        {analysis.image_url && (
+                          <img 
+                            src={analysis.image_url} 
+                            alt={analysis.title}
+                            style={{ width: 60, height: 60, objectFit: 'contain', borderRadius: 4 }}
+                          />
+                        )}
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography variant="subtitle2" noWrap fontWeight={600}>
+                            {analysis.title || 'Unknown Product'}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" fontFamily="monospace">
+                            {analysis.asin}
+                          </Typography>
+                          <Box display="flex" gap={1} mt={1} flexWrap="wrap">
+                            {analysis.net_profit !== undefined && (
+                              <Chip 
+                                label={`Profit: ${formatCurrency(analysis.net_profit)}`} 
+                                size="small" 
+                                color={analysis.net_profit > 0 ? 'success' : 'error'}
+                              />
+                            )}
+                            {analysis.roi !== undefined && (
+                              <Chip 
+                                label={`ROI: ${formatROI(analysis.roi)}`} 
+                                size="small"
+                                color={analysis.roi >= 30 ? 'success' : analysis.roi > 0 ? 'warning' : 'error'}
+                              />
+                            )}
+                          </Box>
+                        </Box>
+                        <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); handleViewRecent(analysis); }}>
+                          View
+                        </Button>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          )}
         </>
+      )}
+
+      {/* Loading indicator when analyzing */}
+      {analyzing && (
+        <Card sx={{ mb: 4 }}>
+          <CardContent>
+            <Box display="flex" flexDirection="column" alignItems="center" gap={2} py={3}>
+              <CircularProgress size={40} />
+              <Typography variant="body1" color="text.secondary">
+                Analyzing product... This may take a few seconds.
+              </Typography>
+            </Box>
+          </CardContent>
+        </Card>
       )}
     </Box>
   );
