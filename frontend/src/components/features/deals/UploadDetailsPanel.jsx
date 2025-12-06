@@ -15,7 +15,23 @@ import {
   CircularProgress,
   Alert
 } from '@mui/material';
-import { format } from 'date-fns';
+// Using native Date formatting instead of date-fns
+const formatDate = (dateString) => {
+  if (!dateString) return '—';
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  } catch (e) {
+    return '—';
+  }
+};
 import { ExternalLink, Upload, MessageSquare, FileText } from 'lucide-react';
 import api from '../../../services/api';
 import { habexa } from '../../../theme';
@@ -90,11 +106,11 @@ export default function UploadDetailsPanel({ deal }) {
     },
     { 
       label: 'Upload Date', 
-      value: deal?.created_at ? format(new Date(deal.created_at), 'MMM d, yyyy h:mm a') : '—'
+      value: deal?.created_at ? formatDate(deal.created_at) : '—'
     },
     { 
       label: 'Last Updated', 
-      value: deal?.updated_at ? format(new Date(deal.updated_at), 'MMM d, yyyy h:mm a') : '—'
+      value: deal?.updated_at ? formatDate(deal.updated_at) : '—'
     },
     { 
       label: 'Source File', 
@@ -217,7 +233,7 @@ export default function UploadDetailsPanel({ deal }) {
                     Message Date
                   </Typography>
                   <Typography variant="body1">
-                    {format(new Date(telegramMessage.telegram_date), 'MMM d, yyyy h:mm a')}
+                    {formatDate(telegramMessage.telegram_date)}
                   </Typography>
                 </Box>
               )}
