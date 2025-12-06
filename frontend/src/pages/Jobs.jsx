@@ -56,7 +56,10 @@ export default function Jobs() {
     fetchJobs();
   }, [filter]);
 
-  // Smart polling - only when active jobs exist
+  // ✅ OPTIMIZATION: Smart polling - only polls when there are active jobs
+  // Stops automatically when all jobs are complete
+  // 5 second interval is reasonable for job status updates
+  // This prevents unnecessary API calls when no jobs are running
   useEffect(() => {
     if (!hasActiveJobs) return;
 

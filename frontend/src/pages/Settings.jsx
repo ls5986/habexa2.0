@@ -111,8 +111,33 @@ const Settings = () => {
 
   useEffect(() => {
     if (tab === 4) {
-      fetchInvoices();
-      fetchUsage();
+      // ✅ OPTIMIZATION: Fetch invoices and usage in parallel (2x faster)
+      const loadBillingData = async () => {
+        try {
+          const [invoicesRes, usageRes] = await Promise.all([
+            api.get('/billing/invoices'),
+            api.get('/billing/usage')
+          ]);
+          setInvoices(invoicesRes.data.invoices || []);
+          setUsage(usageRes.data);
+        } catch (error) {
+          console.error('Failed to fetch billing data:', error);
+          // If one fails, try to set the other
+          try {
+            const invoicesRes = await api.get('/billing/invoices');
+            setInvoices(invoicesRes.data.invoices || []);
+          } catch (err) {
+            console.error('Failed to fetch invoices:', err);
+          }
+          try {
+            const usageRes = await api.get('/billing/usage');
+            setUsage(usageRes.data);
+          } catch (err) {
+            console.error('Failed to fetch usage:', err);
+          }
+        }
+      };
+      loadBillingData();
     }
   }, [tab]);
 

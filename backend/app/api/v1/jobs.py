@@ -47,6 +47,63 @@ async def list_jobs(
     return result.data or []
 
 
+# ✅ CRITICAL: Specific routes MUST come before parameterized routes
+# Otherwise /jobs/upload gets matched by /jobs/{job_id} and "upload" is treated as a UUID
+@router.get("/upload")
+async def list_upload_jobs(
+    status: Optional[str] = Query(None),
+    limit: int = Query(20, le=50),
+    current_user = Depends(get_current_user)
+):
+    """List all upload jobs for the current user."""
+    from datetime import datetime
+    
+    user_id = str(current_user.id)
+    
+    query = supabase.table("upload_jobs")\
+        .select("*, suppliers(id, name)")\
+        .eq("user_id", user_id)
+    
+    if status:
+        query = query.eq("status", status)
+    
+    result = query.order("created_at", desc=True).limit(limit).execute()
+    
+    jobs = result.data or []
+    
+    # Format response with progress
+    formatted_jobs = []
+    for job in jobs:
+        progress = {
+            "total_rows": job.get("total_rows", 0),
+            "processed_rows": job.get("processed_rows", 0),
+            "successful_rows": job.get("successful_rows", 0),
+            "failed_rows": job.get("failed_rows", 0),
+            "percent": 0.0
+        }
+        
+        if progress["total_rows"] > 0:
+            progress["percent"] = round(
+                (progress["processed_rows"] / progress["total_rows"]) * 100, 2
+            )
+        
+        formatted_jobs.append({
+            "id": job["id"],
+            "filename": job["filename"],
+            "supplier": job.get("suppliers"),
+            "status": job["status"],
+            "progress": progress,
+            "created_at": job["created_at"],
+            "updated_at": job["updated_at"],
+            "completed_at": job.get("completed_at")
+        })
+    
+    return {
+        "jobs": formatted_jobs,
+        "total": len(formatted_jobs)
+    }
+
+
 @router.get("/{job_id}")
 async def get_job(job_id: str, current_user = Depends(get_current_user)):
     """Get job status."""
@@ -365,60 +422,7 @@ async def start_telegram_sync(
 # UPLOAD JOBS (New Upload System)
 # ==========================================
 
-@router.get("/upload")
-async def list_upload_jobs(
-    status: Optional[str] = Query(None),
-    limit: int = Query(20, le=50),
-    current_user = Depends(get_current_user)
-):
-    """List all upload jobs for the current user."""
-    from datetime import datetime
-    
-    user_id = str(current_user.id)
-    
-    query = supabase.table("upload_jobs")\
-        .select("*, suppliers(id, name)")\
-        .eq("user_id", user_id)
-    
-    if status:
-        query = query.eq("status", status)
-    
-    result = query.order("created_at", desc=True).limit(limit).execute()
-    
-    jobs = result.data or []
-    
-    # Format response with progress
-    formatted_jobs = []
-    for job in jobs:
-        progress = {
-            "total_rows": job.get("total_rows", 0),
-            "processed_rows": job.get("processed_rows", 0),
-            "successful_rows": job.get("successful_rows", 0),
-            "failed_rows": job.get("failed_rows", 0),
-            "percent": 0.0
-        }
-        
-        if progress["total_rows"] > 0:
-            progress["percent"] = round(
-                (progress["processed_rows"] / progress["total_rows"]) * 100, 2
-            )
-        
-        formatted_jobs.append({
-            "id": job["id"],
-            "filename": job["filename"],
-            "supplier": job.get("suppliers"),
-            "status": job["status"],
-            "progress": progress,
-            "created_at": job["created_at"],
-            "updated_at": job["updated_at"],
-            "completed_at": job.get("completed_at")
-        })
-    
-    return {
-        "jobs": formatted_jobs,
-        "total": len(formatted_jobs)
-    }
-
+# Note: GET /upload is defined above before /{job_id} to avoid route conflict
 
 @router.get("/upload/{job_id}")
 async def get_upload_job(job_id: str, current_user = Depends(get_current_user)):
