@@ -465,6 +465,14 @@ export default function Products() {
       } else if (Array.isArray(dealsRes.data?.data)) {
         dealsData = dealsRes.data.data;
       }
+      
+      // DEBUG: Log filter and results
+      console.log('🔍 Filter applied:', filters.asinStatus);
+      console.log('📦 Products returned:', dealsData.length);
+      if (dealsData.length > 0) {
+        console.log('✅ First product ASIN:', dealsData[0].asin);
+      }
+      
       setDeals(dealsData);
       
       // Ensure stats has all required stage keys
@@ -856,8 +864,11 @@ export default function Products() {
             value={filters.asinStatus}
             label="ASIN Status"
             onChange={(e) => { 
-              setFilters({ ...filters, asinStatus: e.target.value }); 
-              setTimeout(() => fetchData(), 500);
+              const newFilter = e.target.value;
+              console.log('🎯 ASIN Status filter changed:', newFilter);
+              setFilters({ ...filters, asinStatus: newFilter }); 
+              // Force immediate refetch with new filter
+              setTimeout(() => fetchData(true), 100);
             }}
           >
             <MenuItem value="all">All Products ({asinStatusStats.all || 0})</MenuItem>
