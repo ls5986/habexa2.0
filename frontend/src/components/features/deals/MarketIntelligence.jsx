@@ -7,26 +7,26 @@ import {
 import { habexa } from '../../../theme';
 
 export default function MarketIntelligence({ deal, analysis, spApiOffers, spApiSalesEstimate }) {
-  // Real data from SP-API
-  const sellerCount = spApiOffers?.total_sellers || spApiOffers?.seller_count || 0;
-  const fbaCount = spApiOffers?.fba_count || 0;
-  const fbmCount = spApiOffers?.fbm_count || 0;
-  const amazonSells = spApiOffers?.amazon_selling || false;
-  const buyBoxPrice = spApiOffers?.buy_box_winner?.price || spApiOffers?.buy_box_price;
+  // Use database data first, fallback to SP-API if available
+  const sellerCount = deal?.seller_count || analysis?.total_seller_count || spApiOffers?.total_sellers || spApiOffers?.seller_count || 0;
+  const fbaCount = deal?.fba_seller_count || analysis?.fba_seller_count || spApiOffers?.fba_count || 0;
+  const fbmCount = analysis?.fbm_seller_count || spApiOffers?.fbm_count || 0;
+  const amazonSells = deal?.amazon_sells || deal?.amazon_was_seller || analysis?.amazon_was_seller || spApiOffers?.amazon_selling || false;
+  const buyBoxPrice = deal?.sell_price || analysis?.sell_price || spApiOffers?.buy_box_winner?.price || spApiOffers?.buy_box_price;
   const priceRange = {
-    min: spApiOffers?.lowest_price,
+    min: spApiOffers?.lowest_price || analysis?.fba_lowest_365d,
     max: spApiOffers?.highest_price
   };
   
-  // Sales estimate from SP-API
-  const estimatedMonthlySales = spApiSalesEstimate?.est_monthly_sales || spApiSalesEstimate?.estimated_monthly_sales || 0;
-  const salesRank = spApiSalesEstimate?.sales_rank || analysis?.sales_rank;
+  // Sales estimate - use database data first
+  const estimatedMonthlySales = deal?.estimated_monthly_sales || analysis?.estimated_monthly_sales || analysis?.sales_drops_30 || spApiSalesEstimate?.est_monthly_sales || spApiSalesEstimate?.estimated_monthly_sales || 0;
+  const salesRank = deal?.bsr || analysis?.bsr || analysis?.sales_rank || spApiSalesEstimate?.sales_rank;
   
   // Fallback to analysis data
   const reviewCount = analysis?.review_count || 0;
   const rating = analysis?.rating || 0;
   const roi = analysis?.roi || deal?.roi || 0;
-  const category = analysis?.category || spApiSalesEstimate?.category || 'Unknown';
+  const category = analysis?.category || deal?.category || spApiSalesEstimate?.category || 'Unknown';
 
   // Competition Level - Based on REAL seller count from SP-API
   const getCompetitionLevel = () => {
