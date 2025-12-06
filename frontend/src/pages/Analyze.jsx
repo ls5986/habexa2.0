@@ -5,7 +5,7 @@ import {
   RadioGroup, FormControlLabel, Radio, Select, MenuItem, 
   FormControl, InputLabel, Alert, Chip, Divider, CircularProgress, Grid
 } from '@mui/material';
-import { Zap, ExternalLink, TrendingUp, DollarSign, RefreshCw, Plus } from 'lucide-react';
+import { Zap, ExternalLink, TrendingUp, DollarSign, RefreshCw, Plus, Trash2 } from 'lucide-react';
 import { useAnalysis } from '../hooks/useAnalysis';
 import { useSuppliers } from '../hooks/useSuppliers';
 import { useToast } from '../context/ToastContext';
@@ -26,7 +26,12 @@ const Analyze = () => {
   const [addingToProducts, setAddingToProducts] = useState(false);
   const [recentAnalyses, setRecentAnalyses] = useState([]);
   const pollingCleanupRef = useRef(null);
-  const { analyzeSingle, loading } = useAnalysis();
+  
+  // Batch mode state
+  const [batchItems, setBatchItems] = useState([{ asin: '', buy_cost: '', moq: 1 }]);
+  const [batchResults, setBatchResults] = useState(null);
+  
+  const { analyzeSingle, analyzeBatch, loading } = useAnalysis();
   const { suppliers } = useSuppliers();
   const { showToast } = useToast();
 
@@ -64,6 +69,14 @@ const Analyze = () => {
   }, []);
 
   const handleAnalyze = async () => {
+    if (mode === 'single') {
+      await handleSingleAnalyze();
+    } else {
+      await handleBatchAnalyze();
+    }
+  };
+
+  const handleSingleAnalyze = async () => {
     if (!asin || !buyCost) {
       showToast('Please enter ASIN and buy cost', 'error');
       return;
@@ -314,6 +327,81 @@ const Analyze = () => {
     }
   };
 
+  const handleBatchAnalyze = async () => {
+    // Validate all batch items
+    const validItems = batchItems.filter(item => item.asin && item.buy_cost);
+    if (validItems.length === 0) {
+      showToast('Please enter at least one ASIN and buy cost', 'error');
+      return;
+    }
+    
+    setBatchResults(null);
+    setError(null);
+    setAnalyzing(true);
+    
+    // Stop any existing polling
+    if (pollingCleanupRef.current) {
+      pollingCleanupRef.current();
+      pollingCleanupRef.current = null;
+    }
+    
+    try {
+      // Format items for API
+      const items = validItems.map(item => ({
+        asin: item.asin.trim().toUpperCase(),
+        buy_cost: parseFloat(item.buy_cost),
+        moq: parseInt(item.moq) || 1,
+        supplier_id: supplierId || null
+      }));
+      
+      const response = await analyzeBatch(items);
+      console.log('✅ Batch analysis response:', response); // DEBUG
+      
+      if (response.mode === 'sync') {
+        // INSTANT RESULTS!
+        console.log('✅ Synchronous batch analysis - instant results!');
+        setBatchResults({
+          mode: 'sync',
+          total: response.total,
+          results: response.results || []
+        });
+        setAnalyzing(false);
+        showToast(`✅ Analyzed ${response.total} product${response.total > 1 ? 's' : ''} instantly!`, 'success');
+      } else if (response.mode === 'async') {
+        // BACKGROUND PROCESSING
+        console.log('⏳ Async batch analysis - polling job:', response.job_id);
+        showToast(`⏳ Analyzing ${response.total} products in background...`, 'info');
+        
+        // Navigate to jobs page or start polling
+        navigate(`/jobs/${response.job_id}`);
+        setAnalyzing(false);
+      } else {
+        throw new Error('Unexpected response format');
+      }
+    } catch (err) {
+      console.error('❌ Batch analysis error:', err);
+      setAnalyzing(false);
+      const errorMessage = handleApiError(err, showToast);
+      setError(errorMessage);
+    }
+  };
+
+  const handleAddBatchRow = () => {
+    setBatchItems([...batchItems, { asin: '', buy_cost: '', moq: 1 }]);
+  };
+
+  const handleRemoveBatchRow = (index) => {
+    if (batchItems.length > 1) {
+      setBatchItems(batchItems.filter((_, i) => i !== index));
+    }
+  };
+
+  const handleBatchItemChange = (index, field, value) => {
+    const newItems = [...batchItems];
+    newItems[index] = { ...newItems[index], [field]: value };
+    setBatchItems(newItems);
+  };
+
   const handleAnalyzeAnother = () => {
     // Stop polling
     if (pollingCleanupRef.current) {
@@ -322,12 +410,14 @@ const Analyze = () => {
     }
     
     setResult(null);
+    setBatchResults(null);
     setError(null);
     setAnalyzing(false);
     setAsin('');
     setBuyCost('');
     setMoq(1);
     setSupplierId('');
+    setBatchItems([{ asin: '', buy_cost: '', moq: 1 }]);
   };
 
   const handleAddToProducts = async () => {
@@ -423,71 +513,174 @@ const Analyze = () => {
       <Card sx={{ mb: 4 }}>
         <CardContent>
           <Box display="flex" flexDirection="column" gap={3}>
-            <RadioGroup value={mode} onChange={(e) => setMode(e.target.value)} row>
+            <RadioGroup value={mode} onChange={(e) => {
+              setMode(e.target.value);
+              setResult(null);
+              setBatchResults(null);
+              setError(null);
+            }} row>
               <FormControlLabel value="single" control={<Radio />} label="Single ASIN" />
               <FormControlLabel value="bulk" control={<Radio />} label="Bulk Analysis" />
             </RadioGroup>
 
-            <Box display="flex" gap={2}>
-              <TextField
-                fullWidth
-                label="ASIN"
-                placeholder="B08XYZ1234"
-                value={asin}
-                onChange={(e) => setAsin(e.target.value.toUpperCase())}
-                sx={{ fontFamily: 'monospace' }}
-                disabled={!!result}
-              />
-              <Button
-                variant="contained"
-                startIcon={analyzing ? <CircularProgress size={16} color="inherit" /> : <Zap size={16} />}
-                onClick={handleAnalyze}
-                disabled={loading || analyzing || !asin || !buyCost || !!result}
-                sx={{
-                  backgroundColor: habexa.purple.main,
-                  '&:hover': { backgroundColor: habexa.purple.dark },
-                  minWidth: 150,
-                }}
-              >
-                {analyzing ? 'Analyzing...' : loading ? 'Starting...' : 'Analyze'}
-              </Button>
-            </Box>
+            {mode === 'single' ? (
+              <>
+                <Box display="flex" gap={2}>
+                  <TextField
+                    fullWidth
+                    label="ASIN"
+                    placeholder="B08XYZ1234"
+                    value={asin}
+                    onChange={(e) => setAsin(e.target.value.toUpperCase())}
+                    sx={{ fontFamily: 'monospace' }}
+                    disabled={!!result}
+                  />
+                  <Button
+                    variant="contained"
+                    startIcon={analyzing ? <CircularProgress size={16} color="inherit" /> : <Zap size={16} />}
+                    onClick={handleAnalyze}
+                    disabled={loading || analyzing || !asin || !buyCost || !!result}
+                    sx={{
+                      backgroundColor: habexa.purple.main,
+                      '&:hover': { backgroundColor: habexa.purple.dark },
+                      minWidth: 150,
+                    }}
+                  >
+                    {analyzing ? 'Analyzing...' : loading ? 'Starting...' : 'Analyze'}
+                  </Button>
+                </Box>
 
-            <Box display="flex" gap={2}>
-              <TextField
-                label="Your Cost"
-                type="number"
-                value={buyCost}
-                onChange={(e) => setBuyCost(e.target.value)}
-                InputProps={{ startAdornment: '$' }}
-                sx={{ flex: 1 }}
-                disabled={!!result}
-              />
-              <TextField
-                label="MOQ"
-                type="number"
-                value={moq}
-                onChange={(e) => setMoq(parseInt(e.target.value) || 1)}
-                sx={{ flex: 1 }}
-                disabled={!!result}
-              />
-              <FormControl sx={{ flex: 1 }}>
-                <InputLabel>Supplier</InputLabel>
-                <Select
-                  value={supplierId}
-                  label="Supplier"
-                  onChange={(e) => setSupplierId(e.target.value)}
-                  disabled={!!result}
-                >
-                  <MenuItem value="">None</MenuItem>
-                  {suppliers.map((s) => (
-                    <MenuItem key={s.id} value={s.id}>
-                      {s.name}
-                    </MenuItem>
+                <Box display="flex" gap={2}>
+                  <TextField
+                    label="Your Cost"
+                    type="number"
+                    value={buyCost}
+                    onChange={(e) => setBuyCost(e.target.value)}
+                    InputProps={{ startAdornment: '$' }}
+                    sx={{ flex: 1 }}
+                    disabled={!!result}
+                  />
+                  <TextField
+                    label="MOQ"
+                    type="number"
+                    value={moq}
+                    onChange={(e) => setMoq(parseInt(e.target.value) || 1)}
+                    sx={{ flex: 1 }}
+                    disabled={!!result}
+                  />
+                  <FormControl sx={{ flex: 1 }}>
+                    <InputLabel>Supplier</InputLabel>
+                    <Select
+                      value={supplierId}
+                      label="Supplier"
+                      onChange={(e) => setSupplierId(e.target.value)}
+                      disabled={!!result}
+                    >
+                      <MenuItem value="">None</MenuItem>
+                      {suppliers.map((s) => (
+                        <MenuItem key={s.id} value={s.id}>
+                          {s.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Box>
+              </>
+            ) : (
+              <>
+                <Box display="flex" flexDirection="column" gap={2}>
+                  {batchItems.map((item, index) => (
+                    <Box key={index} display="flex" gap={2} alignItems="center">
+                      <TextField
+                        label="ASIN"
+                        placeholder="B08XYZ1234"
+                        value={item.asin}
+                        onChange={(e) => handleBatchItemChange(index, 'asin', e.target.value.toUpperCase())}
+                        sx={{ fontFamily: 'monospace', flex: 2 }}
+                        disabled={!!batchResults}
+                      />
+                      <TextField
+                        label="Cost"
+                        type="number"
+                        value={item.buy_cost}
+                        onChange={(e) => handleBatchItemChange(index, 'buy_cost', e.target.value)}
+                        InputProps={{ startAdornment: '$' }}
+                        sx={{ flex: 1 }}
+                        disabled={!!batchResults}
+                      />
+                      <TextField
+                        label="MOQ"
+                        type="number"
+                        value={item.moq}
+                        onChange={(e) => handleBatchItemChange(index, 'moq', e.target.value)}
+                        sx={{ width: 100 }}
+                        disabled={!!batchResults}
+                      />
+                      {batchItems.length > 1 && (
+                        <Button
+                          variant="outlined"
+                          color="error"
+                          onClick={() => handleRemoveBatchRow(index)}
+                          disabled={!!batchResults}
+                          sx={{ minWidth: 40 }}
+                        >
+                          <Trash2 size={16} />
+                        </Button>
+                      )}
+                    </Box>
                   ))}
-                </Select>
-              </FormControl>
-            </Box>
+                  
+                  <Box display="flex" gap={2} alignItems="center">
+                    <Button
+                      variant="outlined"
+                      startIcon={<Plus size={16} />}
+                      onClick={handleAddBatchRow}
+                      disabled={!!batchResults}
+                    >
+                      Add Another ASIN
+                    </Button>
+                    
+                    <FormControl sx={{ flex: 1, maxWidth: 200 }}>
+                      <InputLabel>Supplier (All)</InputLabel>
+                      <Select
+                        value={supplierId}
+                        label="Supplier (All)"
+                        onChange={(e) => setSupplierId(e.target.value)}
+                        disabled={!!batchResults}
+                      >
+                        <MenuItem value="">None</MenuItem>
+                        {suppliers.map((s) => (
+                          <MenuItem key={s.id} value={s.id}>
+                            {s.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Box>
+                  
+                  <Button
+                    variant="contained"
+                    startIcon={analyzing ? <CircularProgress size={16} color="inherit" /> : <Zap size={16} />}
+                    onClick={handleBatchAnalyze}
+                    disabled={loading || analyzing || !!batchResults || batchItems.filter(item => item.asin && item.buy_cost).length === 0}
+                    sx={{
+                      backgroundColor: habexa.purple.main,
+                      '&:hover': { backgroundColor: habexa.purple.dark },
+                      mt: 1,
+                    }}
+                  >
+                    {analyzing ? 'Analyzing...' : `Analyze ${batchItems.filter(item => item.asin && item.buy_cost).length} Product${batchItems.filter(item => item.asin && item.buy_cost).length !== 1 ? 's' : ''}`}
+                  </Button>
+                  
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: -1 }}>
+                    {batchItems.filter(item => item.asin && item.buy_cost).length <= 10 
+                      ? '⚡ Results will appear instantly (≤10 products)'
+                      : '⏳ Analysis will run in background (track progress on Jobs page)'
+                    }
+                  </Typography>
+                </Box>
+              </>
+            )}
           </Box>
         </CardContent>
       </Card>
@@ -665,8 +858,94 @@ const Analyze = () => {
         </Card>
       )}
 
+      {/* Batch Results Display */}
+      {batchResults && batchResults.mode === 'sync' && (
+        <Card sx={{ mb: 4, borderColor: 'success.main', border: 2 }}>
+          <CardContent>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Typography variant="h5" fontWeight={700}>
+                Batch Analysis Results
+              </Typography>
+              <Chip
+                label={`${batchResults.results.filter(r => r.status === 'success').length}/${batchResults.total} Successful`}
+                color="success"
+                sx={{ fontWeight: 600 }}
+              />
+            </Box>
+
+            <Divider sx={{ my: 2 }} />
+
+            <Box display="flex" flexDirection="column" gap={2}>
+              {batchResults.results.map((result, index) => (
+                <Card
+                  key={index}
+                  sx={{
+                    p: 2,
+                    border: '1px solid',
+                    borderColor: result.status === 'success' ? 'success.main' : 'error.main',
+                    bgcolor: result.status === 'success' ? 'success.50' : 'error.50',
+                  }}
+                >
+                  <Box display="flex" justifyContent="space-between" alignItems="start">
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="subtitle1" fontWeight={600}>
+                        {result.asin}
+                      </Typography>
+                      {result.status === 'success' && result.result && (
+                        <Box mt={1}>
+                          <Typography variant="body2" color="text.secondary">
+                            {result.result.title || 'Unknown'}
+                          </Typography>
+                          <Box display="flex" gap={2} mt={1}>
+                            <Typography variant="body2">
+                              <strong>Profit:</strong> {formatCurrency(result.result.net_profit || 0)}
+                            </Typography>
+                            <Typography variant="body2">
+                              <strong>ROI:</strong> {formatROI(result.result.roi || 0)}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      )}
+                      {result.status === 'failed' && (
+                        <Typography variant="body2" color="error.main" mt={1}>
+                          {result.error || 'Analysis failed'}
+                        </Typography>
+                      )}
+                    </Box>
+                    <Chip
+                      label={result.status === 'success' ? 'Success' : 'Failed'}
+                      color={result.status === 'success' ? 'success' : 'error'}
+                      size="small"
+                    />
+                  </Box>
+                </Card>
+              ))}
+            </Box>
+
+            <Box display="flex" gap={2} mt={3}>
+              <Button
+                variant="contained"
+                onClick={() => navigate('/products')}
+                sx={{
+                  backgroundColor: habexa.purple.main,
+                  '&:hover': { backgroundColor: habexa.purple.dark },
+                }}
+              >
+                View All Products
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={handleAnalyzeAnother}
+              >
+                Analyze More
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Recent Analyses Section - Only show when no result */}
-      {!result && !error && !analyzing && (
+      {!result && !batchResults && !error && !analyzing && (
         <>
           <Typography variant="h6" fontWeight={600} mb={2}>
             📋 Recent Analyses
