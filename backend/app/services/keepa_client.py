@@ -172,15 +172,23 @@ class KeepaClient:
                     # Keepa may return products as None, so handle that case
                     products_array = data.get("products") or []
                     
+                    # Enhanced logging to diagnose Keepa responses
                     logger.info(f"🔍 Keepa API response: {len(products_array)} products returned for {len(batch)} ASINs")
+                    logger.info(f"🔍 Keepa response keys: {list(data.keys())}")
                     
                     if len(products_array) == 0:
                         logger.warning(f"⚠️ Keepa returned empty products array for ASINs: {batch}")
-                        # Log the full response for debugging (truncated)
-                        logger.debug(f"Keepa full response keys: {list(data.keys())}")
                         # Log if products key exists but is None
-                        if "products" in data and data["products"] is None:
-                            logger.warning(f"⚠️ Keepa explicitly returned products: null for ASINs: {batch}")
+                        if "products" in data:
+                            if data["products"] is None:
+                                logger.warning(f"⚠️ Keepa explicitly returned products: null for ASINs: {batch}")
+                            elif isinstance(data["products"], list) and len(data["products"]) == 0:
+                                logger.warning(f"⚠️ Keepa returned empty list [] for ASINs: {batch}")
+                        else:
+                            logger.warning(f"⚠️ Keepa response missing 'products' key for ASINs: {batch}")
+                        
+                        # Log full response structure for debugging (truncated to avoid huge logs)
+                        logger.info(f"🔍 Keepa full response (first 500 chars): {str(data)[:500]}")
                     
                     # Parse products
                     for product in products_array:
