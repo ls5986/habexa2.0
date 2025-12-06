@@ -20,8 +20,10 @@ import openai
 import pandas as pd
 from pathlib import Path
 from datetime import datetime
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+SYNC_PROCESSING_THRESHOLD = settings.SYNC_PROCESSING_THRESHOLD
 
 router = APIRouter(prefix="/products", tags=["products"])
 

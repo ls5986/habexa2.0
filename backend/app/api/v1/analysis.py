@@ -22,8 +22,10 @@ from app.services.cost_calculator import (
 from datetime import datetime
 import uuid
 import logging
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+SYNC_PROCESSING_THRESHOLD = settings.SYNC_PROCESSING_THRESHOLD
 
 router = APIRouter()
 
@@ -327,8 +329,9 @@ async def analyze_batch(
     current_user=Depends(require_feature("bulk_analyze"))
 ):
     """
-    Analyze multiple ASINs - queues to Celery and returns job_id.
-    Frontend should poll /jobs/{job_id} for results.
+    Analyze multiple ASINs - smart sync/async decision based on count.
+    <= 10 products: Synchronous (instant results)
+    > 10 products: Async with job (background + polling)
     """
     user_id = str(current_user.id)
     
@@ -336,6 +339,7 @@ async def analyze_batch(
     check = await feature_gate.check_limit(current_user, "analyses_per_month")
     
     item_count = len(request.items)
+    logger.info(f"📦 Batch analysis request: {item_count} products (threshold: {SYNC_PROCESSING_THRESHOLD})")
     
     if not check.get("unlimited"):
         remaining = check.get("remaining", 0)
@@ -352,64 +356,208 @@ async def analyze_batch(
                 }
             )
     
-    # Get or create products for each ASIN
-    product_ids = []
-    for item in request.items:
-        asin = item.asin.strip().upper()
-        existing = supabase.table("products")\
-            .select("id")\
-            .eq("user_id", user_id)\
-            .eq("asin", asin)\
-            .limit(1)\
-            .execute()
+    # DECISION: Sync or async?
+    if item_count <= SYNC_PROCESSING_THRESHOLD:
+        # SYNCHRONOUS - Process immediately
+        logger.info(f"⚡ Processing {item_count} products synchronously (instant results)")
         
-        if existing.data:
-            product_id = existing.data[0]["id"]
-        else:
-            new_prod = supabase.table("products").insert({
-                "user_id": user_id,
-                "asin": asin,
-                "status": "pending"
-            }).execute()
-            product_id = new_prod.data[0]["id"] if new_prod.data else None
+        from app.services.batch_analyzer import batch_analyzer
         
-        if product_id:
-            product_ids.append(product_id)
-    
-    if not product_ids:
-        raise HTTPException(400, "No valid products to analyze")
-    
-    # Create job record
-    job_id = str(uuid.uuid4())
-    supabase.table("jobs").insert({
-        "id": job_id,
-        "user_id": user_id,
-        "type": "batch_analyze",
-        "status": "pending",
-        "total_items": len(product_ids),
-        "metadata": {
-            "item_count": item_count,
-            "product_ids": product_ids
+        # Get or create products and collect ASINs/buy_costs
+        asins = []
+        buy_costs = {}
+        promo_costs = {}
+        source_data = {}
+        product_mapping = {}  # asin -> product_id
+        
+        for item in request.items:
+            asin = item.asin.strip().upper()
+            
+            # Get or create product
+            existing = supabase.table("products")\
+                .select("id")\
+                .eq("user_id", user_id)\
+                .eq("asin", asin)\
+                .limit(1)\
+                .execute()
+            
+            if existing.data:
+                product_id = existing.data[0]["id"]
+            else:
+                new_prod = supabase.table("products").insert({
+                    "user_id": user_id,
+                    "asin": asin,
+                    "status": "pending"
+                }).execute()
+                product_id = new_prod.data[0]["id"] if new_prod.data else None
+            
+            if product_id:
+                asins.append(asin)
+                buy_costs[asin] = item.buy_cost
+                product_mapping[asin] = product_id
+                source_data[asin] = {"supplier_ships_direct": False}
+        
+        if not asins:
+            raise HTTPException(400, "No valid products to analyze")
+        
+        # Run batch analysis synchronously
+        user_settings = await get_user_cost_settings(user_id)
+        results = await batch_analyzer.analyze_products(
+            asins,
+            buy_costs=buy_costs,
+            promo_costs=promo_costs,
+            source_data=source_data,
+            user_settings=user_settings
+        )
+        
+        # Process results and save to database
+        analysis_results = []
+        for asin, result in results.items():
+            product_id = product_mapping.get(asin)
+            if not product_id:
+                continue
+            
+            try:
+                # Save analysis (same logic as single endpoint)
+                supplier_id = None
+                analysis_data = {
+                    "user_id": user_id,
+                    "asin": asin,
+                    "supplier_id": supplier_id,
+                    "analysis_data": {},
+                    "pricing_status": result.get("pricing_status", "complete"),
+                    "sell_price": result.get("sell_price"),
+                    "buy_cost": result.get("buy_cost") or buy_costs.get(asin),
+                    "net_profit": result.get("net_profit"),
+                    "roi": result.get("roi"),
+                    "analysis_stage": result.get("analysis_stage", "stage3"),
+                }
+                
+                # Upsert analysis
+                existing_analysis = supabase.table("analyses")\
+                    .select("id")\
+                    .eq("user_id", user_id)\
+                    .eq("asin", asin)\
+                    .limit(1)\
+                    .execute()
+                
+                if existing_analysis.data:
+                    supabase.table("analyses").update(analysis_data).eq("id", existing_analysis.data[0]["id"]).execute()
+                else:
+                    supabase.table("analyses").insert(analysis_data).execute()
+                
+                # Update product status
+                supabase.table("products").update({
+                    "status": "analyzed",
+                    "updated_at": datetime.utcnow().isoformat()
+                }).eq("id", product_id).execute()
+                
+                analysis_results.append({
+                    "status": "success",
+                    "asin": asin,
+                    "product_id": product_id,
+                    "result": {
+                        "title": result.get("title"),
+                        "net_profit": result.get("net_profit"),
+                        "roi": result.get("roi"),
+                    }
+                })
+            except Exception as e:
+                logger.error(f"Failed to save analysis for {asin}: {e}")
+                analysis_results.append({
+                    "status": "failed",
+                    "asin": asin,
+                    "error": str(e)
+                })
+        
+        # Get updated usage
+        final_check = await feature_gate.check_limit(current_user, "analyses_per_month")
+        
+        logger.info(f"✅ Synchronous batch analysis complete: {len([r for r in analysis_results if r['status'] == 'success'])}/{item_count} succeeded")
+        
+        return {
+            "mode": "sync",
+            "total": item_count,
+            "results": analysis_results,
+            "message": f"Analyzed {item_count} products instantly",
+            "usage": {
+                "analyses_remaining": final_check.get("remaining", 0),
+                "analyses_limit": final_check.get("limit", 0),
+                "unlimited": final_check.get("unlimited", False)
+            }
         }
-    }).execute()
     
-    # Queue to Celery
-    batch_analyze_products.delay(job_id, user_id, product_ids)
-    
-    # Get updated usage
-    final_check = await feature_gate.check_limit(current_user, "analyses_per_month")
-    
-    return {
-        "job_id": job_id,
-        "status": "queued",
-        "total": len(product_ids),
-        "message": f"Queued {len(product_ids)} products for analysis. Poll /jobs/{job_id} for results.",
-        "usage": {
-            "analyses_remaining": final_check.get("remaining", 0),
-            "analyses_limit": final_check.get("limit", 0),
-            "unlimited": final_check.get("unlimited", False)
+    else:
+        # ASYNC - Create job and queue to Celery
+        logger.info(f"🚀 Queueing {item_count} products for background processing")
+        
+        # Get or create products for each ASIN
+        product_ids = []
+        for item in request.items:
+            asin = item.asin.strip().upper()
+            existing = supabase.table("products")\
+                .select("id")\
+                .eq("user_id", user_id)\
+                .eq("asin", asin)\
+                .limit(1)\
+                .execute()
+            
+            if existing.data:
+                product_id = existing.data[0]["id"]
+            else:
+                new_prod = supabase.table("products").insert({
+                    "user_id": user_id,
+                    "asin": asin,
+                    "status": "pending"
+                }).execute()
+                product_id = new_prod.data[0]["id"] if new_prod.data else None
+            
+            if product_id:
+                product_ids.append(product_id)
+        
+        if not product_ids:
+            raise HTTPException(400, "No valid products to analyze")
+        
+        # Create job record
+        job_id = str(uuid.uuid4())
+        supabase.table("jobs").insert({
+            "id": job_id,
+            "user_id": user_id,
+            "type": "batch_analyze",
+            "status": "pending",
+            "total_items": len(product_ids),
+            "metadata": {
+                "item_count": item_count,
+                "product_ids": product_ids
+            }
+        }).execute()
+        
+        # Queue to Celery
+        try:
+            batch_analyze_products.delay(job_id, user_id, product_ids)
+            logger.info(f"✅ Task queued: job {job_id}")
+        except Exception as e:
+            logger.error(f"❌ Failed to queue task: {e}", exc_info=True)
+            supabase.table("jobs").update({
+                "status": "failed",
+                "error_message": f"Failed to queue task: {str(e)}"
+            }).eq("id", job_id).execute()
+            raise HTTPException(500, f"Failed to queue analysis task: {str(e)}")
+        
+        # Get updated usage
+        final_check = await feature_gate.check_limit(current_user, "analyses_per_month")
+        
+        return {
+            "mode": "async",
+            "job_id": job_id,
+            "total": len(product_ids),
+            "message": f"Analyzing {len(product_ids)} products in background",
+            "usage": {
+                "analyses_remaining": final_check.get("remaining", 0),
+                "analyses_limit": final_check.get("limit", 0),
+                "unlimited": final_check.get("unlimited", False)
+            }
         }
-    }
 
 
 @router.get("/history")

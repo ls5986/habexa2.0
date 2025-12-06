@@ -103,6 +103,9 @@ class Settings(BaseSettings):
     SP_API_BATCH_SIZE: int = 20  # SP-API batch size limit
     KEEPA_BATCH_SIZE: int = 100  # Keepa API batch size limit
     
+    # Processing Threshold: Sync vs Async
+    SYNC_PROCESSING_THRESHOLD: int = 10  # Process <= 10 products synchronously, > 10 use jobs/Celery
+    
     # Testing/Development
     TEST_MODE: bool = False  # Enable test mode (bypasses auth for certain endpoints)
     ALLOWED_IPS: Optional[str] = None  # Comma-separated list of IPs allowed in test mode (e.g., "1.2.3.4,5.6.7.8")
