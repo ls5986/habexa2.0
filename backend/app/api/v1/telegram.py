@@ -514,6 +514,49 @@ async def stop_monitoring(current_user=Depends(get_current_user)):
 # MESSAGES & DEALS ENDPOINTS
 # ==========================================
 
+@router.get("/messages/{message_id}")
+async def get_message(
+    message_id: str,
+    current_user=Depends(get_current_user)
+):
+    """Get a single Telegram message by ID."""
+    user_id = str(current_user.id)
+    
+    try:
+        result = supabase.table("telegram_messages")\
+            .select("""
+                *,
+                telegram_channels!telegram_messages_channel_id_fkey (
+                    channel_name,
+                    channel_username
+                )
+            """)\
+            .eq("id", message_id)\
+            .eq("user_id", user_id)\
+            .limit(1)\
+            .execute()
+        
+        if not result.data:
+            raise HTTPException(404, "Message not found")
+        
+        message = result.data[0]
+        
+        # Extract channel data
+        if "telegram_channels" in message:
+            channel_data = message.pop("telegram_channels")
+            if channel_data and len(channel_data) > 0:
+                channel = channel_data[0]
+                message["channel_name"] = channel.get("channel_name")
+                message["channel_username"] = channel.get("channel_username")
+        
+        return message
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching message {message_id}: {e}")
+        raise HTTPException(500, f"Failed to fetch message: {str(e)}")
+
+
 @router.get("/messages")
 async def get_messages(
     channel_id: Optional[str] = None,
