@@ -80,10 +80,13 @@ const Analyze = () => {
     }
     
     try {
-      const data = await analyzeSingle(asin, parseFloat(buyCost), moq, supplierId || null);
+      const response = await analyzeSingle(asin, parseFloat(buyCost), moq, supplierId || null);
+      
+      console.log('✅ Analysis API response:', response); // DEBUG
       
       // Handle job-based response (async analysis) - POLL FOR RESULTS
-      if (data.job_id) {
+      if (response && response.job_id) {
+        console.log('✅ Starting job polling for job_id:', response.job_id); // DEBUG
         showToast('Analysis started! Waiting for results...', 'info');
         
         // ✅ OPTIMIZATION: Exponential backoff polling (same as QuickAnalyzeModal)
@@ -92,19 +95,27 @@ const Analyze = () => {
           const maxInterval = 10000; // Max 10 seconds
           let timeoutId;
           let isCancelled = false;
+          const jobId = response.job_id; // Capture job_id in closure
           
           const checkJob = async () => {
-            if (isCancelled) return;
+            if (isCancelled) {
+              console.log('❌ Polling cancelled'); // DEBUG
+              return;
+            }
             
             try {
-              const jobRes = await api.get(`/jobs/${data.job_id}`);
+              console.log(`🔄 Polling job: ${jobId} (interval: ${pollInterval}ms)`); // DEBUG
+              const jobRes = await api.get(`/jobs/${jobId}`);
               const job = jobRes.data;
+              console.log(`📊 Job status: ${job.status}`, job); // DEBUG
               
               if (job.status === 'completed') {
+                console.log('✅ Job completed! Fetching results...'); // DEBUG
                 // Job completed - fetch product/deal data
                 try {
-                  const productId = data.product_id || job.metadata?.product_id;
-                  const jobAsin = data.asin || job.metadata?.asin;
+                  const productId = response.product_id || job.metadata?.product_id;
+                  const jobAsin = response.asin || job.metadata?.asin;
+                  console.log('📦 Fetching data for product_id:', productId, 'asin:', jobAsin); // DEBUG
                   
                   // Try fetching from deals endpoint first (has full analysis data)
                   try {
@@ -174,6 +185,7 @@ const Analyze = () => {
                   
                   // If we can't fetch product, show job result if available
                   if (job.result) {
+                    console.log('✅ Using job.result:', job.result); // DEBUG
                     const resultData = {
                       asin: job.result.asin || job.metadata?.asin || asin,
                       title: job.result.title || job.result.product_title || 'Unknown',
@@ -183,7 +195,7 @@ const Analyze = () => {
                       gating_status: job.result.gating_status || 'unknown',
                       meets_threshold: job.result.meets_threshold ?? false,
                       is_profitable: (job.result.net_profit || job.result.profit || 0) > 0,
-                      product_id: data.product_id,
+                      product_id: response.product_id,
                     };
                     setResult(resultData);
                     setAnalyzing(false);
@@ -193,10 +205,11 @@ const Analyze = () => {
                   }
                   
                   // Last resort - show basic info
+                  console.log('⚠️ No product/deal data found, showing basic info'); // DEBUG
                   setResult({
-                    asin: data.asin || asin,
+                    asin: response.asin || asin,
                     title: 'Analysis completed - check Products page for details',
-                    product_id: data.product_id,
+                    product_id: response.product_id,
                   });
                   setAnalyzing(false);
                   showToast('Analysis complete! Check Products page for full details.', 'success');
@@ -219,17 +232,20 @@ const Analyze = () => {
               timeoutId = setTimeout(checkJob, pollInterval);
               
             } catch (err) {
-              console.error('Error polling job:', err);
+              console.error('❌ Error polling job:', err);
+              console.error('Error details:', err.response?.data, err.message); // DEBUG
               
               // If job not found (404), stop polling gracefully
               if (err.response?.status === 404) {
+                console.error('❌ Job not found (404)'); // DEBUG
                 setAnalyzing(false);
                 showToast('Job not found', 'warning');
                 setError('Analysis job not found');
                 return;
               }
               
-              // On error, retry with current interval
+              // On error, retry with current interval (don't back off on errors)
+              console.log(`⚠️ Retrying poll in ${pollInterval}ms after error`); // DEBUG
               timeoutId = setTimeout(checkJob, pollInterval);
             }
           };
@@ -246,22 +262,26 @@ const Analyze = () => {
           };
         };
         
-        // Store cleanup function
+        // Store cleanup function and start polling immediately
         pollingCleanupRef.current = pollJob();
+        console.log('✅ Polling function started, cleanup stored'); // DEBUG
         return;
       }
       
       // Handle direct result response (shouldn't happen with async jobs)
-      if (data.asin || data.product_id) {
-        setResult(data);
+      if (response.asin || response.product_id) {
+        console.log('✅ Direct result (no job_id):', response); // DEBUG
+        setResult(response);
         setAnalyzing(false);
         showToast('Analysis complete!', 'success');
-        setRecentAnalyses(prev => [data, ...prev].slice(0, 10));
+        setRecentAnalyses(prev => [response, ...prev].slice(0, 10));
       } else {
+        console.error('❌ Unexpected response format:', response); // DEBUG
         setAnalyzing(false);
-        setError('Unexpected response format from analysis API');
+        setError('Unexpected response format from analysis API. Expected job_id or product data.');
       }
     } catch (err) {
+      console.error('❌ Analysis error:', err); // DEBUG
       setAnalyzing(false);
       const errorMessage = handleApiError(err, showToast);
       setError(errorMessage);
