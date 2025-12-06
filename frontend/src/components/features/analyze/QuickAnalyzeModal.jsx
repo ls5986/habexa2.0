@@ -25,6 +25,7 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal, onAnalysisComplete }) =>
   const [result, setResult] = useState(null);
   const [debugData, setDebugData] = useState(null); // Debug: Store raw API responses
   const [showDebug, setShowDebug] = useState(false); // Debug: Toggle debug panel
+  const [multipleAsins, setMultipleAsins] = useState(null); // Multiple ASINs found from UPC
   const pollingCleanupRef = useRef(null); // Store cleanup function for polling
   
   // Calculate per-unit buy cost
@@ -97,6 +98,23 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal, onAnalysisComplete }) =>
         analyzeResponse: response,
         timestamp: new Date().toISOString()
       }));
+      
+      // Check for multiple ASINs response (UPC conversion found multiple matches)
+      if (response.status === "multiple_asins_found" || response.asin_status === "multiple_found") {
+        console.log('🔀 [DEBUG] Multiple ASINs found:', response.potential_asins);
+        setMultipleAsins({
+          product_id: response.product_id,
+          upc: response.upc || identifier,
+          asins: response.potential_asins || [],
+          message: response.message || `Found ${response.potential_asins?.length || 0} products for this UPC`
+        });
+        setDebugData(prev => ({
+          ...prev,
+          multipleAsinsResponse: response
+        }));
+        showToast(response.message || 'Multiple products found. Please select one.', 'info');
+        return; // Don't proceed with analysis - wait for user selection
+      }
       
       // NEW: Check for synchronous result first (single ASIN analysis returns immediately)
       if (response.result && (response.result.roi !== undefined || response.result.net_profit !== undefined)) {
