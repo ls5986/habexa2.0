@@ -300,3 +300,6 @@ def get_keepa_client() -> KeepaClient:
     if _client is None:
         _client = KeepaClient()
     return _client
+
+# Singleton instance for backward compatibility
+keepa_client = get_keepa_client()
