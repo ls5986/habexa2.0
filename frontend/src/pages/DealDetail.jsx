@@ -93,12 +93,28 @@ export default function DealDetail() {
 
   const fetchAllDealIds = async () => {
     try {
-      const res = await api.get('/deals?limit=100');
-      const ids = (res.data.deals || res.data || []).map(d => d.id);
+      // Fetch all deals (or a large limit) to get the full list
+      const res = await api.get('/deals?limit=1000');
+      const deals = res.data.deals || res.data || [];
+      
+      // Extract deal IDs - handle both 'id' and 'deal_id' fields
+      const ids = deals.map(d => d.deal_id || d.id).filter(Boolean);
+      
+      // If current deal isn't in the list, add it at the beginning
+      if (!ids.includes(dealId)) {
+        ids.unshift(dealId);
+      }
+      
       setAllDealIds(ids);
-      setCurrentIndex(ids.indexOf(dealId));
+      const index = ids.indexOf(dealId);
+      setCurrentIndex(index >= 0 ? index : 0);
+      
+      console.log(`✅ Loaded ${ids.length} deals, current index: ${index}`);
     } catch (err) {
       console.error('Failed to fetch deal list:', err);
+      // Fallback: at least show the current deal
+      setAllDealIds([dealId]);
+      setCurrentIndex(0);
     }
   };
 
@@ -187,20 +203,28 @@ export default function DealDetail() {
           Back to Deal Feed
         </Button>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="body2" color="text.secondary">
-            {currentIndex + 1} of {allDealIds.length}
+          <Typography variant="body2" color="text.secondary" sx={{ minWidth: 80, textAlign: 'center' }}>
+            {allDealIds.length > 0 ? `${currentIndex + 1} of ${allDealIds.length}` : 'Loading...'}
           </Typography>
           <IconButton 
             size="small" 
             onClick={handlePrev}
-            disabled={currentIndex <= 0}
+            disabled={currentIndex <= 0 || allDealIds.length === 0}
+            sx={{ 
+              '&:disabled': { opacity: 0.3 },
+              '&:hover:not(:disabled)': { bgcolor: 'action.hover' }
+            }}
           >
             <ArrowLeft size={18} />
           </IconButton>
           <IconButton 
             size="small" 
             onClick={handleNext}
-            disabled={currentIndex >= allDealIds.length - 1}
+            disabled={currentIndex >= allDealIds.length - 1 || allDealIds.length === 0}
+            sx={{ 
+              '&:disabled': { opacity: 0.3 },
+              '&:hover:not(:disabled)': { bgcolor: 'action.hover' }
+            }}
           >
             <ArrowRight size={18} />
           </IconButton>
