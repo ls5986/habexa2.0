@@ -1,5 +1,5 @@
 import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Box, Typography, CircularProgress, Card, CardContent, Chip, FormControl, InputLabel, Select, MenuItem, Alert, ToggleButtonGroup, ToggleButton, Checkbox, FormControlLabel, InputAdornment, Accordion, AccordionSummary, AccordionDetails, Divider, Tooltip } from '@mui/material';
-import { X, Zap, TrendingUp, Bug, ChevronDown, Star, AlertTriangle, Info, ThumbUp, LocalShipping, Award } from 'lucide-react';
+import { X, Zap, TrendingUp, Bug, ChevronDown, Star, AlertTriangle, Info, ThumbUp, Truck, Award } from 'lucide-react';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useAnalysis } from '../../../hooks/useAnalysis';
 import { useSuppliers } from '../../../context/SuppliersContext';
@@ -678,7 +678,7 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal, onAnalysisComplete }) =>
                               label="Prime"
                               size="small"
                               color="primary"
-                              icon={<LocalShipping size={14} />}
+                              icon={<Truck size={14} />}
                             />
                           )}
                           

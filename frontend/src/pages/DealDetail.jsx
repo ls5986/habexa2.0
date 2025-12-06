@@ -821,10 +821,6 @@ export default function DealDetail() {
               <MarketIntelligence 
                 deal={deal}
                 analysis={analysis}
-                spApiOffers={null}
-                spApiSalesEstimate={null}
-                deal={deal}
-                analysis={analysis}
                 spApiOffers={null} // Not needed - data in deal/analysis
                 spApiSalesEstimate={null} // Not needed - data in analysis
               />
