@@ -1,7 +1,7 @@
 import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Box, Typography, Chip } from '@mui/material';
 import { X } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { useSuppliers } from '../../../hooks/useSuppliers';
+import { useSuppliers } from '../../../context/SuppliersContext';
 import { useToast } from '../../../context/ToastContext';
 import { habexa } from '../../../theme';
 

@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { CircularProgress, Box } from '@mui/material';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { SuppliersProvider } from './context/SuppliersContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { ToastProvider } from './context/ToastContext';
 import { StripeProvider } from './context/StripeContext';
@@ -57,9 +58,10 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider>
         <AuthProvider>
-          <NotificationProvider>
-            <ToastProvider>
-              <StripeProvider>
+          <SuppliersProvider>
+            <NotificationProvider>
+              <ToastProvider>
+                <StripeProvider>
                 <BrowserRouter>
             <Routes>
               {/* Public routes */}
@@ -100,9 +102,10 @@ function App() {
               <Route path="*" element={<Suspense fallback={<Loading />}><NotFound /></Suspense>} />
             </Routes>
                 </BrowserRouter>
-              </StripeProvider>
-            </ToastProvider>
-          </NotificationProvider>
+                </StripeProvider>
+              </ToastProvider>
+            </NotificationProvider>
+          </SuppliersProvider>
         </AuthProvider>
       </ThemeProvider>
     </ErrorBoundary>

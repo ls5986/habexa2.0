@@ -5,7 +5,7 @@ import {
   Alert, TextField, Divider
 } from '@mui/material';
 import { Add as Plus } from '@mui/icons-material';
-import { useSuppliers } from '../../../hooks/useSuppliers';
+import { useSuppliers } from '../../../context/SuppliersContext';
 import SupplierFormModal from '../suppliers/SupplierFormModal';
 import { useToast } from '../../../context/ToastContext';
 import api from '../../../services/api';
@@ -18,7 +18,7 @@ export default function SupplierSelectionDialog({
   productCount = 0,
   onConfirm
 }) {
-  const { suppliers, loading, createSupplier, refetch: fetchSuppliers } = useSuppliers();
+  const { suppliers, loading, createSupplier, refreshSuppliers } = useSuppliers();
   const { showToast } = useToast();
   const [selectedSupplierId, setSelectedSupplierId] = useState('');
   const [showNewSupplierForm, setShowNewSupplierForm] = useState(false);
@@ -188,8 +188,8 @@ export default function SupplierSelectionDialog({
         onClose={async () => {
           setShowNewSupplierForm(false);
           // Refresh suppliers after modal closes (in case new one was created)
-          if (fetchSuppliers) {
-            await fetchSuppliers();
+          if (refreshSuppliers) {
+            await refreshSuppliers();
           }
         }}
         supplier={null}

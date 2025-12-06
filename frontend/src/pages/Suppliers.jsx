@@ -1,7 +1,7 @@
 import { Box, Typography, Button, Card, CardContent, Avatar, Chip, IconButton, Alert } from '@mui/material';
 import { Plus, MessageCircle, Package, Edit } from 'lucide-react';
 import { useState } from 'react';
-import { useSuppliers } from '../hooks/useSuppliers';
+import { useSuppliers } from '../context/SuppliersContext';
 import { useFeatureGate } from '../hooks/useFeatureGate';
 import { getInitials, formatCurrency } from '../utils/formatters';
 import EmptyState from '../components/common/EmptyState';

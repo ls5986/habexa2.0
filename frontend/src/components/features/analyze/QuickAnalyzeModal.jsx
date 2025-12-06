@@ -2,7 +2,7 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, B
 import { X, Zap, TrendingUp } from 'lucide-react';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useAnalysis } from '../../../hooks/useAnalysis';
-import { useSuppliers } from '../../../hooks/useSuppliers';
+import { useSuppliers } from '../../../context/SuppliersContext';
 import { useToast } from '../../../context/ToastContext';
 import { useFeatureGate } from '../../../hooks/useFeatureGate';
 import { formatCurrency, formatROI } from '../../../utils/formatters';

@@ -7,7 +7,7 @@ import {
 } from '@mui/material';
 import { Zap, ExternalLink, TrendingUp, DollarSign, RefreshCw, Plus, Trash2 } from 'lucide-react';
 import { useAnalysis } from '../hooks/useAnalysis';
-import { useSuppliers } from '../hooks/useSuppliers';
+import { useSuppliers } from '../context/SuppliersContext';
 import { useToast } from '../context/ToastContext';
 import { handleApiError } from '../utils/errorHandler';
 import { habexa } from '../theme';
