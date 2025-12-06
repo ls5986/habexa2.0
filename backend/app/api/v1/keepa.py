@@ -162,6 +162,122 @@ async def debug_keepa(asin: str):
         return {"error": str(e)}
 
 
+@router.get("/test/{asin}")
+async def test_keepa(asin: str):
+    """Test endpoint with full error output."""
+    import traceback
+    
+    client = get_keepa_client()
+    
+    if not client.is_configured():
+        return {"error": "Not configured", "step": "config"}
+    
+    try:
+        # Step 1: Make API call
+        import httpx
+        params = {
+            "key": client.api_key,
+            "domain": 1,
+            "asin": asin,
+            "stats": 90,
+            "offers": 20,
+        }
+        
+        async with httpx.AsyncClient(timeout=30) as c:
+            resp = await c.get("https://api.keepa.com/product", params=params)
+        
+        if resp.status_code != 200:
+            return {"error": f"API returned {resp.status_code}", "step": "api_call"}
+        
+        data = resp.json()
+        products = data.get("products", [])
+        
+        if not products:
+            return {"error": "No products returned", "step": "products_check", "raw_keys": list(data.keys())}
+        
+        product = products[0]
+        
+        # Step 2: Try parsing each section
+        result = {"step": "parsing", "asin": asin}
+        
+        # Basic fields
+        try:
+            result["title"] = product.get("title")
+            result["brand"] = product.get("brand")
+            result["step_basic"] = "ok"
+        except Exception as e:
+            result["step_basic"] = f"error: {e}"
+        
+        # Stats
+        try:
+            stats = product.get("stats") or {}
+            result["stats_keys"] = list(stats.keys())[:15]
+            current = stats.get("current") or []
+            result["current_length"] = len(current)
+            result["current_sample"] = current[:10] if current else []
+            result["step_stats"] = "ok"
+        except Exception as e:
+            result["step_stats"] = f"error: {e}"
+        
+        # Parse prices
+        try:
+            current = (product.get("stats") or {}).get("current") or []
+            
+            def safe_price(arr, idx):
+                if arr and len(arr) > idx and arr[idx] is not None and arr[idx] >= 0:
+                    return arr[idx] / 100.0
+                return None
+            
+            result["amazon_price"] = safe_price(current, 0)
+            result["new_price"] = safe_price(current, 1)
+            result["bsr"] = current[3] if len(current) > 3 and current[3] and current[3] > 0 else None
+            result["buy_box"] = safe_price(current, 18)
+            result["step_prices"] = "ok"
+        except Exception as e:
+            result["step_prices"] = f"error: {e}"
+            result["step_prices_trace"] = traceback.format_exc()
+        
+        # Seller counts
+        try:
+            stats = product.get("stats") or {}
+            result["fba_sellers"] = stats.get("offerCountFBA")
+            result["fbm_sellers"] = stats.get("offerCountFBM")
+            result["drops_30"] = stats.get("salesRankDrops30")
+            result["step_sellers"] = "ok"
+        except Exception as e:
+            result["step_sellers"] = f"error: {e}"
+        
+        # CSV history
+        try:
+            csv = product.get("csv")
+            result["has_csv"] = csv is not None
+            result["csv_length"] = len(csv) if csv else 0
+            if csv and len(csv) > 0:
+                result["csv_0_length"] = len(csv[0]) if csv[0] else 0
+            result["step_csv"] = "ok"
+        except Exception as e:
+            result["step_csv"] = f"error: {e}"
+        
+        # Try full parse
+        try:
+            parsed = client._parse_product(product, asin, 90)
+            result["full_parse"] = "ok"
+            result["parsed_keys"] = list(parsed.keys())[:15]
+            result["parsed_title"] = parsed.get("title")
+        except Exception as e:
+            result["full_parse"] = f"error: {e}"
+            result["full_parse_trace"] = traceback.format_exc()
+        
+        return result
+        
+    except Exception as e:
+        return {
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+            "step": "outer"
+        }
+
+
 def _empty(asin: str, error: str = None) -> dict:
     return {
         "asin": asin, "error": error,

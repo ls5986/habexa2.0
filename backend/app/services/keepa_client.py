@@ -107,9 +107,17 @@ class KeepaClient:
     
     def _parse_product(self, p: dict, asin: str, days: int) -> Dict[str, Any]:
         """Parse Keepa product - ALL fields."""
+        logger.info(f"🔧 Starting parse for {asin}")
+        logger.info(f"🔧 Product keys: {list(p.keys())[:10]}")
+        
         try:
             stats = p.get("stats") or {}
+            logger.info(f"🔧 Stats keys: {list(stats.keys())[:10]}")
+            
             current = stats.get("current") or []
+            logger.info(f"🔧 Current array length: {len(current)}")
+            logger.info(f"🔧 Current first 5: {current[:5] if current else 'empty'}")
+            
             avg90 = stats.get("avg90") or stats.get("avg") or []
             avg30 = stats.get("avg30") or []
             min_v = stats.get("min") or []
