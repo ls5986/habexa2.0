@@ -337,6 +337,7 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal, onAnalysisComplete }) =>
     setMoq(1);
     setSupplierId('');
     setResult(null);
+    setMultipleAsins(null); // Reset multiple ASINs state
   };
 
   const handleViewDetails = () => {
