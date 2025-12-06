@@ -386,45 +386,79 @@ async def get_deals(
 @router.get("/stats/asin-status")
 @cached(ttl=10)
 async def get_asin_status_stats(current_user = Depends(get_current_user)):
-    """Get counts for each ASIN status category."""
+    """Get counts using proper SQL queries on database side."""
     user_id = str(current_user.id)
     
     try:
-        # Get ALL products for this user
-        result = supabase.table("products")\
-            .select("id, asin, upc, status")\
+        # Total products
+        all_result = supabase.table("products")\
+            .select("id", count="exact")\
             .eq("user_id", user_id)\
             .execute()
         
-        products = result.data or []
+        total = all_result.count or 0
         
-        # Count by status
-        stats = {
-            "all": len(products),
-            "asin_found": 0,
-            "needs_selection": 0,
-            "needs_asin": 0,
-            "manual_entry": 0
-        }
+        # Products WITH ASIN (not null, not empty string)
+        asin_found_result = supabase.table("products")\
+            .select("id", count="exact")\
+            .eq("user_id", user_id)\
+            .not_.is_("asin", "null")\
+            .neq("asin", "")\
+            .execute()
         
-        for product in products:
+        asin_found = asin_found_result.count or 0
+        
+        # Products in needs_selection status
+        needs_selection_result = supabase.table("products")\
+            .select("id", count="exact")\
+            .eq("user_id", user_id)\
+            .eq("status", "needs_selection")\
+            .execute()
+        
+        needs_selection = needs_selection_result.count or 0
+        
+        # Products WITH UPC but NO ASIN
+        # For complex OR conditions, we need to fetch and filter in Python
+        # Supabase doesn't easily support (upc IS NOT NULL AND asin IS NULL)
+        upc_result = supabase.table("products")\
+            .select("id, asin, upc")\
+            .eq("user_id", user_id)\
+            .not_.is_("upc", "null")\
+            .neq("upc", "")\
+            .execute()
+        
+        needs_asin = 0
+        manual_entry = 0
+        
+        for product in (upc_result.data or []):
             asin = product.get("asin")
             upc = product.get("upc")
-            status = product.get("status")
             
-            # Has ASIN = Found
-            if asin and asin.strip():
-                stats["asin_found"] += 1
-            # Has UPC but no ASIN = Needs ASIN
-            elif upc and upc.strip():
-                stats["needs_asin"] += 1
-            # No UPC or ASIN = Manual Entry
-            else:
-                stats["manual_entry"] += 1
-            
-            # Check if needs selection (multiple ASINs found)
-            if status == "needs_selection":
-                stats["needs_selection"] += 1
+            # Has UPC but no ASIN
+            if upc and upc.strip() and (not asin or not asin.strip()):
+                needs_asin += 1
+        
+        # Products with NO UPC and NO ASIN (manual entry)
+        # Get all products without UPC, then filter for those without ASIN
+        no_upc_result = supabase.table("products")\
+            .select("id, asin")\
+            .eq("user_id", user_id)\
+            .or_("upc.is.null,upc.eq.")\
+            .execute()
+        
+        for product in (no_upc_result.data or []):
+            asin = product.get("asin")
+            # No UPC and no ASIN = manual entry
+            if not asin or not asin.strip():
+                manual_entry += 1
+        
+        stats = {
+            "all": total,
+            "asin_found": asin_found,
+            "needs_asin": needs_asin,
+            "needs_selection": needs_selection,
+            "manual_entry": manual_entry
+        }
         
         logger.info(f"📊 ASIN Status Stats for user {user_id}: {stats}")
         return stats
