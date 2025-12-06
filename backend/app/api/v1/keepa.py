@@ -101,6 +101,61 @@ async def get_keepa_product(
         raise HTTPException(500, f"Internal error fetching Keepa data: {str(e)}")
 
 
+@router.get("/debug/{asin}")
+async def get_keepa_debug(
+    request: Request,
+    asin: str,
+    days: int = Query(90, ge=30, le=365),
+    current_user=Depends(get_current_user_optional if settings.TEST_MODE else get_current_user)
+):
+    """
+    Debug endpoint to see raw Keepa API response.
+    Returns the actual Keepa API response for troubleshooting.
+    """
+    try:
+        if not keepa_client.api_key:
+            return {"error": "Keepa API key not configured"}
+        
+        # Make direct API call to see raw response
+        import httpx
+        async with httpx.AsyncClient(timeout=60) as client:
+            response = await client.get(
+                "https://api.keepa.com/product",
+                params={
+                    "key": keepa_client.api_key,
+                    "domain": 1,
+                    "asin": asin,
+                    "stats": days,
+                    "history": 1,
+                    "rating": 1,
+                }
+            )
+            
+            if response.status_code != 200:
+                return {
+                    "error": f"Keepa API HTTP {response.status_code}",
+                    "response_text": response.text[:500]
+                }
+            
+            data = response.json()
+            
+            return {
+                "asin": asin,
+                "keepa_response_keys": list(data.keys()),
+                "tokens_left": data.get("tokensLeft"),
+                "has_products_key": "products" in data,
+                "products_type": type(data.get("products")).__name__ if "products" in data else "missing",
+                "products_length": len(data.get("products")) if isinstance(data.get("products"), list) else None,
+                "products_is_none": data.get("products") is None if "products" in data else None,
+                "has_error": "error" in data,
+                "error_message": data.get("error") if "error" in data else None,
+                "raw_response": data  # Full response for debugging
+            }
+    except Exception as e:
+        logger.error(f"Debug endpoint error: {e}", exc_info=True)
+        return {"error": str(e)}
+
+
 @router.get("/history/{asin}")
 async def get_price_history(
     asin: str,
