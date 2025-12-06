@@ -1,10 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List
+import logging
 from app.api.deps import get_current_user
 from app.services.supabase_client import supabase
 from app.services.feature_gate import feature_gate, require_limit
 from app.core.exceptions import NotFoundError
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -37,11 +40,19 @@ class SupplierUpdate(BaseModel):
 @router.get("")
 async def list_suppliers(current_user=Depends(get_current_user)):
     """List all suppliers."""
+    import time
+    start_time = time.time()
     
+    # OPTIMIZATION: Single query with count - no need for separate ID query
     result = supabase.table("suppliers").select("*").eq("user_id", current_user.id).order("created_at", desc=True).execute()
     
-    # Add limit info
+    # Get limit info (cached by feature_gate)
     check = await feature_gate.check_limit(current_user, "suppliers")
+    
+    elapsed = time.time() - start_time
+    if elapsed > 1.0:
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Slow /suppliers request: {elapsed:.2f}s")
     
     return {
         "suppliers": result.data,

@@ -429,24 +429,8 @@ const Analyze = () => {
     setAddingToProducts(true);
     
     try {
-      // Product is already created during analysis, just navigate to products page
-      // Optionally update product source stage if needed
-      if (result.product_id) {
-        try {
-          // Try to update product source stage to make it visible
-          // This is optional - if it fails, we still navigate
-          await api.patch(`/products/deal/${result.product_id}`, {
-            stage: 'new',
-            ...(supplierId && { supplier_id: supplierId }),
-          }).catch(() => {
-            // Ignore errors - product is already created
-          });
-        } catch (updateErr) {
-          // Ignore update errors - product exists and can be viewed
-          console.log('Product already exists, navigating to view it');
-        }
-      }
-      
+      // Product is already created during analysis - no need to update
+      // Just navigate to products page
       showToast('Product is in your list! Redirecting...', 'success');
       
       // Navigate to products page - filter by ASIN if available

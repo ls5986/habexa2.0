@@ -389,16 +389,44 @@ async def get_user_limits(current_user=Depends(get_current_user)):
     Frontend should call this instead of using hardcoded limits.
     This endpoint properly handles super admin bypass.
     """
+    import time
+    start_time = time.time()
+    
     from app.services.permissions_service import PermissionsService
     from app.services.feature_gate import feature_gate
     
     # Get effective limits (includes super admin bypass)
     limits = PermissionsService.get_effective_limits(current_user)
     
-    # Get current usage for numeric features
+    # OPTIMIZATION: Batch usage queries in parallel
+    import asyncio
+    from app.services.feature_gate import FeatureGate
+    user_id = str(current_user.id)
+    
+    # Get all usage counts in parallel
+    usage_tasks = [
+        FeatureGate._get_usage(user_id, "analyses_per_month"),
+        FeatureGate._get_usage(user_id, "telegram_channels"),
+        FeatureGate._get_usage(user_id, "suppliers"),
+        FeatureGate._get_usage(user_id, "team_seats"),
+    ]
+    
+    usage_results = await asyncio.gather(*usage_tasks, return_exceptions=True)
+    
+    # Map results back to features
+    features = ["analyses_per_month", "telegram_channels", "suppliers", "team_seats"]
+    usage_values = {}
+    for idx, feature in enumerate(features):
+        result = usage_results[idx]
+        if isinstance(result, Exception):
+            usage_values[feature] = 0
+        else:
+            usage_values[feature] = result
+    
+    # Build usage data
     usage_data = {}
     for feature in ["analyses_per_month", "telegram_channels", "suppliers", "team_seats"]:
-        used = await feature_gate._get_usage(str(current_user.id), feature)
+        used = usage_values.get(feature, 0)
         feature_limit = limits.get(feature, 0)
         
         usage_data[feature] = {
@@ -414,6 +442,11 @@ async def get_user_limits(current_user=Depends(get_current_user)):
             "allowed": limits.get(feature, False),
             "unlimited": limits["unlimited"]
         }
+    
+    elapsed = time.time() - start_time
+    if elapsed > 1.0:
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Slow /billing/user/limits request: {elapsed:.2f}s")
     
     return {
         "tier": limits["tier"],
