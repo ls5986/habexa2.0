@@ -15,6 +15,43 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [tier, setTier] = useState(null);
+  const [limits, setLimits] = useState(null);
+  const [tierLoading, setTierLoading] = useState(false);
+
+  // Load user tier and limits
+  const loadUserTier = async (userId) => {
+    if (!userId) {
+      setTier(null);
+      setLimits(null);
+      return;
+    }
+
+    try {
+      setTierLoading(true);
+      const response = await api.get('/auth/me');
+      setTier(response.data.tier);
+      setLimits(response.data.limits);
+    } catch (error) {
+      console.error('Failed to load user tier:', error);
+      // Fallback to free tier on error
+      setTier('free');
+      setLimits({
+        analyses_per_month: { limit: 5, used: 0, remaining: 5, unlimited: false },
+        telegram_channels: { limit: 1, used: 0, remaining: 1, unlimited: false },
+        suppliers: { limit: 3, used: 0, remaining: 3, unlimited: false },
+      });
+    } finally {
+      setTierLoading(false);
+    }
+  };
+
+  // Refresh tier (called after subscription changes)
+  const refreshTier = async () => {
+    if (user?.id) {
+      await loadUserTier(user.id);
+    }
+  };
 
   useEffect(() => {
     // Check for existing session
@@ -22,6 +59,8 @@ export const AuthProvider = ({ children }) => {
       if (session) {
         setUser(session.user);
         localStorage.setItem('auth_token', session.access_token);
+        // Load tier and limits
+        loadUserTier(session.user.id);
       }
       setLoading(false);
     });
@@ -33,8 +72,12 @@ export const AuthProvider = ({ children }) => {
       if (session) {
         setUser(session.user);
         localStorage.setItem('auth_token', session.access_token);
+        // Load tier and limits
+        loadUserTier(session.user.id);
       } else {
         setUser(null);
+        setTier(null);
+        setLimits(null);
         localStorage.removeItem('auth_token');
       }
       setLoading(false);
@@ -177,9 +220,13 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     loading,
+    tier,
+    limits,
+    tierLoading,
     signUp,
     signIn,
     signOut,
+    refreshTier,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

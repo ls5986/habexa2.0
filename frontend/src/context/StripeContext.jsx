@@ -10,6 +10,17 @@ export function StripeProvider({ children }) {
   const [subscription, setSubscription] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Helper to refresh tier in AuthContext (called after subscription changes)
+  const refreshAuthTier = async () => {
+    try {
+      // Call /auth/me to refresh tier in AuthContext
+      // This will be picked up by AuthContext's loadUserTier
+      await api.get('/auth/me');
+    } catch (err) {
+      console.warn('Failed to refresh tier after subscription change:', err);
+    }
+  };
 
   useEffect(() => {
     fetchSubscription();
@@ -80,6 +91,8 @@ export function StripeProvider({ children }) {
       await api.post('/billing/cancel-immediately');
     }
     await fetchSubscription();
+    // ✅ Refresh tier in AuthContext after subscription change
+    await refreshAuthTier();
   };
   
   const resubscribe = async (priceKey) => {
@@ -88,27 +101,37 @@ export function StripeProvider({ children }) {
       window.location.href = response.data.url;
     }
     await fetchSubscription();
+    // ✅ Refresh tier in AuthContext after subscription change
+    await refreshAuthTier();
   };
 
   const reactivateSubscription = async () => {
     await api.post('/billing/reactivate');
     await fetchSubscription();
+    // ✅ Refresh tier in AuthContext after subscription change
+    await refreshAuthTier();
   };
 
   const changePlan = async (newPriceKey) => {
     await api.post('/billing/change-plan', { new_price_key: newPriceKey });
     await fetchSubscription();
+    // ✅ Refresh tier in AuthContext after subscription change
+    await refreshAuthTier();
   };
 
   const setTier = async (tier) => {
     await api.post('/billing/set-tier', { tier });
     await fetchSubscription();
+    // ✅ Refresh tier in AuthContext after subscription change
+    await refreshAuthTier();
   };
 
   const syncSubscription = async () => {
     try {
       const response = await api.post('/billing/sync');
       await fetchSubscription(); // Refresh subscription data
+      // ✅ Refresh tier in AuthContext after subscription change
+      await refreshAuthTier();
       return response.data;
     } catch (error) {
       console.error('Failed to sync subscription:', error);
@@ -118,6 +141,8 @@ export function StripeProvider({ children }) {
 
   const refreshSubscription = async () => {
     await fetchSubscription();
+    // ✅ Refresh tier in AuthContext after subscription change
+    await refreshAuthTier();
   };
 
   const checkFeatureAccess = (feature) => {

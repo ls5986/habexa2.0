@@ -531,24 +531,29 @@ class StripeWebhookHandler:
     @staticmethod
     async def handle_subscription_updated(subscription: Dict[str, Any]):
         """Handle subscription updates (plan changes, trial ending, cancellation scheduled, etc.)."""
+        import logging
+        logger = logging.getLogger(__name__)
         
         subscription_id = subscription["id"]
         price_id = subscription["items"]["data"][0]["price"]["id"]
         tier = PRICE_TO_TIER.get(price_id, "starter")
         interval = subscription["items"]["data"][0]["price"]["recurring"]["interval"]
         
-        # Check if trial ended and subscription became active
-        was_trialing = False
+        # Get user_id before updating (for logging)
+        user_id = None
         try:
             existing = supabase.table("subscriptions")\
-                .select("status, had_free_trial")\
+                .select("user_id, status, had_free_trial, tier")\
                 .eq("stripe_subscription_id", subscription_id)\
                 .maybe_single()\
                 .execute()
             if existing.data:
+                user_id = existing.data.get("user_id")
                 was_trialing = existing.data.get("status") == "trialing"
+                old_tier = existing.data.get("tier")
         except Exception:
-            pass
+            was_trialing = False
+            old_tier = None
         
         # If transitioning from trialing to active, ensure had_free_trial is set
         had_free_trial = False
@@ -580,6 +585,10 @@ class StripeWebhookHandler:
             .update(update_data)\
             .eq("stripe_subscription_id", subscription_id)\
             .execute()
+        
+        # ✅ Log tier change for debugging (frontend will refresh on next /auth/me call)
+        if old_tier and old_tier != tier and user_id:
+            logger.info(f"✅ Tier changed for user {user_id}: {old_tier} → {tier} (webhook)")
     
     @staticmethod
     async def handle_subscription_deleted(subscription: Dict[str, Any]):

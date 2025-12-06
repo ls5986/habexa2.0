@@ -1,71 +1,31 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
-import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 export function useFeatureGate() {
   const navigate = useNavigate();
   const { showToast } = useToast();
   
-  // Fetch limits from backend API - single source of truth
-  const [limitsData, setLimitsData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    let intervalId = null;
-    
-    const fetchLimits = async () => {
-      try {
-        setIsLoading(true);
-        const response = await api.get('/billing/user/limits');
-        setLimitsData(response.data);
-        setError(null);
-      } catch (err) {
-        console.error('Failed to fetch user limits:', err);
-        setError(err);
-        // Fallback to free tier on error
-        setLimitsData({
-          tier: 'free',
-          tier_display: 'Free',
-          is_super_admin: false,
-          unlimited: false,
-          limits: {
-            analyses_per_month: { limit: 5, used: 0, remaining: 5, unlimited: false },
-            telegram_channels: { limit: 1, used: 0, remaining: 1, unlimited: false },
-            suppliers: { limit: 3, used: 0, remaining: 3, unlimited: false },
-          }
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    // Initial fetch
-    fetchLimits();
-    
-    // Start polling after initial fetch completes (120 seconds to reduce server load)
-    // Use a ref-like pattern to avoid restarting interval on every render
-    const startPolling = () => {
-      if (!intervalId) {
-        intervalId = setInterval(fetchLimits, 120000);
-      }
-    };
-    
-    // Start polling after a short delay to ensure initial fetch completes
-    const timeoutId = setTimeout(startPolling, 2000);
-    
-    return () => {
-      clearTimeout(timeoutId);
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
-    };
-  }, []); // Empty deps - only run once on mount
-
-  const tier = limitsData?.tier || 'free';
-  const isSuperAdmin = limitsData?.is_super_admin || false;
-  const isUnlimited = limitsData?.unlimited || false;
+  // ✅ Get tier and limits from AuthContext (no polling, instant access)
+  const { tier, limits, tierLoading } = useAuth();
+  
+  // Map AuthContext data to match old format for backward compatibility
+  const limitsData = limits ? {
+    tier: tier || 'free',
+    tier_display: (tier || 'free').charAt(0).toUpperCase() + (tier || 'free').slice(1),
+    is_super_admin: false, // TODO: Add to AuthContext if needed
+    unlimited: limits.analyses_per_month?.unlimited || false,
+    limits: limits
+  } : null;
+  
+  const isLoading = tierLoading;
+  const error = null; // Errors handled in AuthContext
+  
+  // Extract tier info
+  const tierName = tier || 'free';
+  const isSuperAdmin = false; // TODO: Add to AuthContext if needed
+  const isUnlimited = limits?.analyses_per_month?.unlimited || false;
 
   /**
    * Check limit for a feature - returns backend data

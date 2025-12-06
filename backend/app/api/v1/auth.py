@@ -57,11 +57,67 @@ async def register(request: RegisterRequest):
 
 @router.get("/me")
 async def get_current_user_info(current_user=Depends(get_current_user)):
-    """Get current authenticated user information."""
+    """
+    Get current authenticated user information including tier and limits.
+    This is the single source of truth for user data - frontend should call this
+    once on login and store in AuthContext.
+    """
+    from app.services.permissions_service import PermissionsService
+    from app.services.feature_gate import feature_gate
+    import asyncio
+    
+    # Get effective limits (includes super admin bypass)
+    limits = PermissionsService.get_effective_limits(current_user)
+    
+    # Get current usage for numeric features (parallelized)
+    user_id = str(current_user.id)
+    usage_tasks = [
+        feature_gate._get_usage(user_id, "analyses_per_month"),
+        feature_gate._get_usage(user_id, "telegram_channels"),
+        feature_gate._get_usage(user_id, "suppliers"),
+        feature_gate._get_usage(user_id, "team_seats"),
+    ]
+    
+    usage_results = await asyncio.gather(*usage_tasks, return_exceptions=True)
+    
+    features = ["analyses_per_month", "telegram_channels", "suppliers", "team_seats"]
+    usage_values = {}
+    for idx, feature in enumerate(features):
+        result = usage_results[idx]
+        if isinstance(result, Exception):
+            usage_values[feature] = 0
+        else:
+            usage_values[feature] = result
+    
+    # Build limits data with usage
+    limits_data = {}
+    for feature in features:
+        feature_limit = limits.get(feature, 0)
+        used = usage_values.get(feature, 0)
+        
+        limits_data[feature] = {
+            "limit": feature_limit,
+            "used": used,
+            "remaining": -1 if limits["unlimited"] or feature_limit == -1 else max(0, feature_limit - used),
+            "unlimited": limits["unlimited"] or feature_limit == -1
+        }
+    
+    # Add boolean features
+    for feature in ["alerts", "bulk_analyze", "api_access", "export_data", "priority_support"]:
+        limits_data[feature] = {
+            "allowed": limits.get(feature, False),
+            "unlimited": limits["unlimited"]
+        }
+    
     return {
         "id": current_user.id,
         "email": current_user.email,
-        "user_metadata": current_user.user_metadata or {}
+        "user_metadata": current_user.user_metadata or {},
+        "tier": limits["tier"],
+        "tier_display": limits.get("tier_display", limits["tier"].title()),
+        "is_super_admin": limits.get("is_super_admin", False),
+        "unlimited": limits["unlimited"],
+        "limits": limits_data
     }
 
 

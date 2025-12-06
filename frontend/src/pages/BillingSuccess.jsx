@@ -3,6 +3,7 @@ import { Box, Typography, Button, Card, CardContent } from '@mui/material';
 import { CheckCircle, ArrowRight } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useStripe } from '../context/StripeContext';
+import { useAuth } from '../context/AuthContext';
 import { habexa } from '../theme';
 import api from '../services/api';
 
@@ -10,6 +11,7 @@ const BillingSuccess = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { refreshSubscription } = useStripe();
+  const { refreshTier } = useAuth();
   const sessionId = searchParams.get('session_id');
 
   useEffect(() => {
@@ -21,12 +23,14 @@ const BillingSuccess = () => {
         } catch (error) {
           console.warn('Failed to sync subscription from session:', error);
         }
-        // Always refresh subscription after sync attempt
-        refreshSubscription();
+        // Always refresh subscription and tier after sync attempt
+        await refreshSubscription();
+        // ✅ Refresh tier in AuthContext after successful checkout
+        await refreshTier();
       };
       syncAndRefresh();
     }
-  }, [sessionId, refreshSubscription]);
+  }, [sessionId, refreshSubscription, refreshTier]);
 
   return (
     <Box
