@@ -288,6 +288,24 @@ async def analyze_single(
             # Product will still be created, just won't show in Products page
         
         # Prepare analysis data
+        # Fix field name mapping: batch_analyzer returns fees_referral, but we need referral_fee
+        referral_fee = result.get("referral_fee") or result.get("fees_referral")
+        fba_fee = result.get("fba_fee") or result.get("fees_fba")
+        fees_total = result.get("fees_total")
+        
+        # If we have fees_total but missing individual fees, calculate referral_fee from category
+        if fees_total and not referral_fee and result.get("sell_price"):
+            from app.services.profit_calculator import get_referral_rate
+            category = result.get("category")
+            referral_rate = get_referral_rate(category)
+            referral_fee = result.get("sell_price") * referral_rate
+            logger.info(f"📊 Calculated referral fee from category: ${referral_fee:.2f} ({referral_rate*100}%)")
+        
+        # Calculate referral_fee_percent if we have referral_fee and sell_price
+        referral_fee_percent = None
+        if referral_fee and result.get("sell_price"):
+            referral_fee_percent = round((referral_fee / result.get("sell_price")) * 100, 2)
+        
         analysis_data = {
             "user_id": user_id,
             "asin": asin,
@@ -298,11 +316,11 @@ async def analyze_single(
             "needs_review": result.get("needs_review", False),
             "sell_price": result.get("sell_price"),
             "buy_cost": result.get("buy_cost") or adjusted_buy_cost,
-            "referral_fee": result.get("referral_fee"),
-            "referral_fee_percent": result.get("referral_fee_percent"),
-            "fba_fee": result.get("fees_fba") or result.get("fba_fee"),
+            "referral_fee": referral_fee,
+            "referral_fee_percent": referral_fee_percent or result.get("referral_fee_percent"),
+            "fba_fee": fba_fee,
             "variable_closing_fee": result.get("variable_closing_fee"),
-            "fees_total": result.get("fees_total"),
+            "fees_total": fees_total,
             "inbound_shipping": result.get("inbound_shipping"),
             "prep_cost": result.get("prep_cost"),
             "total_landed_cost": result.get("total_landed_cost"),

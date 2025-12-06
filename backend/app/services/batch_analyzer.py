@@ -224,8 +224,14 @@ class BatchAnalyzer:
                 for asin, data in fees_data.items():
                     if asin in results:
                         results[asin]["fees_total"] = data.get("total")
-                        results[asin]["fees_referral"] = data.get("referral_fee")
-                        results[asin]["fees_fba"] = data.get("fba_fulfillment_fee")
+                        # Store as both names for compatibility
+                        referral_fee = data.get("referral_fee")
+                        results[asin]["referral_fee"] = referral_fee  # Standard name
+                        results[asin]["fees_referral"] = referral_fee  # Legacy name
+                        fba_fee = data.get("fba_fulfillment_fee")
+                        results[asin]["fba_fee"] = fba_fee  # Standard name
+                        results[asin]["fees_fba"] = fba_fee  # Legacy name
+                        logger.debug(f"✅ {asin}: Fees - Referral: ${referral_fee}, FBA: ${fba_fee}, Total: ${data.get('total')}")
             except Exception as e:
                 logger.warning(f"SP-API fees batch failed for batch {i//SP_API_BATCH_SIZE + 1}: {e}")
         
