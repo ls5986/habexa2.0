@@ -369,6 +369,7 @@ async def analyze_batch(
         promo_costs = {}
         source_data = {}
         product_mapping = {}  # asin -> product_id
+        item_metadata = {}  # asin -> {supplier_id, moq}
         
         for item in request.items:
             asin = item.asin.strip().upper()
@@ -396,19 +397,48 @@ async def analyze_batch(
                 buy_costs[asin] = item.buy_cost
                 product_mapping[asin] = product_id
                 source_data[asin] = {"supplier_ships_direct": False}
+                item_metadata[asin] = {
+                    "supplier_id": item.supplier_id,
+                    "moq": item.moq
+                }
         
         if not asins:
             raise HTTPException(400, "No valid products to analyze")
         
         # Run batch analysis synchronously
-        user_settings = await get_user_cost_settings(user_id)
-        results = await batch_analyzer.analyze_products(
-            asins,
-            buy_costs=buy_costs,
-            promo_costs=promo_costs,
-            source_data=source_data,
-            user_settings=user_settings
-        )
+        try:
+            user_settings = await get_user_cost_settings(user_id)
+            results = await batch_analyzer.analyze_products(
+                asins,
+                buy_costs=buy_costs,
+                promo_costs=promo_costs,
+                source_data=source_data,
+                user_settings=user_settings
+            )
+            
+            if not results:
+                raise HTTPException(500, "Analysis returned no results")
+        except Exception as e:
+            logger.error(f"❌ Batch analysis failed: {e}", exc_info=True)
+            # Return partial results if any products failed
+            analysis_results = []
+            for asin in asins:
+                analysis_results.append({
+                    "status": "failed",
+                    "asin": asin,
+                    "error": f"Analysis error: {str(e)}"
+                })
+            return {
+                "mode": "sync",
+                "total": item_count,
+                "results": analysis_results,
+                "message": f"Analysis failed: {str(e)}",
+                "usage": {
+                    "analyses_remaining": check.get("remaining", 0),
+                    "analyses_limit": check.get("limit", 0),
+                    "unlimited": check.get("unlimited", False)
+                }
+            }
         
         # Process results and save to database
         analysis_results = []
@@ -418,8 +448,56 @@ async def analyze_batch(
                 continue
             
             try:
-                # Save analysis (same logic as single endpoint)
-                supplier_id = None
+                # Get item metadata (supplier_id, moq)
+                metadata = item_metadata.get(asin, {})
+                supplier_id = metadata.get("supplier_id")
+                moq = metadata.get("moq", 1)
+                buy_cost = buy_costs.get(asin)
+                
+                # Create/update product_source if buy_cost provided
+                if buy_cost:
+                    try:
+                        existing_source = supabase.table("product_sources")\
+                            .select("id")\
+                            .eq("product_id", product_id)\
+                            .eq("user_id", user_id)\
+                            .limit(1)\
+                            .execute()
+                        
+                        if existing_source.data:
+                            supabase.table("product_sources").update({
+                                "buy_cost": buy_cost,
+                                "moq": moq,
+                                "supplier_id": supplier_id,
+                                "updated_at": datetime.utcnow().isoformat()
+                            }).eq("id", existing_source.data[0]["id"]).execute()
+                        else:
+                            supabase.table("product_sources").insert({
+                                "user_id": user_id,
+                                "product_id": product_id,
+                                "supplier_id": supplier_id,
+                                "buy_cost": buy_cost,
+                                "moq": moq,
+                                "stage": "reviewed",
+                                "source": "batch_analyze"
+                            }).execute()
+                    except Exception as e:
+                        logger.warning(f"Could not create/update product_source for {asin}: {e}")
+                
+                # Get supplier_id from product_source if not set
+                if not supplier_id:
+                    try:
+                        sources = supabase.table("product_sources")\
+                            .select("supplier_id")\
+                            .eq("product_id", product_id)\
+                            .limit(1)\
+                            .execute()
+                        if sources.data and sources.data[0].get("supplier_id"):
+                            supplier_id = sources.data[0]["supplier_id"]
+                    except:
+                        pass
+                
+                # Save analysis
                 analysis_data = {
                     "user_id": user_id,
                     "asin": asin,
@@ -427,7 +505,7 @@ async def analyze_batch(
                     "analysis_data": {},
                     "pricing_status": result.get("pricing_status", "complete"),
                     "sell_price": result.get("sell_price"),
-                    "buy_cost": result.get("buy_cost") or buy_costs.get(asin),
+                    "buy_cost": result.get("buy_cost") or buy_cost,
                     "net_profit": result.get("net_profit"),
                     "roi": result.get("roi"),
                     "analysis_stage": result.get("analysis_stage", "stage3"),
@@ -463,7 +541,7 @@ async def analyze_batch(
                     }
                 })
             except Exception as e:
-                logger.error(f"Failed to save analysis for {asin}: {e}")
+                logger.error(f"Failed to save analysis for {asin}: {e}", exc_info=True)
                 analysis_results.append({
                     "status": "failed",
                     "asin": asin,
