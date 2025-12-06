@@ -309,24 +309,13 @@ async def get_deals(
             query = query.ilike("asin", f"%{search}%")
         if asin_status:
             # Map frontend filter values to database filtering
-            if asin_status == "asin_found":
-                # Products with ASIN
-                query = query.not_.is_("asin", "null")
-                query = query.neq("asin", "")
-            elif asin_status == "needs_selection":
+            if asin_status == "needs_selection":
                 # Products in needs_selection status
                 query = query.eq("asin_status", "needs_selection")
-            elif asin_status == "needs_asin":
-                # Products with UPC but no ASIN
-                query = query.not_.is_("upc", "null")
-                query = query.neq("upc", "")
-                query = query.or_("asin.is.null,asin.eq.")
-            elif asin_status == "manual_entry":
-                # Products with no UPC or ASIN
-                query = query.or_("asin.is.null,asin.eq.,upc.is.null,upc.eq.")
             else:
-                # Fallback to direct status match
-                query = query.eq("asin_status", asin_status)
+                # For other filters, we'll filter in Python after fetching
+                # This is because Supabase doesn't support complex OR conditions easily
+                pass
         if min_roi is not None:
             query = query.gte("roi", min_roi)
         if min_profit is not None:
@@ -337,6 +326,18 @@ async def get_deals(
         
         result = query.execute()
         deals = result.data or []
+        
+        # Apply ASIN status filter in Python if needed (for complex conditions)
+        if asin_status and asin_status not in ["needs_selection"]:
+            if asin_status == "asin_found":
+                # Products with ASIN
+                deals = [d for d in deals if d.get("asin") and d["asin"].strip()]
+            elif asin_status == "needs_asin":
+                # Products with UPC but no ASIN
+                deals = [d for d in deals if (d.get("upc") and d["upc"].strip()) and not (d.get("asin") and d["asin"].strip())]
+            elif asin_status == "manual_entry":
+                # Products with no UPC or ASIN
+                deals = [d for d in deals if not (d.get("asin") and d["asin"].strip()) and not (d.get("upc") and d["upc"].strip())]
         
         # Get counts for each status (for UI filters) - only if no filters applied
         counts = {}
