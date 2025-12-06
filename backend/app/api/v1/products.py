@@ -374,10 +374,16 @@ async def get_deals(
             ]
         
         # Log filter application for debugging
+        logger.info(f"🔍 get_deals called - asin_status={asin_status}, stage={stage}, user_id={user_id}")
         if asin_status:
-            logger.info(f"🔍 ASIN status filter applied: {asin_status}, returned {len(deals)} deals")
+            logger.info(f"✅ ASIN status filter applied: {asin_status}, returned {len(deals)} deals")
             if deals:
-                logger.info(f"📦 Sample ASINs: {[d.get('asin') for d in deals[:3]]}")
+                sample_asins = [d.get('asin', 'NO_ASIN')[:20] for d in deals[:5]]
+                logger.info(f"📦 Sample ASINs: {sample_asins}")
+            else:
+                logger.warning(f"⚠️ No deals returned for filter: {asin_status}")
+        else:
+            logger.info(f"📋 No ASIN filter - returned {len(deals)} deals")
         
         # Get counts for each status (for UI filters) - only if no filters applied
         counts = {}
@@ -407,11 +413,13 @@ async def get_deals(
         if len(deals) == 0 and offset == 0:
             logger.debug(f"No deals found for user {user_id} - view might be empty or missing data")
         
-        return {
+        response = {
             "deals": deals,
             "total": len(deals),
             "counts": counts if counts else None
         }
+        logger.info(f"📤 Returning {len(deals)} deals (filter: {asin_status})")
+        return response
         
     except Exception as e:
         logger.error(f"Failed to fetch deals: {e}")

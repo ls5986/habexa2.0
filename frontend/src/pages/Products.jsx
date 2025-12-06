@@ -442,8 +442,14 @@ export default function Products() {
       if (filters.minProfit) params.append('min_profit', filters.minProfit);
       if (debouncedSearch) params.append('search', debouncedSearch);
       if (filters.supplier) params.append('supplier_id', filters.supplier);
-      if (filters.asinStatus && filters.asinStatus !== 'all') params.append('asin_status', filters.asinStatus);
+      if (filters.asinStatus && filters.asinStatus !== 'all') {
+        params.append('asin_status', filters.asinStatus);
+        console.log('✅ Adding asin_status to params:', filters.asinStatus);
+      }
       params.append('limit', '100');
+      
+      const url = `/products?${params.toString()}`;
+      console.log('🌐 API URL:', url);
       
       // Add timestamp to bypass cache if force refresh
       if (forceRefresh) {
@@ -452,9 +458,16 @@ export default function Products() {
 
       // Parallel API calls for better performance
       const [dealsRes, statsRes] = await Promise.all([
-        api.get(`/products?${params}`),
+        api.get(url),
         api.get(`/products/stats${forceRefresh ? `?_t=${Date.now()}` : ''}`)
       ]);
+      
+      console.log('📥 API Response:', {
+        status: dealsRes.status,
+        hasData: !!dealsRes.data,
+        dataKeys: dealsRes.data ? Object.keys(dealsRes.data) : [],
+        isArray: Array.isArray(dealsRes.data)
+      });
 
       // Handle different response formats safely
       let dealsData = [];
