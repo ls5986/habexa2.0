@@ -373,6 +373,12 @@ async def get_deals(
                 )
             ]
         
+        # Log filter application for debugging
+        if asin_status:
+            logger.info(f"🔍 ASIN status filter applied: {asin_status}, returned {len(deals)} deals")
+            if deals:
+                logger.info(f"📦 Sample ASINs: {[d.get('asin') for d in deals[:3]]}")
+        
         # Get counts for each status (for UI filters) - only if no filters applied
         counts = {}
         if not stage and not source and not supplier_id and not asin_status and not search:
