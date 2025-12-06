@@ -257,11 +257,12 @@ class SPAPIClient:
                 _rate_limit()
             
             try:
+                # Log SP-API request for debugging
+                logger.info(f"📡 SP-API REQUEST: {method} {path} | Marketplace: {marketplace_id} | User: {user_id or 'APP'}")
+                if json_data and len(str(json_data)) < 500:
+                    logger.debug(f"SP-API {method} {path} body: {json_data}")
+                
                 async with httpx.AsyncClient() as client:
-                    # Log what we're sending for debugging
-                    if json_data:
-                        logger.debug(f"SP-API {method} {path} body: {json_data}")
-                    
                     response = await client.request(
                         method=method,
                         url=url,
@@ -272,7 +273,9 @@ class SPAPIClient:
                     )
                     
                     if response.status_code == 200:
-                        return response.json()
+                        result = response.json()
+                        logger.info(f"✅ SP-API SUCCESS: {method} {path} | Status: 200")
+                        return result
                     
                     elif response.status_code == 429:
                         # Exponential backoff: 2, 4, 8, 16, 32 sec
