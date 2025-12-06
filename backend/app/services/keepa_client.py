@@ -7,6 +7,11 @@ from typing import Optional, Dict, List, Any
 logger = logging.getLogger(__name__)
 
 
+class KeepaError(Exception):
+    """Keepa API error."""
+    pass
+
+
 class KeepaClient:
     def __init__(self):
         self.api_key = os.getenv("KEEPA_API_KEY")
@@ -16,12 +21,19 @@ class KeepaClient:
     def is_configured(self) -> bool:
         return bool(self.api_key)
     
-    async def get_product(self, asin: str, days: int = 90) -> Optional[Dict]:
-        """Get single product - calls batch with one ASIN."""
+    async def get_product(self, asin: str, days: int = 90, domain: int = 1, history: bool = False) -> Optional[Dict]:
+        """Get single product - calls batch with one ASIN.
+        
+        Args:
+            asin: Product ASIN
+            days: Number of days of history (default 90)
+            domain: Keepa domain (1=US, ignored for backward compatibility)
+            history: Whether to include history (ignored for backward compatibility)
+        """
         results = await self.get_products_batch([asin], days)
         return results.get(asin)
     
-    async def get_products_batch(self, asins: List[str], days: int = 90) -> Dict[str, Dict]:
+    async def get_products_batch(self, asins: List[str], days: int = 90, domain: int = 1, history: bool = False) -> Dict[str, Dict]:
         """
         Batch fetch multiple ASINs in one API call.
         Keepa allows up to 100 ASINs per request.
@@ -136,6 +148,14 @@ class KeepaClient:
         
         return results
     
+    async def get_products_raw(self, asins: List[str], days: int = 90) -> Dict:
+        """Get raw Keepa product data (for deep analysis).
+        
+        This is a compatibility method - returns the same as get_products_batch
+        but with a different name for backward compatibility.
+        """
+        return await self.get_products_batch(asins, days)
+    
     async def get_tokens_left(self) -> Dict:
         """Check remaining API tokens."""
         if not self.api_key:
@@ -167,3 +187,6 @@ def get_keepa_client() -> KeepaClient:
     if _client is None:
         _client = KeepaClient()
     return _client
+
+# Backward compatibility - export keepa_client instance
+keepa_client = get_keepa_client()
