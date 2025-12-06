@@ -942,11 +942,13 @@ export default function Products() {
           {/* Table Header */}
           <Box sx={{ 
             display: { xs: 'none', md: 'grid' },
-            gridTemplateColumns: '40px 140px 1fr 120px 80px 80px 80px 90px 80px 80px 60px',
+            gridTemplateColumns: '40px 50px 140px 1fr 120px 70px 80px 80px 90px 80px 80px 60px',
             p: 1.5, 
             borderBottom: '1px solid',
             borderColor: 'divider',
-            bgcolor: 'background.paper'
+            bgcolor: 'background.paper',
+            gap: 1,
+            alignItems: 'center'
           }}>
             <Checkbox
               size="small"
@@ -954,16 +956,17 @@ export default function Products() {
               indeterminate={selected.length > 0 && selected.length < filteredDeals.length}
               onChange={handleSelectAll}
             />
-            <Typography variant="caption" color="text.secondary">ASIN</Typography>
-            <Typography variant="caption" color="text.secondary">Product</Typography>
-            <Typography variant="caption" color="text.secondary">Supplier</Typography>
-            <Typography variant="caption" color="text.secondary" align="right">MOQ</Typography>
-            <Typography variant="caption" color="text.secondary" align="right">Unit $</Typography>
-            <Typography variant="caption" color="text.secondary" align="right">Total $</Typography>
-            <Typography variant="caption" color="text.secondary" align="right">ROI</Typography>
-            <Typography variant="caption" color="text.secondary" align="right">Profit</Typography>
-            <Typography variant="caption" color="text.secondary">Stage</Typography>
-            <Typography variant="caption" color="text.secondary">Actions</Typography>
+            <Box></Box> {/* Image column header */}
+            <Typography variant="caption" color="text.secondary" fontWeight={600}>ASIN</Typography>
+            <Typography variant="caption" color="text.secondary" fontWeight={600}>Product</Typography>
+            <Typography variant="caption" color="text.secondary" fontWeight={600}>Supplier</Typography>
+            <Typography variant="caption" color="text.secondary" align="center" fontWeight={600}>MOQ</Typography>
+            <Typography variant="caption" color="text.secondary" align="right" fontWeight={600}>Unit $</Typography>
+            <Typography variant="caption" color="text.secondary" align="right" fontWeight={600}>Total $</Typography>
+            <Typography variant="caption" color="text.secondary" align="right" fontWeight={600}>ROI</Typography>
+            <Typography variant="caption" color="text.secondary" align="right" fontWeight={600}>Profit</Typography>
+            <Typography variant="caption" color="text.secondary" fontWeight={600}>Stage</Typography>
+            <Typography variant="caption" color="text.secondary" fontWeight={600}>Actions</Typography>
           </Box>
 
           {/* Table Rows - Desktop */}
