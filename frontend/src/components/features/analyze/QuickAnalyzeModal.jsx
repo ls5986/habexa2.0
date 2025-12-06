@@ -417,7 +417,137 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal, onAnalysisComplete }) =>
       </DialogTitle>
 
       <DialogContent>
-        {!result ? (
+        {multipleAsins ? (
+          <Box>
+            <Alert severity="info" sx={{ mb: 2 }}>
+              <Typography variant="body2" fontWeight={600} mb={1}>
+                {multipleAsins.message}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Select the correct product to analyze:
+              </Typography>
+            </Alert>
+            
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, maxHeight: 400, overflow: 'auto' }}>
+              {multipleAsins.asins.map((asinOption, idx) => (
+                <Card
+                  key={idx}
+                  sx={{
+                    p: 2,
+                    cursor: 'pointer',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    '&:hover': { borderColor: habexa.purple.main, bgcolor: 'action.hover' }
+                  }}
+                  onClick={async () => {
+                    // User selected an ASIN - analyze it
+                    const selectedAsin = asinOption.asin;
+                    console.log('✅ [DEBUG] User selected ASIN:', selectedAsin);
+                    
+                    setMultipleAsins(null);
+                    setAsin(selectedAsin);
+                    setIdentifierType('asin');
+                    
+                    // Re-run analysis with selected ASIN
+                    const finalBuyCost = isPack 
+                      ? parseFloat(wholesaleCost) / packSize 
+                      : parseFloat(buyCost);
+                    
+                    try {
+                      const analyzeResponse = await analyzeSingle(
+                        selectedAsin,
+                        finalBuyCost,
+                        moq,
+                        supplierId || null,
+                        'asin',
+                        1,
+                        {
+                          pack_size: isPack ? packSize : 1,
+                          wholesale_cost: isPack ? parseFloat(wholesaleCost) : null,
+                        }
+                      );
+                      
+                      // Handle the analysis response (same as normal flow)
+                      if (analyzeResponse.result && (analyzeResponse.result.roi !== undefined || analyzeResponse.result.net_profit !== undefined)) {
+                        const resultData = {
+                          asin: analyzeResponse.result.asin || selectedAsin,
+                          title: analyzeResponse.result.title || asinOption.title || 'Unknown',
+                          deal_score: analyzeResponse.result.deal_score ?? 'N/A',
+                          net_profit: analyzeResponse.result.net_profit ?? analyzeResponse.result.profit ?? 0,
+                          roi: analyzeResponse.result.roi ?? 0,
+                          gating_status: analyzeResponse.result.gating_status || 'unknown',
+                          meets_threshold: analyzeResponse.result.meets_threshold ?? false,
+                          is_profitable: (analyzeResponse.result.net_profit || analyzeResponse.result.profit || 0) > 0
+                        };
+                        setResult(resultData);
+                        showToast('Analysis complete!', 'success');
+                        if (onAnalysisComplete) {
+                          onAnalysisComplete({
+                            asin: resultData.asin,
+                            product_id: analyzeResponse.product_id,
+                            ...resultData
+                          });
+                        }
+                      }
+                    } catch (err) {
+                      console.error('Failed to analyze selected ASIN:', err);
+                      showToast(err.message || 'Failed to analyze selected product', 'error');
+                    }
+                  }}
+                >
+                  <Box sx={{ display: 'flex', gap: 2, alignItems: 'start' }}>
+                    {asinOption.image && (
+                      <Box
+                        component="img"
+                        src={asinOption.image}
+                        alt={asinOption.title}
+                        sx={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 1, flexShrink: 0 }}
+                      />
+                    )}
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="body2" fontWeight={600} noWrap>
+                        {asinOption.title || 'Unknown Product'}
+                      </Typography>
+                      <Typography variant="caption" fontFamily="monospace" color="text.secondary" display="block" mb={0.5}>
+                        {asinOption.asin}
+                      </Typography>
+                      {asinOption.brand && (
+                        <Typography variant="caption" color="text.secondary">
+                          Brand: {asinOption.brand}
+                        </Typography>
+                      )}
+                      {asinOption.category && (
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          {asinOption.category}
+                        </Typography>
+                      )}
+                    </Box>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      sx={{ backgroundColor: habexa.purple.main }}
+                    >
+                      Select
+                    </Button>
+                  </Box>
+                </Card>
+              ))}
+            </Box>
+            
+            <Button
+              variant="outlined"
+              fullWidth
+              sx={{ mt: 2 }}
+              onClick={() => {
+                setMultipleAsins(null);
+                setUpc('');
+                setAsin('');
+              }}
+            >
+              Cancel
+            </Button>
+          </Box>
+        ) : !result ? (
           <form onSubmit={handleSubmit}>
             <Box display="flex" flexDirection="column" gap={3}>
               {/* Usage display at top */}
