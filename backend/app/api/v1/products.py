@@ -29,6 +29,76 @@ SYNC_PROCESSING_THRESHOLD = settings.SYNC_PROCESSING_THRESHOLD
 
 router = APIRouter(prefix="/products", tags=["products"])
 
+
+def _calculate_buy_cost_from_wholesale_pack(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Calculate Buy Cost per unit from Wholesale (case cost) and Pack (units per case).
+    
+    Formula: Buy Cost = Wholesale / Pack
+    
+    Only calculates if 'Buy Cost' column doesn't already exist.
+    Handles edge cases: division by zero, missing values, NaN.
+    
+    Args:
+        df: DataFrame with potential Wholesale and Pack columns
+        
+    Returns:
+        DataFrame with 'Buy Cost' column added if calculation was performed
+    """
+    # Check if Buy Cost column already exists (case-insensitive)
+    df_columns_lower = [c.lower() for c in df.columns]
+    if 'buy cost' in df_columns_lower or 'buy_cost' in df_columns_lower:
+        logger.debug("Buy Cost column already exists, skipping calculation")
+        return df
+    
+    # Find Wholesale and Pack columns (case-insensitive)
+    wholesale_col = None
+    pack_col = None
+    
+    for col in df.columns:
+        col_lower = col.lower().strip()
+        if 'wholesale' in col_lower and wholesale_col is None:
+            wholesale_col = col
+        if ('pack' in col_lower or 'case_pack' in col_lower or 'case pack' in col_lower) and pack_col is None:
+            pack_col = col
+    
+    if not wholesale_col or not pack_col:
+        logger.debug(f"Could not find Wholesale/Pack columns. Found: wholesale={wholesale_col}, pack={pack_col}")
+        return df
+    
+    logger.info(f"✅ Calculating Buy Cost from {wholesale_col} / {pack_col}")
+    
+    try:
+        # Convert to numeric, handling non-numeric values
+        wholesale_series = pd.to_numeric(df[wholesale_col], errors='coerce')
+        pack_series = pd.to_numeric(df[pack_col], errors='coerce')
+        
+        # Calculate per-unit cost
+        buy_cost_series = wholesale_series / pack_series
+        
+        # Replace inf and -inf (division by zero) with None
+        buy_cost_series = buy_cost_series.replace([float('inf'), float('-inf')], None)
+        
+        # Round to 2 decimal places, but keep None values
+        buy_cost_series = buy_cost_series.round(2) if buy_cost_series.notna().any() else buy_cost_series
+        
+        # Replace NaN with None for JSON serialization
+        buy_cost_series = buy_cost_series.where(pd.notnull(buy_cost_series), None)
+        
+        # Add Buy Cost column
+        df['Buy Cost'] = buy_cost_series
+        
+        # Log calculation stats
+        calculated_count = buy_cost_series.notna().sum()
+        logger.info(f"✅ Calculated Buy Cost for {calculated_count}/{len(df)} rows")
+        
+    except Exception as e:
+        logger.warning(f"⚠️ Failed to calculate Buy Cost: {e}")
+        # Don't fail the upload, just skip calculation
+    
+    return df
+
+
 # ============================================
 # SCHEMAS
 # ============================================
@@ -931,6 +1001,9 @@ async def preview_csv_upload(
         df = df.replace({pd.NA: None, pd.NaT: None})
         df = df.where(pd.notnull(df), None)
         
+        # Calculate Buy Cost from Wholesale/Pack if missing
+        df = _calculate_buy_cost_from_wholesale_pack(df)
+        
         # Get column names
         columns = df.columns.tolist()
         
@@ -996,6 +1069,9 @@ async def confirm_csv_upload(
         # This prevents "Out of range float values are not JSON compliant: nan" errors
         df = df.replace({pd.NA: None, pd.NaT: None})
         df = df.where(pd.notnull(df), None)
+        
+        # Calculate Buy Cost from Wholesale/Pack if missing
+        df = _calculate_buy_cost_from_wholesale_pack(df)
         
         logger.info(f"📦 Processing {len(df)} products with mapping: {request.column_mapping}")
         
