@@ -465,33 +465,51 @@ async def get_asin_status_stats(current_user = Depends(get_current_user)):
         return fallback_stats
 
 
-@router.get("/stats/cache-status")
+@router.get("/stats/cache-status", response_model=Dict[str, Any])
 async def get_cache_status(current_user = Depends(get_current_user)):
     """
     Get Redis cache status and diagnostics.
     Useful for debugging cache performance.
-    """
-    user_id = str(current_user.id)
-    cache_info = get_cache_info(user_id=user_id)
     
-    return {
-        "redis": {
-            "enabled": cache_info.get("enabled", False),
-            "connected": cache_info.get("connected", False),
-            "hit_rate": cache_info.get("hit_rate"),
-            "memory_usage": cache_info.get("memory_usage"),
-        },
-        "user_cache": {
-            "user_id": user_id,
-            "cache_key": cache_info.get("cache_key"),
-            "is_cached": cache_info.get("user_cached", False),
-            "ttl_seconds": cache_info.get("ttl_seconds", 0)
-        },
-        "stats": {
-            "keyspace_hits": cache_info.get("keyspace_hits", 0),
-            "keyspace_misses": cache_info.get("keyspace_misses", 0)
+    Returns:
+        Dictionary with Redis connection status, cache info, and statistics
+    """
+    try:
+        user_id = str(current_user.id)
+        cache_info = get_cache_info(user_id=user_id)
+        
+        return {
+            "redis": {
+                "enabled": cache_info.get("enabled", False),
+                "connected": cache_info.get("connected", False),
+                "hit_rate": cache_info.get("hit_rate"),
+                "memory_usage": cache_info.get("memory_usage"),
+            },
+            "user_cache": {
+                "user_id": user_id,
+                "cache_key": cache_info.get("cache_key"),
+                "is_cached": cache_info.get("user_cached", False),
+                "ttl_seconds": cache_info.get("ttl_seconds", 0)
+            },
+            "stats": {
+                "keyspace_hits": cache_info.get("keyspace_hits", 0),
+                "keyspace_misses": cache_info.get("keyspace_misses", 0)
+            }
         }
-    }
+    except Exception as e:
+        logger.error(f"Error getting cache status: {e}", exc_info=True)
+        return {
+            "redis": {
+                "enabled": False,
+                "connected": False,
+                "error": str(e)
+            },
+            "user_cache": {
+                "user_id": str(current_user.id) if current_user else None,
+                "error": str(e)
+            },
+            "stats": {}
+        }
 
 @router.get("/stats")
 @cached(ttl=10)  # Cache stats for 10 seconds (reduced from 60 for faster updates)
