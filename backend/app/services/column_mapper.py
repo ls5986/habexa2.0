@@ -165,6 +165,7 @@ Return the JSON mapping now:"""
         columns_lower = {col.lower(): col for col in columns}
         
         # Simple mapping rules
+        # IMPORTANT: Order matters - more specific patterns first
         rules = {
             'asin': ['asin', 'amazon asin', 'amazon_asin'],
             'upc': ['upc', 'barcode', 'upc code', 'upc_code'],
@@ -172,10 +173,12 @@ Return the JSON mapping now:"""
             'title': ['title', 'name', 'product name', 'description', 'product_name', 'product description'],
             'brand': ['brand', 'manufacturer', 'mfg', 'vendor'],
             'category': ['category', 'cat', 'cat1', 'department', 'dept'],
-            'cost': ['cost', 'price', 'wholesale', 'unit cost', 'buy cost', 'wholesale price'],
+            # Cost mapping: prioritize "wholesale cost" (per-unit) over just "wholesale" (case cost)
+            # Don't match "buy cost" - that's calculated, not a CSV column
+            'cost': ['wholesale cost', 'wholesale_cost', 'unit cost', 'unit_cost', 'cost', 'price', 'wholesale price'],
             'moq': ['moq', 'minimum order', 'min qty', 'min_qty'],
-            'case_pack': ['case pack', 'pack', 'pack size', 'units per case', 'case_pack'],
-            'wholesale_cost_case': ['wholesale cost case', 'case cost', 'total deal cost'],
+            'case_pack': ['case pack', 'pack', 'pack size', 'units per case', 'case_pack', 'pack_size'],
+            'wholesale_cost_case': ['wholesale cost case', 'case cost', 'total deal cost', 'wholesale'],  # "wholesale" alone = case cost
             'supplier_name': ['supplier', 'supplier name', 'vendor', 'vendor name']
         }
         
@@ -193,6 +196,11 @@ Return the JSON mapping now:"""
         """
         Validate column mapping.
         
+        Cost is required, but can be:
+        - 'cost' field mapped to "Wholesale Cost" (per-unit)
+        - 'wholesale_cost_case' + 'case_pack' (will calculate per-unit)
+        - 'cost' field mapped to any cost column
+        
         Returns:
             {
                 'valid': bool,
@@ -201,13 +209,29 @@ Return the JSON mapping now:"""
             }
         """
         
-        # Required fields
-        required = ['cost']  # Only cost is truly required
+        # Cost is required, but can be provided in multiple ways:
+        # 1. 'cost' field mapped to "Wholesale Cost" or similar
+        # 2. 'wholesale_cost_case' + 'case_pack' (will calculate)
+        has_cost = 'cost' in mapping
+        has_wholesale_case = 'wholesale_cost_case' in mapping
+        has_pack = 'case_pack' in mapping
+        
+        # Cost is valid if:
+        # - 'cost' is mapped, OR
+        # - 'wholesale_cost_case' + 'case_pack' are both mapped (will calculate)
+        cost_valid = has_cost or (has_wholesale_case and has_pack)
+        
+        missing_required = []
+        if not cost_valid:
+            if has_wholesale_case and not has_pack:
+                missing_required.append("case_pack (needed to calculate per-unit cost from wholesale case cost)")
+            elif has_pack and not has_wholesale_case:
+                missing_required.append("wholesale_cost_case (needed to calculate per-unit cost)")
+            else:
+                missing_required.append("cost (or wholesale_cost_case + case_pack)")
         
         # Recommended fields
         recommended = ['title', 'brand', 'upc', 'asin']
-        
-        missing_required = [f for f in required if f not in mapping]
         missing_recommended = [f for f in recommended if f not in mapping]
         
         warnings = []
@@ -217,7 +241,7 @@ Return the JSON mapping now:"""
             )
         
         return {
-            'valid': len(missing_required) == 0,
+            'valid': cost_valid,
             'missing_required': missing_required,
             'missing_recommended': missing_recommended,
             'warnings': warnings

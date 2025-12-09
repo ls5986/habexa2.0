@@ -1321,6 +1321,22 @@ async def confirm_csv_upload(
                                     'data': {k: (None if pd.isna(v) else v) for k, v in row.to_dict().items()}
                                 })
                                 continue
+                        elif our_field == 'wholesale_cost_case':
+                            # Store wholesale case cost - will calculate buy_cost later if pack is available
+                            try:
+                                if isinstance(value, str):
+                                    value = value.replace('$', '').replace(',', '').strip()
+                                wholesale_case = float(value)
+                                if wholesale_case < 0:
+                                    raise ValueError(f"Wholesale case cost cannot be negative: {wholesale_case}")
+                                product_data['wholesale_cost_case'] = wholesale_case
+                            except (ValueError, TypeError) as e:
+                                errors.append({
+                                    'row': idx + 1,
+                                    'error': f"Invalid wholesale case cost value '{value}' in column '{csv_column}': {str(e)}",
+                                    'data': {k: (None if pd.isna(v) else v) for k, v in row.to_dict().items()}
+                                })
+                                continue
                         elif our_field == 'case_pack':
                             try:
                                 case_pack = int(float(value))  # Allow float input, convert to int
