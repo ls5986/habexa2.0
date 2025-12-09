@@ -926,6 +926,11 @@ async def preview_csv_upload(
         
         logger.info(f"📄 Uploaded file: {len(df)} rows, {len(df.columns)} columns")
         
+        # CRITICAL FIX: Replace NaN values with None for JSON serialization
+        # This prevents "Out of range float values are not JSON compliant: nan" errors
+        df = df.replace({pd.NA: None, pd.NaT: None})
+        df = df.where(pd.notnull(df), None)
+        
         # Get column names
         columns = df.columns.tolist()
         
@@ -941,7 +946,7 @@ async def preview_csv_upload(
         # Validate mapping
         validation = column_mapper.validate_mapping(suggested_mapping)
         
-        # Get preview data (first 5 rows)
+        # Get preview data (first 5 rows) - now safe from NaN values
         preview_data = df.head(5).to_dict('records')
         
         return {
@@ -953,6 +958,10 @@ async def preview_csv_upload(
             'preview_data': preview_data
         }
         
+    except pd.errors.EmptyDataError:
+        raise HTTPException(400, "File is empty or corrupted")
+    except pd.errors.ParserError as e:
+        raise HTTPException(400, f"File format is invalid: {str(e)}")
     except Exception as e:
         logger.error(f"Failed to preview file: {e}", exc_info=True)
         raise HTTPException(500, f"Failed to preview file: {str(e)}")
@@ -982,6 +991,11 @@ async def confirm_csv_upload(
             df = pd.read_excel(io.BytesIO(file_bytes))
         else:
             df = pd.read_csv(io.BytesIO(file_bytes))
+        
+        # CRITICAL FIX: Replace NaN values with None for JSON serialization
+        # This prevents "Out of range float values are not JSON compliant: nan" errors
+        df = df.replace({pd.NA: None, pd.NaT: None})
+        df = df.where(pd.notnull(df), None)
         
         logger.info(f"📦 Processing {len(df)} products with mapping: {request.column_mapping}")
         
@@ -1034,8 +1048,10 @@ async def confirm_csv_upload(
                         else:
                             product_data[our_field] = value
                 
-                # Store original row data
-                product_data['original_upload_data'] = row.to_dict()
+                # Store original row data (NaN already replaced with None above)
+                # Convert any remaining NaN values to None for JSON serialization
+                original_data = row.to_dict()
+                product_data['original_upload_data'] = {k: (None if pd.isna(v) else v) for k, v in original_data.items()}
                 
                 # Add supplier_id if provided
                 if request.supplier_id:
@@ -1067,10 +1083,13 @@ async def confirm_csv_upload(
                 
             except Exception as e:
                 logger.error(f"Failed to create product from row {idx}: {e}")
+                # Convert row to dict, replacing any NaN values with None for JSON
+                error_row_data = row.to_dict()
+                error_row_data_clean = {k: (None if pd.isna(v) else v) for k, v in error_row_data.items()}
                 errors.append({
                     'row': idx + 1,
                     'error': str(e),
-                    'data': row.to_dict()
+                    'data': error_row_data_clean
                 })
         
         logger.info(f"✅ Created {len(created_products)} products, {len(errors)} errors")
