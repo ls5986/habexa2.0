@@ -8,6 +8,7 @@ import base64
 from app.api.deps import get_current_user
 from app.services.supabase_client import supabase
 from app.services.redis_client import cached
+from app.core.redis import get_cached, set_cached, delete_cached, get_cache_info
 import uuid
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
@@ -406,14 +407,22 @@ async def get_deals(
             raise HTTPException(500, str(e))
 
 @router.get("/stats/asin-status")
-@cached(ttl=10)
 async def get_asin_status_stats(current_user = Depends(get_current_user)):
     """
-    Get ASIN status stats using PostgreSQL RPC function.
-    100% database-side, highly scalable.
-    Uses FILTER clauses for efficient aggregation.
+    Get ASIN status stats using PostgreSQL RPC function with Redis caching.
+    100% database-side counting, cached for 10 seconds for sub-10ms response times.
     """
     user_id = str(current_user.id)
+    cache_key = f"asin_stats:{user_id}"
+    
+    # Check cache first
+    cached_stats = get_cached(cache_key)
+    if cached_stats is not None:
+        logger.debug(f"✅ Cache HIT for {cache_key}")
+        return cached_stats
+    
+    # Cache miss - query database
+    logger.debug(f"❌ Cache MISS for {cache_key} - querying database")
     
     try:
         # Call PostgreSQL RPC function - single query, single round-trip
@@ -423,28 +432,66 @@ async def get_asin_status_stats(current_user = Depends(get_current_user)):
         if result.data:
             stats = result.data
             logger.info(f"✅ ASIN Stats (DB-side) for user {user_id}: {stats}")
+            
+            # Store in cache for 10 seconds
+            set_cached(cache_key, stats, ttl_seconds=10)
+            
             return stats
         else:
             # Fallback if RPC returns null
             logger.warning(f"RPC returned null for user {user_id}, using fallback")
-            return {
+            fallback_stats = {
                 "all": 0,
                 "asin_found": 0,
                 "needs_selection": 0,
                 "needs_asin": 0,
                 "manual_entry": 0
             }
+            # Cache fallback too (shorter TTL)
+            set_cached(cache_key, fallback_stats, ttl_seconds=5)
+            return fallback_stats
         
     except Exception as e:
         logger.error(f"❌ Failed to get ASIN stats via RPC: {e}", exc_info=True)
         # Fallback to safe defaults
-        return {
+        fallback_stats = {
             "all": 0,
             "asin_found": 0,
             "needs_selection": 0,
             "needs_asin": 0,
             "manual_entry": 0
         }
+        # Don't cache errors
+        return fallback_stats
+
+
+@router.get("/stats/cache-status")
+async def get_cache_status(current_user = Depends(get_current_user)):
+    """
+    Get Redis cache status and diagnostics.
+    Useful for debugging cache performance.
+    """
+    user_id = str(current_user.id)
+    cache_info = get_cache_info(user_id=user_id)
+    
+    return {
+        "redis": {
+            "enabled": cache_info.get("enabled", False),
+            "connected": cache_info.get("connected", False),
+            "hit_rate": cache_info.get("hit_rate"),
+            "memory_usage": cache_info.get("memory_usage"),
+        },
+        "user_cache": {
+            "user_id": user_id,
+            "cache_key": cache_info.get("cache_key"),
+            "is_cached": cache_info.get("user_cached", False),
+            "ttl_seconds": cache_info.get("ttl_seconds", 0)
+        },
+        "stats": {
+            "keyspace_hits": cache_info.get("keyspace_hits", 0),
+            "keyspace_misses": cache_info.get("keyspace_misses", 0)
+        }
+    }
 
 @router.get("/stats")
 @cached(ttl=10)  # Cache stats for 10 seconds (reduced from 60 for faster updates)
@@ -598,6 +645,11 @@ async def create_product(
         # But for now, the product_source contains the key data
         
         logger.info(f"✅ Product created: {product['id']}, Deal: {deal_result.get('deal', {}).get('id')}")
+        
+        # Invalidate stats cache (product count changed)
+        cache_key = f"asin_stats:{user_id}"
+        delete_cached(cache_key)
+        logger.debug(f"🗑️  Cache invalidated: {cache_key}")
         
         return {
             "success": True,
@@ -1501,6 +1553,11 @@ async def delete_deal(deal_id: str, current_user = Depends(get_current_user)):
             .update({"is_active": False, "updated_at": datetime.utcnow().isoformat()})\
             .eq("id", deal_id)\
             .execute()
+        
+        # Invalidate stats cache (product count changed)
+        cache_key = f"asin_stats:{user_id}"
+        delete_cached(cache_key)
+        logger.debug(f"🗑️  Cache invalidated: {cache_key}")
         
         return {"deleted": True}
     except HTTPException:
@@ -2622,6 +2679,12 @@ async def bulk_action(
     
     else:
         raise HTTPException(400, f"Invalid action: {action}")
+    
+    # Invalidate stats cache if products were modified
+    if action in ['delete', 'move_to_orders']:
+        cache_key = f"asin_stats:{user_id}"
+        delete_cached(cache_key)
+        logger.debug(f"🗑️  Cache invalidated after bulk action '{action}': {cache_key}")
     
     logger.info(f"✅ Bulk action '{action}': {results['success']} succeeded, {results['failed']} failed")
     

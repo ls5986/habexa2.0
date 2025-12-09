@@ -90,7 +90,7 @@ class Settings(BaseSettings):
     EMAIL_FROM_NAME: str = "Habexa"
     
     # Redis (Optional - for caching)
-    REDIS_URL: Optional[str] = None  # e.g., "redis://localhost:6379/0" or "rediss://..." for SSL
+    REDIS_URL: Optional[str] = None  # e.g., "redis://localhost:6379/0" or "redis://red-d4nrmtbe5dus7387vss0:6379" for Render
     
     # Celery Configuration
     CELERY_WORKERS: int = 8  # Number of parallel workers for batch processing
