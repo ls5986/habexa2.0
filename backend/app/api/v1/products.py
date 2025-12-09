@@ -11,7 +11,7 @@ from app.services.redis_client import cached
 from app.core.redis import get_cached, set_cached, delete_cached, get_cache_info
 import uuid
 from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 import csv
 import io
 import logging
@@ -30,7 +30,7 @@ SYNC_PROCESSING_THRESHOLD = settings.SYNC_PROCESSING_THRESHOLD
 router = APIRouter(prefix="/products", tags=["products"])
 
 
-def _calculate_buy_cost_from_wholesale_pack(df: pd.DataFrame) -> pd.DataFrame:
+def _calculate_buy_cost_from_wholesale_pack(df: pd.DataFrame) -> Tuple[pd.DataFrame, dict]:
     """
     Calculate Buy Cost per unit from Wholesale (case cost) and Pack (units per case).
     
@@ -43,13 +43,23 @@ def _calculate_buy_cost_from_wholesale_pack(df: pd.DataFrame) -> pd.DataFrame:
         df: DataFrame with potential Wholesale and Pack columns
         
     Returns:
-        DataFrame with 'Buy Cost' column added if calculation was performed
+        Tuple of (DataFrame with 'Buy Cost' column added if calculation was performed, status dict)
+        Status dict contains: success (bool), calculated_count (int), errors (list)
     """
+    status = {
+        'success': False,
+        'calculated_count': 0,
+        'errors': [],
+        'wholesale_col': None,
+        'pack_col': None
+    }
+    
     # Check if Buy Cost column already exists (case-insensitive)
     df_columns_lower = [c.lower() for c in df.columns]
     if 'buy cost' in df_columns_lower or 'buy_cost' in df_columns_lower:
         logger.debug("Buy Cost column already exists, skipping calculation")
-        return df
+        status['success'] = True  # Not an error, just skipped
+        return df, status
     
     # Find Wholesale and Pack columns (case-insensitive)
     wholesale_col = None
@@ -62,22 +72,54 @@ def _calculate_buy_cost_from_wholesale_pack(df: pd.DataFrame) -> pd.DataFrame:
         if ('pack' in col_lower or 'case_pack' in col_lower or 'case pack' in col_lower) and pack_col is None:
             pack_col = col
     
-    if not wholesale_col or not pack_col:
-        logger.debug(f"Could not find Wholesale/Pack columns. Found: wholesale={wholesale_col}, pack={pack_col}")
-        return df
+    status['wholesale_col'] = wholesale_col
+    status['pack_col'] = pack_col
+    
+    if not wholesale_col:
+        status['errors'].append("Could not find 'Wholesale' column in CSV")
+        logger.warning("⚠️ Could not find Wholesale column for Buy Cost calculation")
+        return df, status
+    
+    if not pack_col:
+        status['errors'].append("Could not find 'Pack' or 'Case Pack' column in CSV")
+        logger.warning("⚠️ Could not find Pack column for Buy Cost calculation")
+        return df, status
     
     logger.info(f"✅ Calculating Buy Cost from {wholesale_col} / {pack_col}")
     
     try:
+        # Validate columns exist
+        if wholesale_col not in df.columns:
+            status['errors'].append(f"Column '{wholesale_col}' not found in DataFrame")
+            return df, status
+        
+        if pack_col not in df.columns:
+            status['errors'].append(f"Column '{pack_col}' not found in DataFrame")
+            return df, status
+        
         # Convert to numeric, handling non-numeric values
         wholesale_series = pd.to_numeric(df[wholesale_col], errors='coerce')
         pack_series = pd.to_numeric(df[pack_col], errors='coerce')
+        
+        # Check for all NaN values (invalid data)
+        if wholesale_series.isna().all():
+            status['errors'].append(f"All values in '{wholesale_col}' column are invalid (non-numeric)")
+            return df, status
+        
+        if pack_series.isna().all():
+            status['errors'].append(f"All values in '{pack_col}' column are invalid (non-numeric)")
+            return df, status
         
         # Calculate per-unit cost
         buy_cost_series = wholesale_series / pack_series
         
         # Replace inf and -inf (division by zero) with None
         buy_cost_series = buy_cost_series.replace([float('inf'), float('-inf')], None)
+        
+        # Count division by zero errors
+        zero_division_count = (pack_series == 0).sum()
+        if zero_division_count > 0:
+            status['errors'].append(f"{zero_division_count} rows have Pack = 0 (division by zero)")
         
         # Round to 2 decimal places, but keep None values
         buy_cost_series = buy_cost_series.round(2) if buy_cost_series.notna().any() else buy_cost_series
@@ -90,13 +132,17 @@ def _calculate_buy_cost_from_wholesale_pack(df: pd.DataFrame) -> pd.DataFrame:
         
         # Log calculation stats
         calculated_count = buy_cost_series.notna().sum()
+        status['calculated_count'] = int(calculated_count)
+        status['success'] = True
+        
         logger.info(f"✅ Calculated Buy Cost for {calculated_count}/{len(df)} rows")
         
     except Exception as e:
-        logger.warning(f"⚠️ Failed to calculate Buy Cost: {e}")
-        # Don't fail the upload, just skip calculation
+        error_msg = f"Failed to calculate Buy Cost: {str(e)}"
+        status['errors'].append(error_msg)
+        logger.error(f"❌ {error_msg}", exc_info=True)
     
-    return df
+    return df, status
 
 
 # ============================================
@@ -984,15 +1030,58 @@ async def preview_csv_upload(
     """
     user_id = str(current_user.id)
     
+    # Validate file
+    if not file.filename:
+        raise HTTPException(400, "File name is required")
+    
+    # Validate file size (max 50MB)
+    MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
+    
     try:
         # Read file
         content = await file.read()
         
-        # Detect file type
-        if file.filename and (file.filename.endswith('.xlsx') or file.filename.endswith('.xls')):
-            df = pd.read_excel(io.BytesIO(content))
-        else:
-            df = pd.read_csv(io.BytesIO(content))
+        if len(content) == 0:
+            raise HTTPException(400, "File is empty")
+        
+        if len(content) > MAX_FILE_SIZE:
+            raise HTTPException(400, f"File is too large. Maximum size is {MAX_FILE_SIZE / (1024*1024):.0f}MB")
+        
+        # Validate file extension
+        file_ext = Path(file.filename).suffix.lower()
+        if file_ext not in ['.csv', '.xlsx', '.xls']:
+            raise HTTPException(400, f"Invalid file type. Only CSV and Excel files (.csv, .xlsx, .xls) are supported. Got: {file_ext}")
+        
+        # Parse file with error handling
+        try:
+            if file_ext in ['.xlsx', '.xls']:
+                try:
+                    df = pd.read_excel(io.BytesIO(content), engine='openpyxl' if file_ext == '.xlsx' else None)
+                except Exception as e:
+                    raise HTTPException(400, f"Failed to parse Excel file. Make sure it's a valid Excel file. Error: {str(e)}")
+            else:
+                try:
+                    # Try different encodings
+                    try:
+                        df = pd.read_csv(io.BytesIO(content), encoding='utf-8')
+                    except UnicodeDecodeError:
+                        try:
+                            df = pd.read_csv(io.BytesIO(content), encoding='utf-8-sig')  # Handle BOM
+                        except UnicodeDecodeError:
+                            df = pd.read_csv(io.BytesIO(content), encoding='latin-1')  # Fallback
+                except Exception as e:
+                    raise HTTPException(400, f"Failed to parse CSV file. Make sure it's a valid CSV file. Error: {str(e)}")
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(400, f"Failed to parse file: {str(e)}")
+        
+        # Validate DataFrame
+        if df.empty:
+            raise HTTPException(400, "File contains no data rows")
+        
+        if len(df.columns) == 0:
+            raise HTTPException(400, "File contains no columns")
         
         logger.info(f"📄 Uploaded file: {len(df)} rows, {len(df.columns)} columns")
         
@@ -1002,25 +1091,43 @@ async def preview_csv_upload(
         df = df.where(pd.notnull(df), None)
         
         # Calculate Buy Cost from Wholesale/Pack if missing
-        df = _calculate_buy_cost_from_wholesale_pack(df)
+        df, buy_cost_status = _calculate_buy_cost_from_wholesale_pack(df)
         
         # Get column names
         columns = df.columns.tolist()
         
-        # Get sample data (first row)
-        sample_data = df.iloc[0].to_dict() if len(df) > 0 else None
+        # Get sample data (first row) - handle empty DataFrame
+        sample_data = None
+        if len(df) > 0:
+            try:
+                sample_data = df.iloc[0].to_dict()
+            except Exception as e:
+                logger.warning(f"Failed to get sample data: {e}")
         
-        # AI column mapping
-        suggested_mapping = await column_mapper.map_columns_ai(
-            columns=columns,
-            sample_data=sample_data
-        )
-        
-        # Validate mapping
-        validation = column_mapper.validate_mapping(suggested_mapping)
+        # AI column mapping with error handling
+        suggested_mapping = {}
+        validation = {}
+        try:
+            suggested_mapping = await column_mapper.map_columns_ai(
+                columns=columns,
+                sample_data=sample_data
+            )
+            
+            # Validate mapping
+            validation = column_mapper.validate_mapping(suggested_mapping)
+        except Exception as e:
+            logger.warning(f"AI column mapping failed: {e}, using fallback")
+            # Fallback: create basic mapping
+            suggested_mapping = {}
+            validation = {'valid': False, 'errors': [f"Column mapping failed: {str(e)}"]}
         
         # Get preview data (first 5 rows) - now safe from NaN values
-        preview_data = df.head(5).to_dict('records')
+        preview_data = []
+        try:
+            preview_data = df.head(5).to_dict('records')
+        except Exception as e:
+            logger.error(f"Failed to convert preview data: {e}", exc_info=True)
+            raise HTTPException(500, f"Failed to generate preview: {str(e)}")
         
         return {
             'filename': file.filename,
@@ -1028,13 +1135,18 @@ async def preview_csv_upload(
             'columns': columns,
             'suggested_mapping': suggested_mapping,
             'validation': validation,
-            'preview_data': preview_data
+            'preview_data': preview_data,
+            'buy_cost_calculation': buy_cost_status
         }
         
+    except HTTPException:
+        raise
     except pd.errors.EmptyDataError:
         raise HTTPException(400, "File is empty or corrupted")
     except pd.errors.ParserError as e:
-        raise HTTPException(400, f"File format is invalid: {str(e)}")
+        raise HTTPException(400, f"File format is invalid. Please check that your CSV/Excel file is properly formatted. Error: {str(e)}")
+    except UnicodeDecodeError as e:
+        raise HTTPException(400, f"File encoding error. Please save your file as UTF-8 and try again. Error: {str(e)}")
     except Exception as e:
         logger.error(f"Failed to preview file: {e}", exc_info=True)
         raise HTTPException(500, f"Failed to preview file: {str(e)}")
@@ -1055,23 +1167,69 @@ async def confirm_csv_upload(
     """
     user_id = str(current_user.id)
     
+    # Validate request
+    if not request.filename:
+        raise HTTPException(400, "Filename is required")
+    
+    if not request.file_data:
+        raise HTTPException(400, "File data is required")
+    
+    if not request.column_mapping:
+        raise HTTPException(400, "Column mapping is required")
+    
     try:
-        # Read file (from base64)
-        file_bytes = base64.b64decode(request.file_data)
+        # Read file (from base64) with error handling
+        try:
+            file_bytes = base64.b64decode(request.file_data)
+        except Exception as e:
+            raise HTTPException(400, f"Invalid file data encoding: {str(e)}")
         
-        # Parse file
-        if request.filename.endswith('.xlsx') or request.filename.endswith('.xls'):
-            df = pd.read_excel(io.BytesIO(file_bytes))
-        else:
-            df = pd.read_csv(io.BytesIO(file_bytes))
+        if len(file_bytes) == 0:
+            raise HTTPException(400, "File data is empty")
+        
+        # Parse file with comprehensive error handling
+        try:
+            file_ext = Path(request.filename).suffix.lower()
+            if file_ext in ['.xlsx', '.xls']:
+                try:
+                    df = pd.read_excel(io.BytesIO(file_bytes), engine='openpyxl' if file_ext == '.xlsx' else None)
+                except Exception as e:
+                    raise HTTPException(400, f"Failed to parse Excel file: {str(e)}")
+            else:
+                try:
+                    df = pd.read_csv(io.BytesIO(file_bytes), encoding='utf-8')
+                except UnicodeDecodeError:
+                    try:
+                        df = pd.read_csv(io.BytesIO(file_bytes), encoding='utf-8-sig')
+                    except UnicodeDecodeError:
+                        df = pd.read_csv(io.BytesIO(file_bytes), encoding='latin-1')
+                except Exception as e:
+                    raise HTTPException(400, f"Failed to parse CSV file: {str(e)}")
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(400, f"Failed to parse file: {str(e)}")
         
         # CRITICAL FIX: Replace NaN values with None for JSON serialization
         # This prevents "Out of range float values are not JSON compliant: nan" errors
         df = df.replace({pd.NA: None, pd.NaT: None})
         df = df.where(pd.notnull(df), None)
         
+        # Validate DataFrame
+        if df.empty:
+            raise HTTPException(400, "File contains no data rows")
+        
+        if len(df.columns) == 0:
+            raise HTTPException(400, "File contains no columns")
+        
         # Calculate Buy Cost from Wholesale/Pack if missing
-        df = _calculate_buy_cost_from_wholesale_pack(df)
+        df, buy_cost_status = _calculate_buy_cost_from_wholesale_pack(df)
+        
+        # Log buy cost calculation status
+        if buy_cost_status['success']:
+            logger.info(f"✅ Buy Cost calculated: {buy_cost_status['calculated_count']}/{len(df)} rows")
+        elif buy_cost_status['errors']:
+            logger.warning(f"⚠️ Buy Cost calculation issues: {', '.join(buy_cost_status['errors'])}")
         
         logger.info(f"📦 Processing {len(df)} products with mapping: {request.column_mapping}")
         
@@ -1100,29 +1258,85 @@ async def confirm_csv_upload(
                     'uploaded_at': datetime.utcnow().isoformat()
                 }
                 
-                # Apply column mapping
+                # Apply column mapping with error handling
                 for our_field, csv_column in request.column_mapping.items():
-                    if csv_column in row and pd.notna(row[csv_column]):
-                        value = row[csv_column]
-                        
-                        # Map to correct field name
+                    if csv_column not in row:
+                        continue
+                    
+                    value = row[csv_column]
+                    
+                    # Skip None/NaN values
+                    if pd.isna(value) or value is None:
+                        continue
+                    
+                    try:
+                        # Map to correct field name with type validation
                         if our_field == 'title':
-                            product_data['uploaded_title'] = str(value)
+                            product_data['uploaded_title'] = str(value).strip() if value else None
                         elif our_field == 'brand':
-                            product_data['uploaded_brand'] = str(value)
+                            product_data['uploaded_brand'] = str(value).strip() if value else None
                         elif our_field == 'category':
-                            product_data['uploaded_category'] = str(value)
-                        elif our_field == 'cost':
-                            product_data['buy_cost'] = float(value)
+                            product_data['uploaded_category'] = str(value).strip() if value else None
+                        elif our_field == 'cost' or our_field == 'buy_cost':
+                            # Handle numeric conversion with error handling
+                            try:
+                                # Remove currency symbols and commas
+                                if isinstance(value, str):
+                                    value = value.replace('$', '').replace(',', '').strip()
+                                buy_cost = float(value)
+                                if buy_cost < 0:
+                                    raise ValueError(f"Buy cost cannot be negative: {buy_cost}")
+                                product_data['buy_cost'] = buy_cost
+                            except (ValueError, TypeError) as e:
+                                errors.append({
+                                    'row': idx + 1,
+                                    'error': f"Invalid buy cost value '{value}' in column '{csv_column}': {str(e)}",
+                                    'data': {k: (None if pd.isna(v) else v) for k, v in row.to_dict().items()}
+                                })
+                                continue
                         elif our_field == 'case_pack':
-                            product_data['case_pack'] = int(value)
+                            try:
+                                case_pack = int(float(value))  # Allow float input, convert to int
+                                if case_pack < 1:
+                                    raise ValueError(f"Case pack must be at least 1: {case_pack}")
+                                product_data['case_pack'] = case_pack
+                            except (ValueError, TypeError) as e:
+                                errors.append({
+                                    'row': idx + 1,
+                                    'error': f"Invalid case pack value '{value}' in column '{csv_column}': {str(e)}",
+                                    'data': {k: (None if pd.isna(v) else v) for k, v in row.to_dict().items()}
+                                })
+                                continue
                         elif our_field == 'moq':
-                            product_data['moq'] = int(value)
+                            try:
+                                moq = int(float(value))  # Allow float input, convert to int
+                                if moq < 1:
+                                    raise ValueError(f"MOQ must be at least 1: {moq}")
+                                product_data['moq'] = moq
+                            except (ValueError, TypeError) as e:
+                                errors.append({
+                                    'row': idx + 1,
+                                    'error': f"Invalid MOQ value '{value}' in column '{csv_column}': {str(e)}",
+                                    'data': {k: (None if pd.isna(v) else v) for k, v in row.to_dict().items()}
+                                })
+                                continue
                         elif our_field == 'supplier_name':
-                            if str(value) in supplier_map:
-                                product_data['supplier_id'] = supplier_map[str(value)]
+                            supplier_name = str(value).strip()
+                            if supplier_name in supplier_map:
+                                product_data['supplier_id'] = supplier_map[supplier_name]
+                            else:
+                                # Log warning but don't fail - supplier might be created later
+                                logger.warning(f"Supplier '{supplier_name}' not found for row {idx + 1}")
                         else:
+                            # Generic field mapping
                             product_data[our_field] = value
+                    except Exception as e:
+                        errors.append({
+                            'row': idx + 1,
+                            'error': f"Error processing field '{our_field}' from column '{csv_column}': {str(e)}",
+                            'data': {k: (None if pd.isna(v) else v) for k, v in row.to_dict().items()}
+                        })
+                        continue
                 
                 # Store original row data (NaN already replaced with None above)
                 # Convert any remaining NaN values to None for JSON serialization
