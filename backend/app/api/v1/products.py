@@ -1389,7 +1389,8 @@ async def confirm_csv_upload(
             'total': len(df),
             'created': len(created_products),
             'failed': len(errors),
-            'errors': errors[:10]  # Return first 10 errors
+            'errors': errors[:10],  # Return first 10 errors
+            'buy_cost_calculation': buy_cost_status
         }
         
     except Exception as e:
