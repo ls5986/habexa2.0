@@ -422,6 +422,7 @@ export default function Products() {
   const [manualAsinDialog, setManualAsinDialog] = useState({ open: false, product: null, asinInput: '' });
   const [counts, setCounts] = useState({ all: 0, found: 0, not_found: 0, multiple_found: 0, manual: 0 });
   const [asinStatusStats, setAsinStatusStats] = useState({ all: 0, asin_found: 0, needs_selection: 0, needs_asin: 0, manual_entry: 0 });
+  const [deleteAllDialog, setDeleteAllDialog] = useState({ open: false, count: 0 });
   const { hasFeature, promptUpgrade } = useFeatureGate();
   const { showToast } = useToast();
 
@@ -588,6 +589,55 @@ export default function Products() {
       setSelected(dealsArray.map(d => d.deal_id));
     } else {
       setSelected([]);
+    }
+  };
+
+  const handleSelectAllProducts = async () => {
+    try {
+      // Fetch ALL products with current filters to get all deal_ids
+      const params = new URLSearchParams();
+      if (activeStage) params.append('stage', activeStage);
+      if (filters.minRoi) params.append('min_roi', filters.minRoi);
+      if (filters.minProfit) params.append('min_profit', filters.minProfit);
+      if (debouncedSearch) params.append('search', debouncedSearch);
+      if (filters.supplier) params.append('supplier_id', filters.supplier);
+      if (filters.asinStatus && filters.asinStatus !== 'all') {
+        params.append('asin_status', filters.asinStatus);
+      }
+      params.append('limit', '10000'); // Get all products
+      
+      const response = await api.get(`/products?${params.toString()}`);
+      let allDeals = [];
+      if (Array.isArray(response.data)) {
+        allDeals = response.data;
+      } else if (Array.isArray(response.data?.deals)) {
+        allDeals = response.data.deals;
+      } else if (Array.isArray(response.data?.data)) {
+        allDeals = response.data.data;
+      }
+      
+      const allDealIds = allDeals.map(d => d.deal_id).filter(Boolean);
+      setSelected(allDealIds);
+      showToast(`Selected all ${allDealIds.length} products`, 'success');
+    } catch (err) {
+      handleApiError(err, showToast);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!selected.length) return;
+    
+    try {
+      await api.post('/products/bulk-action', {
+        action: 'delete',
+        product_ids: selected
+      });
+      
+      showToast(`Deleted ${selected.length} product${selected.length > 1 ? 's' : ''}`, 'success');
+      setSelected([]);
+      fetchData(true); // Force refresh
+    } catch (err) {
+      handleApiError(err, showToast);
     }
   };
 
@@ -926,6 +976,13 @@ export default function Products() {
             </Typography>
             <Button
               size="small"
+              variant="outlined"
+              onClick={handleSelectAllProducts}
+            >
+              Select All
+            </Button>
+            <Button
+              size="small"
               variant="contained"
               startIcon={analyzing ? <CircularProgress size={14} /> : <Zap size={14} />}
               onClick={handleBulkAnalyze}
@@ -939,6 +996,15 @@ export default function Products() {
               onClick={() => handleBulkMove('buy_list')}
             >
               Move to Buy List
+            </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              color="error"
+              startIcon={<Trash2 size={14} />}
+              onClick={() => setDeleteAllDialog({ open: true, count: selected.length })}
+            >
+              Delete All
             </Button>
             <Button
               size="small"
@@ -1329,6 +1395,53 @@ export default function Products() {
             startIcon={deleteDialog.deleting ? <CircularProgress size={16} /> : <Trash2 size={16} />}
           >
             {deleteDialog.deleting ? 'Deleting...' : 'Delete Product'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <Dialog 
+        open={deleteAllDialog.open} 
+        onClose={() => setDeleteAllDialog({ open: false, count: 0 })}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <AlertTriangle size={24} style={{ color: habexa.error.main }} />
+          Delete All Selected Products
+        </DialogTitle>
+        <DialogContent>
+          <Alert severity="error" sx={{ mb: 2 }}>
+            <Typography variant="body2" fontWeight={600}>
+              This action cannot be undone!
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 1 }}>
+              All analysis data, pricing history, and related information for {deleteAllDialog.count} product{deleteAllDialog.count !== 1 ? 's' : ''} will be permanently lost.
+            </Typography>
+          </Alert>
+          <Typography variant="body1" fontWeight={600} gutterBottom>
+            Are you sure you want to delete {deleteAllDialog.count} product{deleteAllDialog.count !== 1 ? 's' : ''}?
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            This will permanently remove all selected products from your account. This action cannot be reversed.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => setDeleteAllDialog({ open: false, count: 0 })}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={async () => {
+              setDeleteAllDialog({ open: false, count: 0 });
+              await handleBulkDelete();
+            }}
+            variant="contained"
+            color="error"
+            startIcon={<Trash2 size={16} />}
+          >
+            Delete All {deleteAllDialog.count} Product{deleteAllDialog.count !== 1 ? 's' : ''}
           </Button>
         </DialogActions>
       </Dialog>
