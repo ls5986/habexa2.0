@@ -32,115 +32,142 @@ router = APIRouter(prefix="/products", tags=["products"])
 
 def _calculate_buy_cost_from_wholesale_pack(df: pd.DataFrame) -> Tuple[pd.DataFrame, dict]:
     """
-    Calculate Buy Cost per unit from Wholesale (case cost) and Pack (units per case).
+    Calculate Buy Cost per unit from available columns.
     
-    Formula: Buy Cost = Wholesale / Pack
+    Priority:
+    1. If "Wholesale Cost" exists → use it directly as Buy Cost
+    2. If "Wholesale" + "Pack" exist → calculate Buy Cost = Wholesale / Pack (only for rows with both)
+    3. If "Buy Cost" already exists → use it (skip calculation)
     
-    Only calculates if 'Buy Cost' column doesn't already exist.
-    Handles edge cases: division by zero, missing values, NaN.
+    Handles mixed cases where some rows have packs and some don't.
     
     Args:
-        df: DataFrame with potential Wholesale and Pack columns
+        df: DataFrame with potential Wholesale Cost, Wholesale, and Pack columns
         
     Returns:
         Tuple of (DataFrame with 'Buy Cost' column added if calculation was performed, status dict)
-        Status dict contains: success (bool), calculated_count (int), errors (list)
+        Status dict contains: success (bool), calculated_count (int), errors (list), method (str)
     """
     status = {
         'success': False,
         'calculated_count': 0,
         'errors': [],
         'wholesale_col': None,
-        'pack_col': None
+        'pack_col': None,
+        'method': None
     }
     
     # Check if Buy Cost column already exists (case-insensitive)
-    df_columns_lower = [c.lower() for c in df.columns]
+    df_columns_lower = [c.lower().strip() for c in df.columns]
     if 'buy cost' in df_columns_lower or 'buy_cost' in df_columns_lower:
         logger.debug("Buy Cost column already exists, skipping calculation")
-        status['success'] = True  # Not an error, just skipped
+        status['success'] = True
+        status['method'] = 'existing_column'
         return df, status
     
-    # Find Wholesale and Pack columns (case-insensitive)
-    wholesale_col = None
+    # Find columns (case-insensitive)
+    wholesale_cost_col = None  # "Wholesale Cost" - use directly
+    wholesale_col = None        # "Wholesale" - needs Pack to calculate
     pack_col = None
     
     for col in df.columns:
         col_lower = col.lower().strip()
-        if 'wholesale' in col_lower and wholesale_col is None:
+        # Check for "Wholesale Cost" (exact match or contains both words)
+        if ('wholesale' in col_lower and 'cost' in col_lower) and wholesale_cost_col is None:
+            wholesale_cost_col = col
+        # Check for just "Wholesale" (without "cost")
+        elif 'wholesale' in col_lower and 'cost' not in col_lower and wholesale_col is None:
             wholesale_col = col
+        # Check for Pack
         if ('pack' in col_lower or 'case_pack' in col_lower or 'case pack' in col_lower) and pack_col is None:
             pack_col = col
     
-    status['wholesale_col'] = wholesale_col
-    status['pack_col'] = pack_col
+    # Priority 1: Use "Wholesale Cost" directly if it exists
+    if wholesale_cost_col:
+        logger.info(f"✅ Using '{wholesale_cost_col}' directly as Buy Cost")
+        try:
+            buy_cost_series = pd.to_numeric(df[wholesale_cost_col], errors='coerce')
+            buy_cost_series = buy_cost_series.round(2)
+            buy_cost_series = buy_cost_series.where(pd.notnull(buy_cost_series), None)
+            
+            df['Buy Cost'] = buy_cost_series
+            calculated_count = buy_cost_series.notna().sum()
+            
+            status['success'] = True
+            status['calculated_count'] = int(calculated_count)
+            status['method'] = 'wholesale_cost_direct'
+            status['wholesale_col'] = wholesale_cost_col
+            
+            logger.info(f"✅ Used Wholesale Cost for {calculated_count}/{len(df)} rows")
+            return df, status
+        except Exception as e:
+            error_msg = f"Failed to use Wholesale Cost column: {str(e)}"
+            status['errors'].append(error_msg)
+            logger.error(f"❌ {error_msg}", exc_info=True)
+            # Fall through to try calculation method
     
-    if not wholesale_col:
-        status['errors'].append("Could not find 'Wholesale' column in CSV")
-        logger.warning("⚠️ Could not find Wholesale column for Buy Cost calculation")
+    # Priority 2: Calculate from Wholesale / Pack (if both exist)
+    if wholesale_col and pack_col:
+        logger.info(f"✅ Calculating Buy Cost from {wholesale_col} / {pack_col}")
+        status['wholesale_col'] = wholesale_col
+        status['pack_col'] = pack_col
+        
+        try:
+            # Convert to numeric
+            wholesale_series = pd.to_numeric(df[wholesale_col], errors='coerce')
+            pack_series = pd.to_numeric(df[pack_col], errors='coerce')
+            
+            # Initialize Buy Cost series (start with None for all rows)
+            buy_cost_series = pd.Series([None] * len(df), dtype=object)
+            
+            # Calculate only for rows that have both wholesale AND pack values
+            # Rows without pack will keep None (which is correct - they don't have per-unit cost)
+            mask = wholesale_series.notna() & pack_series.notna() & (pack_series > 0)
+            
+            if mask.any():
+                # Calculate for rows with both values
+                calculated = wholesale_series[mask] / pack_series[mask]
+                calculated = calculated.round(2)
+                buy_cost_series[mask] = calculated
+                
+                # Count successful calculations
+                calculated_count = mask.sum()
+                status['calculated_count'] = int(calculated_count)
+                status['success'] = True
+                status['method'] = 'wholesale_divided_by_pack'
+                
+                # Count rows without pack (not an error, just info)
+                no_pack_count = (wholesale_series.notna() & (pack_series.isna() | (pack_series == 0))).sum()
+                if no_pack_count > 0:
+                    logger.info(f"ℹ️ {no_pack_count} rows don't have Pack - Buy Cost will be None for those rows")
+                
+                # Count division by zero
+                zero_division_count = (pack_series == 0).sum()
+                if zero_division_count > 0:
+                    status['errors'].append(f"{zero_division_count} rows have Pack = 0 (division by zero)")
+                
+                logger.info(f"✅ Calculated Buy Cost for {calculated_count}/{len(df)} rows (rows with both Wholesale and Pack)")
+            else:
+                status['errors'].append("No rows have both Wholesale and Pack values")
+                logger.warning("⚠️ No rows have both Wholesale and Pack values for calculation")
+            
+            # Add Buy Cost column
+            df['Buy Cost'] = buy_cost_series
+            
+        except Exception as e:
+            error_msg = f"Failed to calculate Buy Cost: {str(e)}"
+            status['errors'].append(error_msg)
+            logger.error(f"❌ {error_msg}", exc_info=True)
+        
         return df, status
     
-    if not pack_col:
-        status['errors'].append("Could not find 'Pack' or 'Case Pack' column in CSV")
-        logger.warning("⚠️ Could not find Pack column for Buy Cost calculation")
-        return df, status
-    
-    logger.info(f"✅ Calculating Buy Cost from {wholesale_col} / {pack_col}")
-    
-    try:
-        # Validate columns exist
-        if wholesale_col not in df.columns:
-            status['errors'].append(f"Column '{wholesale_col}' not found in DataFrame")
-            return df, status
-        
-        if pack_col not in df.columns:
-            status['errors'].append(f"Column '{pack_col}' not found in DataFrame")
-            return df, status
-        
-        # Convert to numeric, handling non-numeric values
-        wholesale_series = pd.to_numeric(df[wholesale_col], errors='coerce')
-        pack_series = pd.to_numeric(df[pack_col], errors='coerce')
-        
-        # Check for all NaN values (invalid data)
-        if wholesale_series.isna().all():
-            status['errors'].append(f"All values in '{wholesale_col}' column are invalid (non-numeric)")
-            return df, status
-        
-        if pack_series.isna().all():
-            status['errors'].append(f"All values in '{pack_col}' column are invalid (non-numeric)")
-            return df, status
-        
-        # Calculate per-unit cost
-        buy_cost_series = wholesale_series / pack_series
-        
-        # Replace inf and -inf (division by zero) with None
-        buy_cost_series = buy_cost_series.replace([float('inf'), float('-inf')], None)
-        
-        # Count division by zero errors
-        zero_division_count = (pack_series == 0).sum()
-        if zero_division_count > 0:
-            status['errors'].append(f"{zero_division_count} rows have Pack = 0 (division by zero)")
-        
-        # Round to 2 decimal places, but keep None values
-        buy_cost_series = buy_cost_series.round(2) if buy_cost_series.notna().any() else buy_cost_series
-        
-        # Replace NaN with None for JSON serialization
-        buy_cost_series = buy_cost_series.where(pd.notnull(buy_cost_series), None)
-        
-        # Add Buy Cost column
-        df['Buy Cost'] = buy_cost_series
-        
-        # Log calculation stats
-        calculated_count = buy_cost_series.notna().sum()
-        status['calculated_count'] = int(calculated_count)
-        status['success'] = True
-        
-        logger.info(f"✅ Calculated Buy Cost for {calculated_count}/{len(df)} rows")
-        
-    except Exception as e:
-        error_msg = f"Failed to calculate Buy Cost: {str(e)}"
-        status['errors'].append(error_msg)
-        logger.error(f"❌ {error_msg}", exc_info=True)
+    # No suitable columns found
+    if not wholesale_cost_col and not wholesale_col:
+        status['errors'].append("Could not find 'Wholesale Cost' or 'Wholesale' column in CSV")
+        logger.warning("⚠️ Could not find Wholesale Cost or Wholesale column")
+    elif wholesale_col and not pack_col:
+        status['errors'].append("Found 'Wholesale' but no 'Pack' column. Need both to calculate per-unit cost, or use 'Wholesale Cost' column directly.")
+        logger.warning("⚠️ Found Wholesale but no Pack column")
     
     return df, status
 
