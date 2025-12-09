@@ -465,7 +465,7 @@ async def get_asin_status_stats(current_user = Depends(get_current_user)):
         return fallback_stats
 
 
-@router.get("/stats/cache-status", response_model=Dict[str, Any])
+@router.get("/cache-status", response_model=Dict[str, Any])
 async def get_cache_status(current_user = Depends(get_current_user)):
     """
     Get Redis cache status and diagnostics.
