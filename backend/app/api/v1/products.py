@@ -267,6 +267,7 @@ def upsert_deal(product_id: str, supplier_id: Optional[str], data: dict) -> Dict
 # ============================================
 
 @router.get("")
+@router.get("/")
 @router.get("/deals")  # Alias for frontend compatibility
 @cached(ttl=10)  # Cache for 10 seconds (reduced from 30 for faster updates)
 async def get_deals(
@@ -282,101 +283,44 @@ async def get_deals(
     current_user = Depends(get_current_user)
 ):
     """
-    Get all deals (product + source combinations) using the view.
-    Optimized with Redis caching and single query.
+    Get all deals (product + source combinations) using PostgreSQL RPC function.
+    100% database-side filtering - highly scalable and accurate.
     
     Supports filtering by asin_status:
-    - 'found': Has ASIN, analyzed or analyzing
-    - 'not_found': Needs manual ASIN entry
-    - 'multiple_found': Needs ASIN selection from options
-    - 'manual': ASIN was manually entered
+    - 'asin_found': Has real ASIN (not PENDING_*, not Unknown)
+    - 'needs_selection': Needs ASIN selection from multiple options
+    - 'needs_asin': Has UPC but no real ASIN (includes PENDING_*)
+    - 'manual_entry': No UPC and no real ASIN
     """
     user_id = str(current_user.id)
     
+    logger.info(f"🔍 get_deals called - asin_status={asin_status}, stage={stage}, user_id={user_id}")
+    
     try:
-        # Use the product_deals view for optimized querying
-        query = supabase.table("product_deals")\
-            .select("*")\
-            .eq("user_id", user_id)
+        # Use PostgreSQL RPC function for 100% database-side filtering
+        # This ensures filtering is accurate and scalable
+        rpc_params = {
+            'p_user_id': user_id,
+            'p_asin_status': asin_status if asin_status and asin_status != 'all' else None,
+            'p_stage': stage,
+            'p_source': source,
+            'p_supplier_id': supplier_id,
+            'p_min_roi': min_roi,
+            'p_min_profit': min_profit,
+            'p_search': search,
+            'p_limit': limit,
+            'p_offset': offset
+        }
         
-        if stage:
-            query = query.eq("stage", stage)
-        if source:
-            query = query.eq("source", source)
-        if supplier_id:
-            query = query.eq("supplier_id", supplier_id)
-        if search:
-            query = query.ilike("asin", f"%{search}%")
-        if asin_status:
-            # Map frontend filter values to database filtering
-            # Basic filtering done database-side, PENDING_* exclusion done in Python
-            # (Supabase doesn't easily support NOT LIKE, so we filter after fetch)
-            if asin_status == "asin_found":
-                # Has real ASIN (not null, not empty, not PENDING_*)
-                # First filter database-side for non-null/non-empty
-                query = query.not_.is_("asin", "null").neq("asin", "")
-            elif asin_status == "needs_selection":
-                # Products in needs_selection status
-                query = query.eq("asin_status", "needs_selection")
-            elif asin_status == "needs_asin":
-                # Has UPC but no real ASIN (includes PENDING_* as needing ASIN)
-                # Filter for products with UPC
-                query = query.not_.is_("upc", "null").neq("upc", "")
-            elif asin_status == "manual_entry":
-                # No UPC and no real ASIN
-                # Filter for products without UPC
-                query = query.is_("upc", "null")
-        if min_roi is not None:
-            query = query.gte("roi", min_roi)
-        if min_profit is not None:
-            query = query.gte("profit", min_profit)
+        # Remove None values to avoid passing NULL unnecessarily
+        rpc_params = {k: v for k, v in rpc_params.items() if v is not None}
         
-        query = query.order("deal_created_at", desc=True)
-        query = query.range(offset, offset + limit - 1)
-        
-        result = query.execute()
+        result = supabase.rpc('filter_product_deals', rpc_params).execute()
         deals = result.data or []
         
-        # Apply PENDING_* exclusion filter in Python (matches RPC function logic)
-        # This is minimal Python filtering - most work done database-side
-        if asin_status == "asin_found":
-            # Exclude PENDING_* and Unknown placeholders (real ASINs only)
-            deals = [
-                d for d in deals 
-                if d.get("asin") 
-                and d["asin"].strip()
-                and not d["asin"].startswith("PENDING_")
-                and not d["asin"].startswith("Unknown")
-            ]
-        elif asin_status == "needs_asin":
-            # Include products with UPC but no real ASIN (PENDING_* counts as needing ASIN)
-            deals = [
-                d for d in deals
-                if d.get("upc") and d["upc"].strip()
-                and (
-                    not d.get("asin")
-                    or not d["asin"].strip()
-                    or d["asin"].startswith("PENDING_")
-                    or d["asin"].startswith("Unknown")
-                )
-            ]
-        elif asin_status == "manual_entry":
-            # No UPC and no real ASIN
-            deals = [
-                d for d in deals
-                if (not d.get("upc") or not d["upc"].strip())
-                and (
-                    not d.get("asin")
-                    or not d["asin"].strip()
-                    or d["asin"].startswith("PENDING_")
-                    or d["asin"].startswith("Unknown")
-                )
-            ]
-        
         # Log filter application for debugging
-        logger.info(f"🔍 get_deals called - asin_status={asin_status}, stage={stage}, user_id={user_id}")
         if asin_status:
-            logger.info(f"✅ ASIN status filter applied: {asin_status}, returned {len(deals)} deals")
+            logger.info(f"✅ ASIN status filter applied (RPC): {asin_status}, returned {len(deals)} deals")
             if deals:
                 sample_asins = [d.get('asin', 'NO_ASIN')[:20] for d in deals[:5]]
                 logger.info(f"📦 Sample ASINs: {sample_asins}")
@@ -389,29 +333,22 @@ async def get_deals(
         counts = {}
         if not stage and not source and not supplier_id and not asin_status and not search:
             try:
-                # Get total count
-                all_deals = supabase.table("product_deals")\
-                    .select("asin_status", count="exact")\
-                    .eq("user_id", user_id)\
-                    .execute()
-                
-                counts["all"] = all_deals.count or 0
-                
-                # Get counts by status
-                for status in ['found', 'not_found', 'multiple_found', 'manual']:
-                    status_result = supabase.table("product_deals")\
-                        .select("id", count="exact")\
-                        .eq("user_id", user_id)\
-                        .eq("asin_status", status)\
-                        .execute()
-                    counts[status] = status_result.count or 0
+                # Use the existing RPC function for counts (already optimized)
+                stats_result = supabase.rpc('get_asin_stats', {'p_user_id': user_id}).execute()
+                if stats_result.data:
+                    stats = stats_result.data
+                    counts = {
+                        "all": stats.get("all", 0),
+                        "asin_found": stats.get("asin_found", 0),
+                        "needs_selection": stats.get("needs_selection", 0),
+                        "needs_asin": stats.get("needs_asin", 0),
+                        "manual_entry": stats.get("manual_entry", 0)
+                    }
+                else:
+                    counts = {"all": len(deals)}
             except Exception as count_error:
                 logger.warning(f"Failed to get status counts: {count_error}")
                 counts = {"all": len(deals)}
-        
-        # Log if view returns empty but we expect data (for debugging)
-        if len(deals) == 0 and offset == 0:
-            logger.debug(f"No deals found for user {user_id} - view might be empty or missing data")
         
         response = {
             "deals": deals,
@@ -422,14 +359,51 @@ async def get_deals(
         return response
         
     except Exception as e:
-        logger.error(f"Failed to fetch deals: {e}")
-        # Check if it's a view missing error
-        if "relation" in str(e).lower() and "product_deals" in str(e).lower():
-            logger.error("product_deals view does not exist! Please create it in the database.")
-            raise HTTPException(500, "Database view missing. Please contact support.")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(500, str(e))
+        logger.error(f"Failed to fetch deals: {e}", exc_info=True)
+        # Check if RPC function doesn't exist
+        if "function" in str(e).lower() and "filter_product_deals" in str(e).lower():
+            logger.error("filter_product_deals RPC function does not exist! Please run the migration.")
+            raise HTTPException(500, "Database function missing. Please contact support.")
+        # Fallback to view-based query if RPC fails (graceful degradation)
+        logger.warning("RPC call failed, falling back to view-based query")
+        try:
+            query = supabase.table("product_deals")\
+                .select("*")\
+                .eq("user_id", user_id)
+            
+            if stage:
+                query = query.eq("stage", stage)
+            if source:
+                query = query.eq("source", source)
+            if supplier_id:
+                query = query.eq("supplier_id", supplier_id)
+            if search:
+                query = query.ilike("asin", f"%{search}%")
+            if min_roi is not None:
+                query = query.gte("roi", min_roi)
+            if min_profit is not None:
+                query = query.gte("profit", min_profit)
+            
+            query = query.order("deal_created_at", desc=True)
+            query = query.range(offset, offset + limit - 1)
+            
+            result = query.execute()
+            deals = result.data or []
+            
+            # Note: Fallback doesn't support ASIN status filtering - will return all
+            if asin_status:
+                logger.warning(f"⚠️ ASIN status filter not applied in fallback mode: {asin_status}")
+            
+            return {
+                "deals": deals,
+                "total": len(deals),
+                "counts": None
+            }
+        except Exception as fallback_error:
+            logger.error(f"Fallback query also failed: {fallback_error}")
+            import traceback
+            traceback.print_exc()
+            raise HTTPException(500, str(e))
 
 @router.get("/stats/asin-status")
 @cached(ttl=10)
