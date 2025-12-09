@@ -465,20 +465,19 @@ async def get_asin_status_stats(current_user = Depends(get_current_user)):
         return fallback_stats
 
 
-@router.get("/cache-status", response_model=Dict[str, Any])
+@router.get("/cache-status")
 async def get_cache_status(current_user = Depends(get_current_user)):
     """
     Get Redis cache status and diagnostics.
     Useful for debugging cache performance.
     
-    Returns:
-        Dictionary with Redis connection status, cache info, and statistics
+    Full path: /api/v1/products/cache-status
     """
     try:
         user_id = str(current_user.id)
         cache_info = get_cache_info(user_id=user_id)
         
-        return {
+        response = {
             "redis": {
                 "enabled": cache_info.get("enabled", False),
                 "connected": cache_info.get("connected", False),
@@ -496,6 +495,8 @@ async def get_cache_status(current_user = Depends(get_current_user)):
                 "keyspace_misses": cache_info.get("keyspace_misses", 0)
             }
         }
+        logger.info(f"Cache status requested by user {user_id}")
+        return response
     except Exception as e:
         logger.error(f"Error getting cache status: {e}", exc_info=True)
         return {
