@@ -1118,16 +1118,23 @@ async def preview_csv_upload(
         df = df.where(pd.notnull(df), None)
         
         # Calculate Buy Cost from Wholesale/Pack if missing
+        # Store original columns BEFORE calculation (so "Buy Cost" doesn't appear in mapping)
+        original_columns = df.columns.tolist()
         df, buy_cost_status = _calculate_buy_cost_from_wholesale_pack(df)
         
-        # Get column names
-        columns = df.columns.tolist()
+        # Get column names - EXCLUDE calculated "Buy Cost" from mapping options
+        # Users should map "Wholesale Cost" or "Wholesale" + "Pack", not the calculated "Buy Cost"
+        columns = [col for col in df.columns.tolist() if col != 'Buy Cost']
         
-        # Get sample data (first row) - handle empty DataFrame
+        # Get sample data (first row) - exclude "Buy Cost" from sample so it doesn't confuse AI mapping
         sample_data = None
         if len(df) > 0:
             try:
-                sample_data = df.iloc[0].to_dict()
+                sample_dict = df.iloc[0].to_dict()
+                # Remove "Buy Cost" from sample data so it doesn't confuse AI mapping
+                if 'Buy Cost' in sample_dict:
+                    del sample_dict['Buy Cost']
+                sample_data = sample_dict
             except Exception as e:
                 logger.warning(f"Failed to get sample data: {e}")
         
@@ -1159,11 +1166,12 @@ async def preview_csv_upload(
         return {
             'filename': file.filename,
             'total_rows': len(df),
-            'columns': columns,
+            'columns': columns,  # Excludes calculated "Buy Cost" column
             'suggested_mapping': suggested_mapping,
             'validation': validation,
             'preview_data': preview_data,
-            'buy_cost_calculation': buy_cost_status
+            'buy_cost_calculation': buy_cost_status,
+            'calculated_buy_cost_column': 'Buy Cost' if buy_cost_status.get('success') else None  # Inform frontend that Buy Cost was calculated
         }
         
     except HTTPException:
@@ -1380,6 +1388,47 @@ async def confirm_csv_upload(
                             'data': {k: (None if pd.isna(v) else v) for k, v in row.to_dict().items()}
                         })
                         continue
+                
+                # Calculate buy_cost from wholesale_cost_case + case_pack if needed
+                if 'buy_cost' not in product_data and 'wholesale_cost_case' in product_data and 'case_pack' in product_data:
+                    wholesale_case = product_data.get('wholesale_cost_case')
+                    case_pack = product_data.get('case_pack')
+                    if wholesale_case and case_pack and case_pack > 0:
+                        product_data['buy_cost'] = round(wholesale_case / case_pack, 2)
+                        logger.debug(f"Row {idx + 1}: Calculated buy_cost = {wholesale_case} / {case_pack} = {product_data['buy_cost']}")
+                
+                # If still no buy_cost, try to get from calculated "Buy Cost" column (created by _calculate_buy_cost_from_wholesale_pack)
+                if 'buy_cost' not in product_data and 'Buy Cost' in df.columns:
+                    buy_cost_val = row.get('Buy Cost')
+                    if pd.notna(buy_cost_val) and buy_cost_val is not None:
+                        try:
+                            if isinstance(buy_cost_val, str):
+                                buy_cost_val = buy_cost_val.replace('$', '').replace(',', '').strip()
+                            product_data['buy_cost'] = float(buy_cost_val)
+                            logger.debug(f"Row {idx + 1}: Using calculated Buy Cost = {product_data['buy_cost']}")
+                        except (ValueError, TypeError) as e:
+                            logger.warning(f"Row {idx + 1}: Could not use calculated Buy Cost value: {e}")
+                
+                # Validate buy_cost is present
+                if 'buy_cost' not in product_data or product_data.get('buy_cost') is None:
+                    # Check if we have the columns to calculate it
+                    has_wholesale = 'wholesale_cost_case' in product_data or any('wholesale' in str(k).lower() for k in row.index)
+                    has_pack = 'case_pack' in product_data or any('pack' in str(k).lower() for k in row.index)
+                    
+                    error_msg = "Buy cost is required. "
+                    if has_wholesale and not has_pack:
+                        error_msg += "Map 'case_pack' to 'Pack' column to calculate buy cost from wholesale case cost."
+                    elif has_pack and not has_wholesale:
+                        error_msg += "Map 'cost' to 'Wholesale Cost' column, or map 'wholesale_cost_case' to calculate buy cost."
+                    else:
+                        error_msg += "Map 'cost' to 'Wholesale Cost' column, or map 'wholesale_cost_case' + 'case_pack' to calculate it."
+                    
+                    errors.append({
+                        'row': idx + 1,
+                        'error': error_msg,
+                        'data': {k: (None if pd.isna(v) else v) for k, v in row.to_dict().items()}
+                    })
+                    continue
                 
                 # Store original row data (NaN already replaced with None above)
                 # Convert any remaining NaN values to None for JSON serialization
