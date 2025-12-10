@@ -357,20 +357,42 @@ def lookup_product_asins(self, product_ids: List[str]):
         
         logger.info(f"💾 Cache hit: {len(cached)}, Need lookup: {len(uncached_upcs)}")
         
-        # Lookup uncached
+        # Lookup uncached - CRITICAL FIX: Process in batches of 20 (SP-API limit)
         lookups = {}
         if uncached_upcs:
             try:
-                logger.info(f"🚀 Calling SP-API for {len(uncached_upcs)} UPCs...")
-                batch_results = run_async(upc_converter.upcs_to_asins_batch(uncached_upcs))
-                lookups.update(batch_results)
+                logger.info(f"🚀 Calling SP-API for {len(uncached_upcs)} UPCs (will process in batches of 20)...")
+                
+                # Process in batches of 20 (SP-API limit per request)
+                BATCH_SIZE = 20
+                total_batches = (len(uncached_upcs) + BATCH_SIZE - 1) // BATCH_SIZE
+                
+                for batch_idx in range(0, len(uncached_upcs), BATCH_SIZE):
+                    batch_upcs = uncached_upcs[batch_idx:batch_idx + BATCH_SIZE]
+                    batch_num = (batch_idx // BATCH_SIZE) + 1
+                    
+                    logger.info(f"📦 Processing batch {batch_num}/{total_batches}: {len(batch_upcs)} UPCs")
+                    
+                    try:
+                        batch_results = run_async(upc_converter.upcs_to_asins_batch(batch_upcs))
+                        lookups.update(batch_results)
+                        
+                        batch_found = sum(1 for a in batch_results.values() if a)
+                        logger.info(f"✅ Batch {batch_num} complete: {batch_found}/{len(batch_upcs)} found")
+                        
+                        # Cache results immediately
+                        for upc, asin in batch_results.items():
+                            if asin:  # Only cache successful lookups
+                                cache_upc_asin(upc, asin)
+                    except Exception as batch_error:
+                        logger.error(f"❌ Error in batch {batch_num}: {batch_error}", exc_info=True)
+                        # Mark this batch as failed but continue with next batch
+                        for upc in batch_upcs:
+                            lookups[upc] = None
                 
                 found_count = sum(1 for a in lookups.values() if a)
-                logger.info(f"✅ SP-API lookup complete: {found_count}/{len(uncached_upcs)} found")
+                logger.info(f"✅ SP-API lookup complete: {found_count}/{len(uncached_upcs)} found across {total_batches} batches")
                 
-                # Cache results
-                for upc, asin in lookups.items():
-                    cache_upc_asin(upc, asin)
             except Exception as e:
                 logger.error(f"❌ Error during UPC lookup: {e}", exc_info=True)
                 import traceback
