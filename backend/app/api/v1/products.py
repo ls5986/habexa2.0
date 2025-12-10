@@ -1574,18 +1574,16 @@ async def confirm_csv_upload(
                 # Remove None values from product_fields
                 product_fields = {k: v for k, v in product_fields.items() if v is not None}
                 
-                        # Deal/source fields (for product_sources table)
-                        deal_fields = {
-                            'buy_cost': product_data.get('buy_cost'),
-                            'moq': product_data.get('moq', 1),
-                            'source': 'csv',
-                            'source_detail': request.filename,
-                            'stage': 'new',
-                            'percent_off': product_data.get('percent_off'),
-                            'promo_qty': product_data.get('promo_qty')
-                            'percent_off': product_data.get('percent_off'),
-                            'promo_qty': product_data.get('promo_qty')
-                        }
+                # Deal/source fields (for product_sources table)
+                deal_fields = {
+                    'buy_cost': product_data.get('buy_cost'),
+                    'moq': product_data.get('moq', 1),
+                    'source': 'csv',
+                    'source_detail': request.filename,
+                    'stage': 'new',
+                    'percent_off': product_data.get('percent_off'),
+                    'promo_qty': product_data.get('promo_qty')
+                }
                 
                 # Add supplier_id to deal_fields if provided
                 if request.supplier_id:
