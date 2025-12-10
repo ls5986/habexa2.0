@@ -1071,16 +1071,19 @@ async def save_product_from_analysis(
                 buy_cost = request.buy_cost / request.pack_size
         
         # Get or create product_source (deal)
-        existing_source = supabase.table("product_sources")\
+        # Note: product_sources doesn't have user_id - it's accessed via products table
+        existing_source_query = supabase.table("product_sources")\
             .select("id")\
-            .eq("product_id", product_id)\
-            .eq("user_id", user_id)\
-            .eq("supplier_id", request.supplier_id if request.supplier_id else None)\
-            .limit(1)\
-            .execute()
+            .eq("product_id", product_id)
+        
+        if request.supplier_id:
+            existing_source_query = existing_source_query.eq("supplier_id", request.supplier_id)
+        else:
+            existing_source_query = existing_source_query.is_("supplier_id", "null")
+        
+        existing_source = existing_source_query.limit(1).execute()
         
         source_data = {
-            "user_id": user_id,
             "product_id": product_id,
             "buy_cost": buy_cost,
             "moq": request.moq,
