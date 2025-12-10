@@ -1,0 +1,125 @@
+{
+  "timestamp": "2025-12-09T19:46:38.244109",
+  "summary": {
+    "total": 14,
+    "passed": 10,
+    "failed": 0,
+    "skipped": 4,
+    "score": 71.42857142857143
+  },
+  "broken_features": [],
+  "all_results": [
+    {
+      "category": "Analysis",
+      "name": "POST /products/analyze-upc",
+      "status": "SKIP",
+      "success": false,
+      "error": "Endpoint not found (404)",
+      "duration": 235.85200309753418
+    },
+    {
+      "category": "Analysis",
+      "name": "POST /products/analyze-asin",
+      "status": "SKIP",
+      "success": false,
+      "error": "Endpoint not found (404)",
+      "duration": 243.2730197906494
+    },
+    {
+      "category": "Management",
+      "name": "GET /products",
+      "status": "PASS",
+      "success": true,
+      "error": "",
+      "duration": 719.8171615600586
+    },
+    {
+      "category": "Management",
+      "name": "POST /products",
+      "status": "PASS",
+      "success": true,
+      "error": "",
+      "duration": 727.3859977722168
+    },
+    {
+      "category": "Management",
+      "name": "PATCH /products/deal/{deal_id}/favorite",
+      "status": "PASS",
+      "success": true,
+      "error": "",
+      "duration": 610.2468967437744
+    },
+    {
+      "category": "Management",
+      "name": "GET /products?favorite=true",
+      "status": "PASS",
+      "success": true,
+      "error": "",
+      "duration": 561.2039566040039
+    },
+    {
+      "category": "CSV Upload",
+      "name": "POST /products/upload/preview",
+      "status": "PASS",
+      "success": true,
+      "error": "",
+      "duration": 2595.311164855957
+    },
+    {
+      "category": "Bulk Actions",
+      "name": "POST /products/bulk-action",
+      "status": "SKIP",
+      "success": false,
+      "error": "No product ID available",
+      "duration": 0
+    },
+    {
+      "category": "Filtering",
+      "name": "GET /products?asin_status=needs_asin",
+      "status": "PASS",
+      "success": true,
+      "error": "",
+      "duration": 656.8539142608643
+    },
+    {
+      "category": "Filtering",
+      "name": "GET /products?search=test",
+      "status": "PASS",
+      "success": true,
+      "error": "",
+      "duration": 668.2281494140625
+    },
+    {
+      "category": "Orders",
+      "name": "GET /orders",
+      "status": "SKIP",
+      "success": false,
+      "error": "Endpoint not found (404)",
+      "duration": 173.4781265258789
+    },
+    {
+      "category": "Suppliers",
+      "name": "GET /suppliers",
+      "status": "PASS",
+      "success": true,
+      "error": "",
+      "duration": 544.1539287567139
+    },
+    {
+      "category": "Stats",
+      "name": "GET /products/stats/asin-status",
+      "status": "PASS",
+      "success": true,
+      "error": "",
+      "duration": 475.04591941833496
+    },
+    {
+      "category": "Stats",
+      "name": "GET /products/lookup-status",
+      "status": "PASS",
+      "success": true,
+      "error": "",
+      "duration": 480.5898666381836
+    }
+  ]
+}

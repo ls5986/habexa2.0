@@ -3355,6 +3355,151 @@ async def retry_asin_lookup(
         raise HTTPException(500, f"Failed to retry lookup: {str(e)}")
 
 
+# ============================================================================
+# QUICK ANALYSIS ENDPOINTS (without creating product)
+# ============================================================================
+
+class QuickAnalyzeUPCRequest(BaseModel):
+    upc: str
+
+class QuickAnalyzeASINRequest(BaseModel):
+    asin: str
+    buy_cost: Optional[float] = None
+
+@router.post("/analyze-upc")
+async def analyze_upc(
+    request: QuickAnalyzeUPCRequest,
+    current_user = Depends(get_current_user)
+):
+    """
+    Quick analysis for a UPC (without creating product).
+    Returns ASIN, title, price, profit estimate.
+    """
+    try:
+        from app.services.upc_converter import upc_converter
+        
+        # 1. Lookup ASIN from UPC
+        upc_clean = upc_converter.normalize_upc(request.upc)
+        if not upc_clean:
+            return {
+                "success": False,
+                "error": "Invalid UPC format. Must be 12-14 digits."
+            }
+        
+        # Convert UPC to ASIN
+        potential_asins, asin_status = await upc_converter.upc_to_asins(upc_clean)
+        
+        if asin_status == "not_found" or not potential_asins:
+            return {
+                "success": False,
+                "error": "ASIN not found for this UPC"
+            }
+        
+        # Use first ASIN if multiple found
+        asin = potential_asins[0].get('asin') if isinstance(potential_asins[0], dict) else potential_asins[0]
+        
+        if not asin or asin.startswith('PENDING'):
+            return {
+                "success": False,
+                "error": "ASIN not found for this UPC"
+            }
+        
+        # 2. Get product details (quick analysis without full analysis)
+        try:
+            from app.services.product_data_service import product_data_service
+            product_data = await product_data_service.get_product_data(asin)
+            
+            if not product_data:
+                return {
+                    "success": False,
+                    "error": "Could not get product data"
+                }
+            
+            return {
+                "success": True,
+                "upc": upc_clean,
+                "asin": asin,
+                "title": product_data.get('title'),
+                "image_url": product_data.get('image_url'),
+                "sell_price": product_data.get('sell_price'),
+                "fees_total": product_data.get('fees_total'),
+                "bsr": product_data.get('bsr'),
+                "multiple_asins": len(potential_asins) > 1,
+                "potential_asins": potential_asins if len(potential_asins) > 1 else None
+            }
+        except Exception as e:
+            logger.error(f"Error getting product data for ASIN {asin}: {e}", exc_info=True)
+            return {
+                "success": False,
+                "error": f"Could not analyze product: {str(e)}"
+            }
+        
+    except Exception as e:
+        logger.error(f"Error analyzing UPC {request.upc}: {e}", exc_info=True)
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@router.post("/analyze-asin")
+async def analyze_asin(
+    request: QuickAnalyzeASINRequest,
+    current_user = Depends(get_current_user)
+):
+    """
+    Quick analysis for an ASIN (without creating product).
+    Returns product details, price, profit estimate.
+    """
+    try:
+        from app.services.product_data_service import product_data_service
+        
+        if not request.asin or len(request.asin) != 10:
+            return {
+                "success": False,
+                "error": "Invalid ASIN format. Must be 10 characters."
+            }
+        
+        # Get product data
+        product_data = await product_data_service.get_product_data(request.asin)
+        
+        if not product_data:
+            return {
+                "success": False,
+                "error": "Could not get product data for this ASIN"
+            }
+        
+        # Calculate profit if buy_cost provided
+        profit = None
+        roi = None
+        if request.buy_cost and product_data.get('sell_price'):
+            sell_price = product_data.get('sell_price', 0)
+            fees = product_data.get('fees_total', 0)
+            profit = sell_price - request.buy_cost - fees
+            roi = (profit / request.buy_cost * 100) if request.buy_cost > 0 else 0
+        
+        return {
+            "success": True,
+            "asin": request.asin,
+            "title": product_data.get('title'),
+            "image_url": product_data.get('image_url'),
+            "sell_price": product_data.get('sell_price'),
+            "fees_total": product_data.get('fees_total'),
+            "bsr": product_data.get('bsr'),
+            "seller_count": product_data.get('seller_count'),
+            "fba_seller_count": product_data.get('fba_seller_count'),
+            "amazon_sells": product_data.get('amazon_sells'),
+            "profit": profit,
+            "roi": roi
+        }
+        
+    except Exception as e:
+        logger.error(f"Error analyzing ASIN {request.asin}: {e}", exc_info=True)
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+
 @router.post("/retry-all-failed")
 async def retry_all_failed_lookups(
     background_tasks: BackgroundTasks,

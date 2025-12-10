@@ -773,7 +773,8 @@ export default function DealDetail() {
                   </Typography>
                 )}
                 <FavoriteButton 
-                  productId={deal?.id || deal?.product_id}
+                  productId={deal?.product_id || deal?.id}
+                  dealId={deal?.deal_id || deal?.id}
                   size="medium"
                 />
               </Box>
