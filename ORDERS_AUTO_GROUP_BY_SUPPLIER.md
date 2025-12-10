@@ -297,3 +297,4 @@ for deal in deals_result.data:
 *Generated: December 9, 2025*
 
 
+

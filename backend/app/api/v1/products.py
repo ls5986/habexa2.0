@@ -1815,18 +1815,54 @@ async def confirm_csv_upload(
                             try:
                                 if status == "found" and asins:
                                     asin = asins[0].get('asin')
-                                    supabase.table('products').update({
-                                        'asin': asin,
-                                        'lookup_status': 'found',
-                                        'asin_status': 'found',
-                                        'status': 'pending'
-                                    }).eq('id', product['id']).execute()
                                     
-                                    asin_lookup_results['converted'] += 1
-                                    asin_lookup_results['products_ready_for_analysis'].append({
-                                        'product_id': product['id'],
-                                        'asin': asin
-                                    })
+                                    # Check if ASIN already exists for this user (duplicate check)
+                                    existing_check = supabase.table('products')\
+                                        .select('id')\
+                                        .eq('user_id', user_id)\
+                                        .eq('asin', asin)\
+                                        .neq('id', product['id'])\
+                                        .limit(1)\
+                                        .execute()
+                                    
+                                    if existing_check.data:
+                                        # ASIN already exists for another product - mark as duplicate
+                                        logger.warning(f"⚠️ Duplicate ASIN {asin} for product {product['id']} - ASIN already exists for product {existing_check.data[0]['id']}")
+                                        supabase.table('products').update({
+                                            'lookup_status': 'duplicate_asin',
+                                            'asin_status': 'duplicate',
+                                            'status': 'pending'
+                                        }).eq('id', product['id']).execute()
+                                        
+                                        asin_lookup_results['failed'] += 1
+                                    else:
+                                        # ASIN is unique - update product
+                                        try:
+                                            supabase.table('products').update({
+                                                'asin': asin,
+                                                'lookup_status': 'found',
+                                                'asin_status': 'found',
+                                                'status': 'pending'
+                                            }).eq('id', product['id']).execute()
+                                            
+                                            asin_lookup_results['converted'] += 1
+                                            asin_lookup_results['products_ready_for_analysis'].append({
+                                                'product_id': product['id'],
+                                                'asin': asin
+                                            })
+                                        except Exception as update_error:
+                                            # Handle unique constraint violation (race condition)
+                                            error_str = str(update_error)
+                                            if 'duplicate key' in error_str.lower() or '23505' in error_str:
+                                                logger.warning(f"⚠️ Duplicate ASIN {asin} detected during update (race condition) for product {product['id']}")
+                                                supabase.table('products').update({
+                                                    'lookup_status': 'duplicate_asin',
+                                                    'asin_status': 'duplicate',
+                                                    'status': 'pending'
+                                                }).eq('id', product['id']).execute()
+                                                asin_lookup_results['failed'] += 1
+                                            else:
+                                                raise  # Re-raise if it's a different error
                                 elif status == "multiple" and asins:
                                     supabase.table('products').update({
                                         'asin_status': 'multiple_found',

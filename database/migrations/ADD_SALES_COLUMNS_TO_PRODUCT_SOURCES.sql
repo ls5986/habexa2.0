@@ -25,3 +25,4 @@ ALTER TABLE product_sources
 ADD CONSTRAINT check_promo_qty_positive 
 CHECK (promo_qty IS NULL OR promo_qty > 0);
 
+
