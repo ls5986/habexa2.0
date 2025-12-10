@@ -23,10 +23,16 @@ app = FastAPI(
 app.add_middleware(PerformanceMiddleware)
 
 # CORS - MUST be added before other middleware
+# Production frontend URL
+PRODUCTION_FRONTEND_URL = "https://habexa-frontend.onrender.com"
+PRODUCTION_FRONTEND_URL_ALT = "https://habexa.onrender.com"  # Alternative domain
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         settings.FRONTEND_URL,
+        PRODUCTION_FRONTEND_URL,
+        PRODUCTION_FRONTEND_URL_ALT,
         "http://localhost:3002",
         "http://localhost:5173",  # Legacy port
         "http://localhost:5189",  # Vite may use different ports
@@ -66,6 +72,8 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     origin = request.headers.get("origin")
     allowed_origin = origin if origin in [
         settings.FRONTEND_URL,
+        PRODUCTION_FRONTEND_URL,
+        PRODUCTION_FRONTEND_URL_ALT,
         "http://localhost:3002",
         "http://localhost:5173",
         "http://localhost:5189",
