@@ -78,8 +78,9 @@ async def start_batch_analyze(
             raise HTTPException(400, "No products to analyze")
         
         # Check for products without suppliers
-        # Get all product_sources for these products
-        # Fetch in batches to avoid URL length limits
+        # IMPORTANT: Only check products that don't already have suppliers
+        # Products on the Products page are likely already analyzed/have suppliers
+        # This check is mainly for Telegram deals (new products)
         products_with_suppliers = set()
         product_source_map = {}  # product_id -> source_detail
         BATCH_SIZE = 100
@@ -107,7 +108,21 @@ async def start_batch_analyze(
         # Find products without suppliers
         products_without_suppliers = [pid for pid in product_ids if pid not in products_with_suppliers]
         
-        if products_without_suppliers:
+        # FIX: Only require suppliers for products that:
+        # 1. Don't have suppliers AND
+        # 2. Don't have any product_sources entry (new products from Telegram)
+        # If a product has a product_sources entry but no supplier_id, it's likely a manual upload
+        # and should be allowed to analyze (supplier can be assigned later)
+        products_requiring_suppliers = []
+        for pid in products_without_suppliers:
+            # Check if this product has ANY product_sources entry
+            has_source = pid in product_source_map
+            # Only require supplier if it's a new product (no source entry)
+            # OR if it's from Telegram (has source_detail but no supplier)
+            if not has_source:
+                products_requiring_suppliers.append(pid)
+        
+        if products_requiring_suppliers:
             # Get product details with source_detail for grouping
             products_data = []
             asins = []
@@ -115,10 +130,10 @@ async def start_batch_analyze(
             try:
                 # Fetch in batches to avoid URL length issues
                 BATCH_SIZE = 100
-                logger.info(f"Fetching details for {len(products_without_suppliers)} products without suppliers")
+                logger.info(f"Fetching details for {len(products_requiring_suppliers)} products requiring suppliers")
                 
-                for i in range(0, len(products_without_suppliers), BATCH_SIZE):
-                    batch_ids = products_without_suppliers[i:i + BATCH_SIZE]
+                for i in range(0, len(products_requiring_suppliers), BATCH_SIZE):
+                    batch_ids = products_requiring_suppliers[i:i + BATCH_SIZE]
                     logger.info(f"Fetching batch {i//BATCH_SIZE + 1}: {len(batch_ids)} products")
                     
                     products_info = supabase.table("products")\
@@ -158,15 +173,15 @@ async def start_batch_analyze(
             # Return structured error with grouped products
             error_data = {
                 "error": "products_missing_suppliers",
-                "message": f"{len(products_without_suppliers)} product(s) have no supplier assigned. Please assign a supplier before analyzing.",
-                "count": len(products_without_suppliers),
+                "message": f"{len(products_requiring_suppliers)} product(s) have no supplier assigned. Please assign a supplier before analyzing.",
+                "count": len(products_requiring_suppliers),
                 "products": products_data,
                 "asins": asins,
                 "grouped_by_file": products_by_file,  # Products grouped by filename
                 "ungrouped": ungrouped_products  # Products without source_detail
             }
             
-            logger.info(f"Raising supplier missing error: {len(products_without_suppliers)} products, {len(products_by_file)} files")
+            logger.info(f"Raising supplier missing error: {len(products_requiring_suppliers)} products, {len(products_by_file)} files")
             raise HTTPException(
                 status_code=400,
                 detail=error_data
