@@ -28,6 +28,7 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal, onAnalysisComplete }) =>
   const [multipleAsins, setMultipleAsins] = useState(null); // Multiple ASINs found from UPC
   const [countdown, setCountdown] = useState(5); // Auto-select countdown
   const pollingCleanupRef = useRef(null); // Store cleanup function for polling
+  const [savingProduct, setSavingProduct] = useState(false); // Saving product state
   
   // Calculate per-unit buy cost
   const calculatedBuyCost = useMemo(() => {
@@ -445,6 +446,42 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal, onAnalysisComplete }) =>
     if (result) {
       onViewDeal(result);
       onClose();
+    }
+  };
+
+  const handleSaveProduct = async () => {
+    if (!result || !result.asin) {
+      showToast('No analysis result to save', 'error');
+      return;
+    }
+
+    setSavingProduct(true);
+    try {
+      const saveData = {
+        asin: result.asin,
+        buy_cost: parseFloat(calculatedBuyCost) || parseFloat(buyCost) || 0,
+        moq: moq || 1,
+        supplier_id: supplierId || null,
+        notes: null,
+        upc: upc || null,
+        pack_size: isPack ? packSize : null,
+        wholesale_cost: isPack && wholesaleCost ? parseFloat(wholesaleCost) : null
+      };
+
+      const response = await api.post('/analyze/save-product', saveData);
+      
+      showToast(response.data.message || 'Product saved! Full analysis is running in the background.', 'success');
+      
+      // Navigate to products page after a short delay
+      setTimeout(() => {
+        navigate('/products');
+        onClose();
+      }, 1500);
+    } catch (error) {
+      console.error('Failed to save product:', error);
+      showToast(error.response?.data?.detail || 'Failed to save product', 'error');
+    } finally {
+      setSavingProduct(false);
     }
   };
 
@@ -1067,6 +1104,18 @@ const QuickAnalyzeModal = ({ open, onClose, onViewDeal, onAnalysisComplete }) =>
                 }}
               >
                 View Full Analysis
+              </Button>
+              <Button
+                variant="contained"
+                fullWidth
+                onClick={handleSaveProduct}
+                disabled={savingProduct}
+                sx={{
+                  backgroundColor: habexa.success.main,
+                  '&:hover': { backgroundColor: habexa.success.dark },
+                }}
+              >
+                {savingProduct ? 'Saving...' : 'Save as Product'}
               </Button>
               <Button
                 variant="outlined"

@@ -48,6 +48,17 @@ class BatchAnalysisRequest(BaseModel):
     items: List[ASINInput]
 
 
+class SaveProductFromAnalysisRequest(BaseModel):
+    asin: str
+    buy_cost: float
+    moq: int = 1
+    supplier_id: Optional[str] = None
+    notes: Optional[str] = None
+    upc: Optional[str] = None
+    pack_size: Optional[int] = None
+    wholesale_cost: Optional[float] = None
+
+
 @router.post("/single")
 async def analyze_single(
     request: ASINInput,
@@ -1001,6 +1012,143 @@ async def set_manual_price(
         },
         "note": "Fees are estimated. Re-analyze when product has active offers for accurate fees."
     }
+
+
+@router.post("/save-product")
+async def save_product_from_analysis(
+    request: SaveProductFromAnalysisRequest,
+    current_user=Depends(get_current_user)
+):
+    """
+    Save a product from Quick Analyze results.
+    Creates product, product_source (deal), and triggers full analysis.
+    """
+    user_id = str(current_user.id)
+    
+    try:
+        # Get or create product
+        existing = supabase.table("products")\
+            .select("id, asin, upc")\
+            .eq("user_id", user_id)\
+            .eq("asin", request.asin)\
+            .limit(1)\
+            .execute()
+        
+        if existing.data:
+            product_id = existing.data[0]["id"]
+            # Update UPC if provided
+            if request.upc and not existing.data[0].get("upc"):
+                supabase.table("products")\
+                    .update({"upc": request.upc})\
+                    .eq("id", product_id)\
+                    .execute()
+            logger.info(f"✅ Using existing product {product_id} for ASIN {request.asin}")
+        else:
+            # Create new product
+            product_data = {
+                "user_id": user_id,
+                "asin": request.asin,
+                "status": "pending",
+                "asin_status": "found"
+            }
+            if request.upc:
+                product_data["upc"] = request.upc
+            
+            new_prod = supabase.table("products").insert(product_data).execute()
+            product_id = new_prod.data[0]["id"] if new_prod.data else None
+            
+            if not product_id:
+                raise HTTPException(500, "Failed to create product")
+            
+            logger.info(f"✅ Created new product {product_id} for ASIN {request.asin}")
+        
+        # Calculate buy_cost (handle pack_size if provided)
+        buy_cost = request.buy_cost
+        if request.pack_size and request.pack_size > 1:
+            if request.wholesale_cost:
+                buy_cost = request.wholesale_cost / request.pack_size
+            else:
+                buy_cost = request.buy_cost / request.pack_size
+        
+        # Get or create product_source (deal)
+        existing_source = supabase.table("product_sources")\
+            .select("id")\
+            .eq("product_id", product_id)\
+            .eq("user_id", user_id)\
+            .eq("supplier_id", request.supplier_id if request.supplier_id else None)\
+            .limit(1)\
+            .execute()
+        
+        source_data = {
+            "user_id": user_id,
+            "product_id": product_id,
+            "buy_cost": buy_cost,
+            "moq": request.moq,
+            "supplier_id": request.supplier_id,
+            "source": "quick_analyze",
+            "stage": "new",
+            "is_active": True,
+            "notes": request.notes
+        }
+        
+        if request.pack_size:
+            source_data["pack_size"] = request.pack_size
+        if request.wholesale_cost:
+            source_data["wholesale_cost"] = request.wholesale_cost
+        
+        if existing_source.data:
+            # Update existing deal
+            deal_id = existing_source.data[0]["id"]
+            supabase.table("product_sources")\
+                .update(source_data)\
+                .eq("id", deal_id)\
+                .execute()
+            logger.info(f"✅ Updated product_source {deal_id}")
+        else:
+            # Create new deal
+            source_result = supabase.table("product_sources").insert(source_data).execute()
+            deal_id = source_result.data[0]["id"] if source_result.data else None
+            logger.info(f"✅ Created product_source {deal_id}")
+        
+        # Trigger full analysis (SP-API + Keepa) via Celery
+        try:
+            from uuid import uuid4
+            analysis_job_id = str(uuid4())
+            
+            # Create analysis job
+            supabase.table("jobs").insert({
+                "id": analysis_job_id,
+                "user_id": user_id,
+                "type": "batch_analyze",
+                "status": "pending",
+                "total_items": 1,
+                "metadata": {
+                    "triggered_by": "save_from_quick_analyze",
+                    "asin": request.asin,
+                    "product_id": product_id
+                }
+            }).execute()
+            
+            # Queue analysis
+            batch_analyze_products.delay(analysis_job_id, user_id, [product_id])
+            logger.info(f"✅ Queued full analysis for product {product_id} (job: {analysis_job_id})")
+        except Exception as analysis_error:
+            logger.error(f"Failed to queue analysis: {analysis_error}", exc_info=True)
+            # Don't fail the save if analysis queueing fails
+        
+        return {
+            "success": True,
+            "product_id": product_id,
+            "deal_id": deal_id,
+            "message": "Product saved successfully. Full analysis is running in the background.",
+            "analysis_job_id": analysis_job_id if 'analysis_job_id' in locals() else None
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to save product from analysis: {e}", exc_info=True)
+        raise HTTPException(500, f"Failed to save product: {str(e)}")
 
 
 @router.post("/{analysis_id}/re-analyze")
