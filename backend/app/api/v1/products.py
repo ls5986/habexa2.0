@@ -2,7 +2,7 @@
 Products API - Parent-Child Model (products + product_sources)
 Optimized with Redis caching and query batching.
 """
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form, BackgroundTasks, Body
 from app.tasks.file_processing import process_file_upload
 import base64
 import binascii
