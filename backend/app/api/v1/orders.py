@@ -34,13 +34,24 @@ class SendOrderRequest(BaseModel):
     message: Optional[str] = None
 
 
+class CreateOrdersFromProductsRequest(BaseModel):
+    product_ids: List[str]  # List of deal_ids (can be from multiple suppliers)
+    notes: Optional[str] = None
+
+
 @router.post("")
 async def create_order(
     request: CreateOrderRequest,
     current_user=Depends(get_current_user)
 ):
     """
-    Create a purchase request to supplier.
+    Create a purchase request for a SINGLE supplier.
+    
+    For creating orders from mixed suppliers, use:
+    POST /orders/create-from-products
+    
+    This endpoint is useful when you know all products
+    are from the same supplier.
     
     Body:
     {

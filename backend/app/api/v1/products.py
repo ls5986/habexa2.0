@@ -1687,6 +1687,125 @@ async def confirm_csv_upload(
         logger.error(f"Failed to process upload: {e}", exc_info=True)
         raise HTTPException(500, f"Failed to process upload: {str(e)}")
 
+
+@router.post("/group-by-supplier")
+async def group_products_by_supplier(
+    product_ids: List[str] = Body(..., alias="product_ids"),
+    current_user=Depends(get_current_user)
+):
+    """
+    Group selected products by supplier for order preview.
+    
+    Shows what orders will be created before actually creating them.
+    
+    Body:
+    {
+        "product_ids": ["deal_id1", "deal_id2", "deal_id3"]
+    }
+    
+    Returns:
+    {
+        "supplier_groups": [
+            {
+                "supplier": {"id": "...", "name": "KEHE"},
+                "products": [...],
+                "total_cost": 1250.00,
+                "items_count": 5
+            },
+            {
+                "supplier": {"id": "...", "name": "UNFI"},
+                "products": [...],
+                "total_cost": 800.00,
+                "items_count": 3
+            }
+        ],
+        "total_suppliers": 2,
+        "total_products": 8
+    }
+    """
+    user_id = str(current_user.id)
+    
+    if not product_ids:
+        raise HTTPException(400, "At least one product is required")
+    
+    try:
+        # Get deals with supplier and product info
+        deals_result = supabase.table('product_sources') \
+            .select('*, product:products(*), supplier:suppliers(*)') \
+            .in_('id', product_ids) \
+            .execute()
+        
+        if not deals_result.data:
+            raise HTTPException(404, "No products found")
+        
+        # Verify all products belong to user
+        for deal in deals_result.data:
+            product = deal.get('product', {})
+            if not product or product.get('user_id') != user_id:
+                raise HTTPException(403, "Some products don't belong to you")
+        
+        # Group by supplier
+        from collections import defaultdict
+        groups = defaultdict(lambda: {'products': [], 'total_cost': 0.0})
+        
+        for deal in deals_result.data:
+            supplier_id = deal.get('supplier_id')
+            if not supplier_id:
+                supplier_id = 'no_supplier'
+            
+            # Initialize supplier info if first time seeing this supplier
+            if 'supplier' not in groups[supplier_id]:
+                supplier = deal.get('supplier', {})
+                groups[supplier_id]['supplier'] = {
+                    'id': supplier_id if supplier_id != 'no_supplier' else None,
+                    'name': supplier.get('name') if supplier else 'No Supplier',
+                    'contact_name': supplier.get('contact_name') if supplier else None,
+                    'contact_email': supplier.get('contact_email') if supplier else None
+                }
+            
+            product = deal.get('product', {})
+            buy_cost = deal.get('buy_cost', 0) or 0
+            quantity = deal.get('moq', 1) or 1
+            subtotal = quantity * float(buy_cost)
+            
+            groups[supplier_id]['products'].append({
+                'deal_id': deal.get('id'),
+                'product_id': product.get('id') if product else None,
+                'title': product.get('title') if product else 'Unknown Product',
+                'upc': product.get('upc') if product else None,
+                'asin': product.get('asin') if product else None,
+                'quantity': quantity,
+                'unit_cost': float(buy_cost),
+                'subtotal': round(subtotal, 2)
+            })
+            
+            groups[supplier_id]['total_cost'] += subtotal
+        
+        # Format response
+        supplier_groups = []
+        for supplier_id, data in groups.items():
+            supplier_groups.append({
+                'supplier': data['supplier'],
+                'products': data['products'],
+                'items_count': len(data['products']),
+                'total_cost': round(data['total_cost'], 2)
+            })
+        
+        # Sort by supplier name
+        supplier_groups.sort(key=lambda x: x['supplier']['name'] or 'ZZZ')
+        
+        return {
+            'supplier_groups': supplier_groups,
+            'total_suppliers': len(supplier_groups),
+            'total_products': len(deals_result.data)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to group products by supplier: {e}", exc_info=True)
+        raise HTTPException(500, f"Failed to group products: {str(e)}")
+
 @router.post("/upload-csv")
 async def upload_csv(file: UploadFile = File(...), current_user = Depends(get_current_user)):
     """
