@@ -1583,6 +1583,8 @@ async def confirm_csv_upload(
                             'stage': 'new',
                             'percent_off': product_data.get('percent_off'),
                             'promo_qty': product_data.get('promo_qty')
+                            'percent_off': product_data.get('percent_off'),
+                            'promo_qty': product_data.get('promo_qty')
                         }
                 
                 # Add supplier_id to deal_fields if provided
