@@ -34,7 +34,7 @@ class SendOrderRequest(BaseModel):
     message: Optional[str] = None
 
 
-@router.post("/")
+@router.post("")
 async def create_order(
     request: CreateOrderRequest,
     current_user=Depends(get_current_user)
@@ -176,7 +176,7 @@ async def create_order(
         raise HTTPException(500, f"Failed to create order: {str(e)}")
 
 
-@router.get("/")
+@router.get("")
 async def get_orders(
     status: Optional[str] = Query(None),
     supplier_id: Optional[str] = Query(None),
