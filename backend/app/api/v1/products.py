@@ -1601,13 +1601,37 @@ async def confirm_csv_upload(
         
         logger.info(f"✅ Created {len(created_products)} products, {len(errors)} errors out of {total_rows} total rows")
         
+        # Queue ASIN lookup for products with UPCs (non-blocking)
+        if created_products:
+            product_ids_for_lookup = [
+                p['id'] for p in created_products 
+                if p.get('upc') and (not p.get('asin') or p.get('asin', '').startswith('PENDING_'))
+            ]
+            
+            if product_ids_for_lookup:
+                try:
+                    from app.tasks.asin_lookup import lookup_product_asins
+                    task = lookup_product_asins.delay(product_ids_for_lookup)
+                    logger.info(f"✅ Queued Celery ASIN lookup task {task.id} for {len(product_ids_for_lookup)} products")
+                except Exception as e:
+                    logger.error(f"Failed to queue Celery task for ASIN lookup: {e}", exc_info=True)
+                    # Fallback to FastAPI BackgroundTasks if Celery fails
+                    try:
+                        from app.tasks.asin_lookup import lookup_product_asins
+                        # Execute synchronously as fallback (not ideal but ensures processing)
+                        logger.warning(f"⚠️ Falling back to synchronous ASIN lookup for {len(product_ids_for_lookup)} products")
+                        lookup_product_asins(product_ids_for_lookup)
+                    except Exception as fallback_error:
+                        logger.error(f"Fallback ASIN lookup also failed: {fallback_error}", exc_info=True)
+        
         return {
             'success': True,
             'total': len(df),
             'created': len(created_products),
             'failed': len(errors),
             'errors': errors[:10],  # Return first 10 errors
-            'buy_cost_calculation': buy_cost_status
+            'buy_cost_calculation': buy_cost_status,
+            'message': f"{len(created_products)} products created. ASIN lookup queued in background." if created_products else "No products created."
         }
         
     except Exception as e:
