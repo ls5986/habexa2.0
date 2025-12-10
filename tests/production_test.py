@@ -22,6 +22,13 @@ BASE_URL = os.getenv("BASE_URL", os.getenv("API_BASE_URL", "https://habexa-backe
 TEST_EMAIL = os.getenv("TEST_EMAIL", "lindsey@letsclink.com")
 TEST_PASSWORD = os.getenv("TEST_PASSWORD", "")
 
+# Supabase credentials (optional - for direct auth)
+SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "")
+
+# Alternative: Direct token (from browser localStorage after login)
+TEST_TOKEN = os.getenv("TEST_TOKEN", "")
+
 # Performance thresholds
 EXPECTED_REDIS_HIT_RATE_MIN = int(os.getenv("EXPECTED_REDIS_HIT_RATE_MIN", "40"))
 EXPECTED_STATS_CACHE_TIME_MAX = int(os.getenv("EXPECTED_STATS_CACHE_TIME_MAX", "50"))
@@ -47,8 +54,49 @@ def print_info(msg):
     print(f"{BLUE}ℹ️  {msg}{RESET}")
 
 def test_auth():
-    """Test login."""
+    """Test authentication - try multiple methods."""
     print_info("Testing authentication...")
+    
+    # Method 1: Use TEST_TOKEN if provided (from browser localStorage)
+    if TEST_TOKEN:
+        try:
+            # Verify token works by calling /me endpoint
+            response = requests.get(
+                f"{BASE_URL}/auth/me",
+                headers={"Authorization": f"Bearer {TEST_TOKEN}"},
+                timeout=10
+            )
+            if response.status_code == 200:
+                print_success(f"Login successful (using TEST_TOKEN)")
+                return TEST_TOKEN
+        except Exception as e:
+            print_warning(f"TEST_TOKEN failed: {e}")
+    
+    # Method 2: Try Supabase Auth API if credentials provided
+    if SUPABASE_URL and SUPABASE_ANON_KEY:
+        try:
+            auth_url = f"{SUPABASE_URL}/auth/v1/token?grant_type=password"
+            headers = {
+                "apikey": SUPABASE_ANON_KEY,
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "email": TEST_EMAIL,
+                "password": TEST_PASSWORD
+            }
+            
+            response = requests.post(auth_url, json=payload, headers=headers, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                token = data.get("access_token")
+                if token:
+                    print_success(f"Login successful (via Supabase API)")
+                    return token
+        except Exception as e:
+            print_warning(f"Supabase auth API failed: {e}")
+    
+    # Method 3: Try backend login endpoint (informational only)
     try:
         response = requests.post(f"{BASE_URL}/auth/login", json={
             "email": TEST_EMAIL,
@@ -57,19 +105,15 @@ def test_auth():
         
         if response.status_code == 200:
             data = response.json()
-            token = data.get("access_token")
-            if token:
-                print_success(f"Login successful")
-                return token
-            else:
-                print_error("Login response missing access_token")
-                return None
-        else:
-            print_error(f"Login failed: {response.status_code} - {response.text}")
-            return None
-    except Exception as e:
-        print_error(f"Login error: {e}")
-        return None
+            if "message" in data and "client-side" in data.get("message", "").lower():
+                print_warning("Backend login endpoint is informational only")
+                print_info("Authentication uses Supabase client-side auth")
+    except:
+        pass
+    
+    # All methods failed
+    print_error("Authentication failed - no valid token")
+    return None
 
 def test_redis_status(token):
     """Test Redis cache status."""
@@ -251,7 +295,16 @@ def run_all_tests():
         return False
     
     print_success("Configuration Check")
-    print(f"   Testing against: {BASE_URL}\n")
+    print(f"   Testing against: {BASE_URL}")
+    
+    # Check if we have Supabase credentials for direct auth
+    if SUPABASE_URL and SUPABASE_ANON_KEY:
+        print_info("   Supabase credentials found - will use direct auth")
+    else:
+        print_warning("   Supabase credentials not found - auth test may need manual token")
+        print_info("   Add SUPABASE_URL and SUPABASE_ANON_KEY to .env.test for automatic auth")
+    
+    print()
     
     print(f"{BLUE}🔍 Running Tests{RESET}\n")
     
@@ -285,6 +338,12 @@ def run_all_tests():
     token = test_auth()
     if not token:
         print_error("Cannot continue without authentication token")
+        print_info("\nTo get a token:")
+        print_info("1. Log in to the frontend at https://habexa.onrender.com")
+        print_info("2. Open browser console (F12)")
+        print_info("3. Run: localStorage.getItem('sb-habexa-auth-token')")
+        print_info("4. Copy the token and set TEST_TOKEN in .env.test")
+        print_info("\nOr add SUPABASE_URL and SUPABASE_ANON_KEY to .env.test for automatic auth")
         return False
     results["auth"] = True
     print()
