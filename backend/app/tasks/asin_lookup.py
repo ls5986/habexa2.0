@@ -105,14 +105,48 @@ def process_pending_asin_lookups(self, batch_size: int = 100):
         # Get products needing lookup
         # Priority: lookup_status='pending' or 'retry_pending', then PENDING_ ASINs
         # CRITICAL: Only get products with UPCs (can't lookup without UPC)
-        products_result = supabase.table("products")\
-            .select("id, upc, asin, asin_status, lookup_status, lookup_attempts, user_id")\
-            .or_('lookup_status.eq.pending,lookup_status.eq.retry_pending,asin.like.PENDING_%,asin.like.Unknown%')\
-            .not_.is_("upc", "null")\
-            .neq("upc", "")\
-            .neq("upc", "null")\
-            .limit(batch_size)\
-            .execute()
+        # FIX: Use proper Supabase query syntax - filter by user_id if provided in product_ids
+        try:
+            # If product_ids provided, use them directly
+            if hasattr(self, 'request') and hasattr(self.request, 'args') and self.request.args:
+                # Called with specific product_ids
+                product_ids = self.request.args[0] if isinstance(self.request.args, tuple) else []
+                if product_ids:
+                    products_result = supabase.table("products")\
+                        .select("id, upc, asin, asin_status, lookup_status, lookup_attempts, user_id")\
+                        .in_("id", product_ids)\
+                        .not_.is_("upc", "null")\
+                        .neq("upc", "")\
+                        .limit(batch_size)\
+                        .execute()
+                else:
+                    # Fall through to general query
+                    products_result = supabase.table("products")\
+                        .select("id, upc, asin, asin_status, lookup_status, lookup_attempts, user_id")\
+                        .or_('lookup_status.eq.pending,lookup_status.eq.retry_pending,asin.like.PENDING_%,asin.like.Unknown%')\
+                        .not_.is_("upc", "null")\
+                        .neq("upc", "")\
+                        .limit(batch_size)\
+                        .execute()
+            else:
+                # General query for periodic job
+                products_result = supabase.table("products")\
+                    .select("id, upc, asin, asin_status, lookup_status, lookup_attempts, user_id")\
+                    .or_('lookup_status.eq.pending,lookup_status.eq.retry_pending,asin.like.PENDING_%,asin.like.Unknown%')\
+                    .not_.is_("upc", "null")\
+                    .neq("upc", "")\
+                    .limit(batch_size)\
+                    .execute()
+        except Exception as e:
+            logger.error(f"Error querying products: {e}", exc_info=True)
+            # Fallback to simple query
+            products_result = supabase.table("products")\
+                .select("id, upc, asin, asin_status, lookup_status, lookup_attempts, user_id")\
+                .or_('lookup_status.eq.pending,asin.like.PENDING_%')\
+                .not_.is_("upc", "null")\
+                .neq("upc", "")\
+                .limit(batch_size)\
+                .execute()
         
         products = products_result.data or []
         
@@ -304,27 +338,39 @@ def lookup_product_asins(self, product_ids: List[str]):
         products = products_result.data or []
         
         if not products:
+            logger.warning(f"❌ No products with UPCs found for {len(product_ids)} product IDs")
             return {"processed": 0, "message": "No products with UPCs found"}
         
-        # Extract UPCs
-        upcs = [p["upc"] for p in products if p.get("upc")]
+        logger.info(f"📦 Found {len(products)} products with UPCs out of {len(product_ids)} requested")
+        
+        # Extract unique UPCs
+        upcs = list(set([p["upc"] for p in products if p.get("upc")]))
+        logger.info(f"🔢 Extracted {len(upcs)} unique UPCs")
         
         # Check cache
         cached = get_cached_upcs(upcs)
         uncached_upcs = [u for u in upcs if u not in cached]
         
+        logger.info(f"💾 Cache hit: {len(cached)}, Need lookup: {len(uncached_upcs)}")
+        
         # Lookup uncached
         lookups = {}
         if uncached_upcs:
             try:
+                logger.info(f"🚀 Calling SP-API for {len(uncached_upcs)} UPCs...")
                 batch_results = run_async(upc_converter.upcs_to_asins_batch(uncached_upcs))
                 lookups.update(batch_results)
+                
+                found_count = sum(1 for a in lookups.values() if a)
+                logger.info(f"✅ SP-API lookup complete: {found_count}/{len(uncached_upcs)} found")
                 
                 # Cache results
                 for upc, asin in lookups.items():
                     cache_upc_asin(upc, asin)
             except Exception as e:
-                logger.error(f"Error during manual UPC lookup: {e}", exc_info=True)
+                logger.error(f"❌ Error during UPC lookup: {e}", exc_info=True)
+                import traceback
+                logger.error(traceback.format_exc())
         
         # Combine results
         all_results = {**cached, **lookups}

@@ -1566,6 +1566,17 @@ async def confirm_csv_upload(
                 if not asin and product_data.get('upc'):
                     asin = f"PENDING_{product_data.get('upc', 'UNKNOWN')}"
                 
+                # CRITICAL: Determine if this product needs ASIN lookup
+                needs_lookup = False
+                if product_data.get('upc'):
+                    # Needs lookup if:
+                    # 1. No ASIN provided, OR
+                    # 2. ASIN is PENDING_ or Unknown
+                    if not asin or asin.startswith('PENDING_') or asin.startswith('Unknown'):
+                        needs_lookup = True
+                        if not asin:
+                            asin = f"PENDING_{product_data.get('upc', 'UNKNOWN')}"
+                
                 product_fields = {
                     'user_id': user_id,
                     'asin': asin,
@@ -1574,8 +1585,8 @@ async def confirm_csv_upload(
                     'category': product_data.get('uploaded_category') or product_data.get('category'),
                     'status': 'pending',
                     'upc': product_data.get('upc'),
-                    # CRITICAL: Set lookup_status for products with PENDING_ ASINs
-                    'lookup_status': 'pending' if (asin and asin.startswith('PENDING_')) else None,
+                    # CRITICAL: Set lookup_status for products that need ASIN lookup
+                    'lookup_status': 'pending' if needs_lookup else None,
                     'lookup_attempts': 0
                 }
                 
