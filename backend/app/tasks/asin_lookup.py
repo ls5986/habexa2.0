@@ -236,12 +236,12 @@ def process_pending_asin_lookups(self, batch_size: int = 100):
                         .execute()
                     
                     if existing_check.data:
-                        # ASIN already exists - mark as duplicate
+                        # ASIN already exists - mark as duplicate (use 'not_found' since constraint doesn't allow 'duplicate_found')
                         logger.warning(f"⚠️ Duplicate ASIN {asin} for product {product_id} - ASIN already exists for product {existing_check.data[0]['id']}")
                         supabase.table("products")\
                             .update({
-                                "asin_status": "duplicate_found",
-                                "lookup_status": "failed",
+                                "asin_status": "not_found",  # Constraint only allows: 'found', 'not_found', 'multiple_found', 'manual'
+                                "lookup_status": "duplicate_asin",
                                 "status": "pending",
                                 "updated_at": datetime.utcnow().isoformat()
                             })\

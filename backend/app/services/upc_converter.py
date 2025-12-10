@@ -82,13 +82,23 @@ class UPCConverter:
         # Clean and validate UPC
         upc_clean = str(upc).strip().replace("-", "").replace(" ", "").replace(".0", "")
         
-        # Validate UPC format (12-14 digits)
+        # Validate UPC format
         if not upc_clean.isdigit():
-            logger.warning(f"Invalid UPC format: {upc}")
+            logger.warning(f"Invalid UPC format (non-numeric): {upc}")
             return ([], "error")
         
-        if len(upc_clean) < 12 or len(upc_clean) > 14:
-            logger.warning(f"UPC length invalid (must be 12-14 digits): {upc_clean}")
+        original_length = len(upc_clean)
+        
+        # Handle short UPCs (9-11 digits) - Excel often strips leading zeros
+        # Try padding with leading zeros to make it 12 digits
+        if original_length < 12:
+            logger.info(f"📏 Short UPC detected ({original_length} digits): {upc_clean} - attempting padding")
+            # Pad with leading zeros to make 12 digits (UPC-A standard)
+            upc_padded = upc_clean.zfill(12)
+            logger.info(f"   Padded to 12 digits: {upc_padded}")
+            upc_clean = upc_padded
+        elif original_length > 14:
+            logger.warning(f"UPC too long ({original_length} digits): {upc_clean}")
             return ([], "error")
         
         # Normalize to 12 digits (UPC-A) or 13 digits (EAN-13)
@@ -96,29 +106,37 @@ class UPCConverter:
         if len(upc_clean) == 14:
             upc_clean = upc_clean[1:]  # Remove first digit (packaging indicator)
         
+        # Try initial lookup
         try:
-            # Use SP-API catalog search to find product by UPC
-            result = await sp_api_client.search_catalog_items(
-                identifiers=[upc_clean],
-                identifiers_type="UPC",
-                marketplace_id=marketplace_id
-            )
+            result = await self._try_upc_lookup(upc_clean, marketplace_id)
             
-            if not result:
-                logger.warning(f"No response from SP-API for UPC {upc_clean}")
-                return ([], "not_found")
+            if result:
+                items = result.get("items") or []
+                if not items:
+                    summaries = result.get("summaries") or []
+                    if summaries:
+                        items = summaries
+                
+                if items:
+                    # Found results with original/padded UPC
+                    logger.info(f"✅ Found products for UPC {upc_clean} (original: {upc})")
+                else:
+                    # No results - try retry with variations
+                    logger.info(f"⚠️ No products found for UPC {upc_clean}, trying retry variations...")
+                    result = await self._retry_upc_lookup(upc_clean, upc, marketplace_id)
+                    if result:
+                        items = result.get("items") or []
+                        if not items:
+                            summaries = result.get("summaries") or []
+                            if summaries:
+                                items = summaries
+                    else:
+                        items = []
+            else:
+                items = []
             
-            # Extract all items from response
-            items = result.get("items") or []
-            
-            # If no items, check summaries
             if not items:
-                summaries = result.get("summaries") or []
-                if summaries:
-                    items = summaries
-            
-            if not items:
-                logger.info(f"No products found for UPC {upc_clean}")
+                logger.info(f"No products found for UPC {upc_clean} (original: {upc})")
                 return ([], "not_found")
             
             # Extract ASIN info from all items
@@ -214,14 +232,23 @@ class UPCConverter:
             
             # Validate format
             if not upc_clean.isdigit():
-                logger.warning(f"Invalid UPC format: {upc}")
+                logger.warning(f"Invalid UPC format (non-numeric): {upc}")
                 continue
             
-            if len(upc_clean) < 12 or len(upc_clean) > 14:
-                logger.warning(f"UPC length invalid (must be 12-14 digits): {upc_clean}")
+            original_length = len(upc_clean)
+            
+            # Handle short UPCs (9-11 digits) - Excel often strips leading zeros
+            # Pad with leading zeros to make it 12 digits (UPC-A standard)
+            if original_length < 12:
+                logger.info(f"📏 Short UPC detected ({original_length} digits): {upc_clean} - padding to 12 digits")
+                upc_clean = upc_clean.zfill(12)
+                logger.info(f"   Padded UPC: {upc_clean}")
+            elif original_length > 14:
+                logger.warning(f"UPC too long ({original_length} digits): {upc_clean}")
                 continue
             
             # Normalize to 12 digits (UPC-A) or 13 digits (EAN-13)
+            # If 14 digits, it's GTIN-14, use last 13 digits
             if len(upc_clean) == 14:
                 upc_clean = upc_clean[1:]  # Remove first digit (packaging indicator)
             
