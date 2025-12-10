@@ -1561,14 +1561,22 @@ async def confirm_csv_upload(
                 # Products table fields: user_id, asin, title, image_url, category, brand, sell_price, fees_total, bsr, seller_count, fba_seller_count, amazon_sells, analysis_id, status, upc
                 # Product_sources table fields: product_id, supplier_id, buy_cost, moq, source, source_detail, stage, notes
                 
+                # Determine if ASIN is PENDING (needs lookup)
+                asin = product_data.get('asin')
+                if not asin and product_data.get('upc'):
+                    asin = f"PENDING_{product_data.get('upc', 'UNKNOWN')}"
+                
                 product_fields = {
                     'user_id': user_id,
-                    'asin': product_data.get('asin') or f"PENDING_{product_data.get('upc', 'UNKNOWN')}",
+                    'asin': asin,
                     'title': product_data.get('uploaded_title') or product_data.get('title'),
                     'brand': product_data.get('uploaded_brand') or product_data.get('brand'),
                     'category': product_data.get('uploaded_category') or product_data.get('category'),
                     'status': 'pending',
-                    'upc': product_data.get('upc')
+                    'upc': product_data.get('upc'),
+                    # CRITICAL: Set lookup_status for products with PENDING_ ASINs
+                    'lookup_status': 'pending' if (asin and asin.startswith('PENDING_')) else None,
+                    'lookup_attempts': 0
                 }
                 
                 # Remove None values from product_fields

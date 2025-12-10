@@ -105,7 +105,7 @@ async def get_deals(
     is_profitable: Optional[bool] = Query(None),
     channel_id: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
-    limit: int = Query(50, le=100),
+    limit: int = Query(50, le=1000),  # FIX: Allow up to 1000 for bulk operations
     offset: int = Query(0),
     current_user=Depends(get_current_user)
 ):

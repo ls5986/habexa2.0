@@ -102,13 +102,15 @@ def process_pending_asin_lookups(self, batch_size: int = 100):
         batch_size: Number of products to process per run
     """
     try:
-        # Get products needing lookup - check both old and new status fields
-        # Priority: lookup_status field (new), then asin_status (old), then PENDING_ ASINs
+        # Get products needing lookup
+        # Priority: lookup_status='pending' or 'retry_pending', then PENDING_ ASINs
+        # CRITICAL: Only get products with UPCs (can't lookup without UPC)
         products_result = supabase.table("products")\
             .select("id, upc, asin, asin_status, lookup_status, lookup_attempts, user_id")\
-            .or_('lookup_status.eq.pending,lookup_status.eq.retry_pending,asin.like.PENDING_%,asin.like.Unknown%,asin.is.null')\
+            .or_('lookup_status.eq.pending,lookup_status.eq.retry_pending,asin.like.PENDING_%,asin.like.Unknown%')\
             .not_.is_("upc", "null")\
             .neq("upc", "")\
+            .neq("upc", "null")\
             .limit(batch_size)\
             .execute()
         
