@@ -55,25 +55,37 @@ async def list_upload_jobs(
     limit: int = Query(20, le=50),
     current_user = Depends(get_current_user)
 ):
-    """List all upload jobs for the current user."""
+    """List all upload jobs for the current user (includes upload_jobs and ASIN lookup jobs)."""
     from datetime import datetime
     
     user_id = str(current_user.id)
     
-    query = supabase.table("upload_jobs")\
+    # Get upload_jobs (file uploads)
+    upload_jobs_query = supabase.table("upload_jobs")\
         .select("*, suppliers(id, name)")\
         .eq("user_id", user_id)
     
     if status:
-        query = query.eq("status", status)
+        upload_jobs_query = upload_jobs_query.eq("status", status)
     
-    result = query.order("created_at", desc=True).limit(limit).execute()
+    upload_jobs_result = upload_jobs_query.order("created_at", desc=True).limit(limit).execute()
+    upload_jobs = upload_jobs_result.data or []
     
-    jobs = result.data or []
+    # Get ASIN lookup jobs from unified jobs table
+    asin_jobs_query = supabase.table("jobs")\
+        .select("*")\
+        .eq("user_id", user_id)\
+        .eq("type", "asin_lookup")
     
-    # Format response with progress
+    if status:
+        asin_jobs_query = asin_jobs_query.eq("status", status)
+    
+    asin_jobs_result = asin_jobs_query.order("created_at", desc=True).limit(limit).execute()
+    asin_jobs = asin_jobs_result.data or []
+    
+    # Format upload_jobs
     formatted_jobs = []
-    for job in jobs:
+    for job in upload_jobs:
         progress = {
             "total_rows": job.get("total_rows", 0),
             "processed_rows": job.get("processed_rows", 0),
@@ -92,11 +104,43 @@ async def list_upload_jobs(
             "filename": job["filename"],
             "supplier": job.get("suppliers"),
             "status": job["status"],
+            "type": "file_upload",
             "progress": progress,
             "created_at": job["created_at"],
             "updated_at": job["updated_at"],
             "completed_at": job.get("completed_at")
         })
+    
+    # Format ASIN lookup jobs
+    for job in asin_jobs:
+        metadata = job.get("metadata", {})
+        filename = metadata.get("filename", "CSV Upload")
+        
+        progress = {
+            "total_items": job.get("total_items", 0),
+            "processed_items": job.get("processed_items", 0),
+            "success_count": job.get("success_count", 0),
+            "error_count": job.get("error_count", 0),
+            "percent": job.get("progress", 0)
+        }
+        
+        formatted_jobs.append({
+            "id": job["id"],
+            "filename": f"ASIN Lookup: {filename}",
+            "supplier": None,
+            "status": job["status"],
+            "type": "asin_lookup",
+            "progress": progress,
+            "created_at": job.get("created_at"),
+            "updated_at": job.get("updated_at"),
+            "completed_at": None  # jobs table doesn't have completed_at
+        })
+    
+    # Sort all jobs by created_at descending
+    formatted_jobs.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+    
+    # Limit to requested limit
+    formatted_jobs = formatted_jobs[:limit]
     
     return {
         "jobs": formatted_jobs,
