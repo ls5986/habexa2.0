@@ -2512,14 +2512,19 @@ async def bulk_analyze(req: AnalyzeBatchRequest, current_user = Depends(get_curr
         raise HTTPException(500, str(e))
 
 @router.delete("/deal/{deal_id}")
-async def delete_deal(deal_id: str, current_user = Depends(get_current_user)):
-    """Soft delete a deal."""
+async def delete_deal(deal_id: str, current_user = Depends(get_current_user), hard_delete: bool = False):
+    """
+    Delete a deal (product source).
+    
+    By default, soft deletes (sets is_active = False).
+    Set hard_delete=True to permanently delete the deal and associated product if no other deals reference it.
+    """
     user_id = str(current_user.id)
     
     try:
         # Verify ownership
         deal = supabase.table("product_sources")\
-            .select("id, products!inner(user_id)")\
+            .select("id, product_id, products!inner(user_id)")\
             .eq("id", deal_id)\
             .limit(1)\
             .execute()
@@ -2532,17 +2537,44 @@ async def delete_deal(deal_id: str, current_user = Depends(get_current_user)):
         if not isinstance(products, dict) or products.get("user_id") != user_id:
             raise HTTPException(404, "Deal not found")
         
-        result = supabase.table("product_sources")\
-            .update({"is_active": False, "updated_at": datetime.utcnow().isoformat()})\
-            .eq("id", deal_id)\
-            .execute()
+        product_id = deal_data.get("product_id")
+        
+        if hard_delete:
+            # Hard delete: Remove the deal
+            supabase.table("product_sources")\
+                .delete()\
+                .eq("id", deal_id)\
+                .execute()
+            
+            # Check if product has any other active deals
+            other_deals = supabase.table("product_sources")\
+                .select("id")\
+                .eq("product_id", product_id)\
+                .eq("is_active", True)\
+                .limit(1)\
+                .execute()
+            
+            # If no other active deals, delete the product too
+            if not other_deals.data:
+                logger.info(f"🗑️  No other deals for product {product_id}, deleting product")
+                supabase.table("products")\
+                    .delete()\
+                    .eq("id", product_id)\
+                    .eq("user_id", user_id)\
+                    .execute()
+        else:
+            # Soft delete: Just mark as inactive
+            supabase.table("product_sources")\
+                .update({"is_active": False, "updated_at": datetime.utcnow().isoformat()})\
+                .eq("id", deal_id)\
+                .execute()
         
         # Invalidate stats cache (product count changed)
         cache_key = f"asin_stats:{user_id}"
         delete_cached(cache_key)
         logger.debug(f"🗑️  Cache invalidated: {cache_key}")
         
-        return {"deleted": True}
+        return {"deleted": True, "hard_delete": hard_delete}
     except HTTPException:
         raise
     except Exception as e:
