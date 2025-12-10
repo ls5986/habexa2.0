@@ -888,47 +888,72 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
         # Complete
         job.complete(results, results["deals_processed"], len(error_list), error_list)
         
-        # Auto-analyze uploaded products if requested (optional - can be enabled via metadata)
-        # Get product IDs from the uploaded deals
+        # Auto-analyze uploaded products WITH REAL ASINs (not PENDING_ placeholders)
+        # Get product IDs from the uploaded deals that have real ASINs
         if results["deals_processed"] > 0:
             try:
-                # Get product IDs from product_sources that were just created/updated
-                # Query by source_detail (filename) to get the products we just uploaded
+                # Get product IDs with their ASINs - only analyze products with real ASINs
+                # Join with products table to filter out PENDING_ ASINs
                 uploaded_products = supabase.table("product_sources")\
-                    .select("product_id")\
+                    .select("product_id, products!inner(asin)")\
                     .eq("source_detail", filename)\
                     .eq("supplier_id", supplier_id)\
                     .execute()
                 
                 if uploaded_products.data:
-                    product_ids = list(set([p["product_id"] for p in uploaded_products.data]))
+                    # Filter to only products with real ASINs (not PENDING_ or NULL)
+                    product_ids_to_analyze = []
+                    for p in uploaded_products.data:
+                        product = p.get("products")
+                        if product:
+                            asin = product.get("asin")
+                            # Only include products with real ASINs
+                            if asin and asin != "" and not asin.startswith("PENDING_") and not asin.startswith("Unknown"):
+                                product_ids_to_analyze.append(p["product_id"])
                     
-                    # Queue analysis job (optional - check metadata flag)
-                    # For now, we'll always auto-analyze. Can be made configurable later.
-                    from app.tasks.analysis import batch_analyze_products
-                    from uuid import uuid4
-                    
-                    analysis_job_id = str(uuid4())
-                    supabase.table("jobs").insert({
-                        "id": analysis_job_id,
-                        "user_id": user_id,
-                        "type": "batch_analyze",
-                        "status": "pending",
-                        "total_items": len(product_ids),
-                        "metadata": {
-                            "triggered_by": "file_upload",
-                            "upload_job_id": job_id,
-                            "filename": filename
-                        }
-                    }).execute()
-                    
-                    # Queue analysis task
-                    batch_analyze_products.delay(analysis_job_id, user_id, product_ids)
-                    
-                    logger.info(f"Auto-queued analysis for {len(product_ids)} products from upload {job_id}")
+                    if product_ids_to_analyze:
+                        # Queue analysis job in chunks for better performance
+                        from app.tasks.analysis import batch_analyze_products
+                        from uuid import uuid4
+                        
+                        # Process in chunks of 50 products at a time
+                        CHUNK_SIZE = 50
+                        total_chunks = (len(product_ids_to_analyze) + CHUNK_SIZE - 1) // CHUNK_SIZE
+                        
+                        logger.info(f"📊 Queuing analysis for {len(product_ids_to_analyze)} products in {total_chunks} chunks...")
+                        
+                        for chunk_idx in range(0, len(product_ids_to_analyze), CHUNK_SIZE):
+                            chunk = product_ids_to_analyze[chunk_idx:chunk_idx + CHUNK_SIZE]
+                            chunk_num = chunk_idx // CHUNK_SIZE + 1
+                            
+                            analysis_job_id = str(uuid4())
+                            supabase.table("jobs").insert({
+                                "id": analysis_job_id,
+                                "user_id": user_id,
+                                "type": "batch_analyze",
+                                "status": "pending",
+                                "total_items": len(chunk),
+                                "metadata": {
+                                    "triggered_by": "file_upload",
+                                    "upload_job_id": job_id,
+                                    "filename": filename,
+                                    "chunk": f"{chunk_num}/{total_chunks}",
+                                    "total_products": len(product_ids_to_analyze)
+                                }
+                            }).execute()
+                            
+                            # Queue analysis task for this chunk
+                            batch_analyze_products.delay(analysis_job_id, user_id, chunk)
+                            
+                            logger.info(f"✅ Queued analysis chunk {chunk_num}/{total_chunks} ({len(chunk)} products)")
+                        
+                        results["analyzed"] = len(product_ids_to_analyze)
+                        logger.info(f"🎉 Auto-queued analysis for {len(product_ids_to_analyze)} products with real ASINs from upload {job_id}")
+                    else:
+                        logger.warning(f"⚠️ No products with real ASINs to analyze (all have PENDING_ or no ASIN)")
             except Exception as analysis_error:
                 # Don't fail the upload job if auto-analysis fails
-                logger.warning(f"Failed to auto-analyze uploaded products: {analysis_error}")
+                logger.error(f"❌ Failed to auto-analyze uploaded products: {analysis_error}", exc_info=True)
         
     except Exception as e:
         logger.error(f"❌ BACKGROUND TASK CRASHED for job {job_id}: {e}", exc_info=True)
