@@ -224,23 +224,68 @@ def process_pending_asin_lookups(self, batch_size: int = 100):
             asin = all_results.get(upc)
             
             if asin:
-                # Found ASIN - update product
-                supabase.table("products")\
-                    .update({
-                        "asin": asin,
-                        "asin_status": "found",
-                        "lookup_status": "found",
-                        "asin_found_at": datetime.utcnow().isoformat(),
-                        "status": "pending",  # Ready for analysis
-                        "updated_at": datetime.utcnow().isoformat()
-                    })\
-                    .eq("id", product_id)\
-                    .execute()
-                found_count += 1
-                
-                # Queue for analysis
-                if user_id:
-                    products_to_analyze.append((product_id, user_id))
+                # Found ASIN - check for duplicates before updating
+                try:
+                    # Check if ASIN already exists for this user
+                    existing_check = supabase.table("products")\
+                        .select("id")\
+                        .eq("user_id", user_id)\
+                        .eq("asin", asin)\
+                        .neq("id", product_id)\
+                        .limit(1)\
+                        .execute()
+                    
+                    if existing_check.data:
+                        # ASIN already exists - mark as duplicate
+                        logger.warning(f"⚠️ Duplicate ASIN {asin} for product {product_id} - ASIN already exists for product {existing_check.data[0]['id']}")
+                        supabase.table("products")\
+                            .update({
+                                "asin_status": "duplicate_found",
+                                "lookup_status": "failed",
+                                "status": "pending",
+                                "updated_at": datetime.utcnow().isoformat()
+                            })\
+                            .eq("id", product_id)\
+                            .execute()
+                        not_found_count += 1  # Count as failed
+                        continue
+                    
+                    # No duplicate - update product with ASIN
+                    supabase.table("products")\
+                        .update({
+                            "asin": asin,
+                            "asin_status": "found",
+                            "lookup_status": "found",
+                            "asin_found_at": datetime.utcnow().isoformat(),
+                            "status": "pending",  # Ready for analysis
+                            "updated_at": datetime.utcnow().isoformat()
+                        })\
+                        .eq("id", product_id)\
+                        .execute()
+                    found_count += 1
+                    
+                    # Queue for analysis
+                    if user_id:
+                        products_to_analyze.append((product_id, user_id))
+                        
+                except Exception as update_error:
+                    error_str = str(update_error)
+                    # Handle duplicate key constraint violation (race condition)
+                    if 'duplicate key' in error_str.lower() or '23505' in error_str:
+                        logger.warning(f"⚠️ Duplicate ASIN {asin} detected during update (race condition) for product {product_id}")
+                        supabase.table("products")\
+                            .update({
+                                "asin_status": "duplicate_found",
+                                "lookup_status": "failed",
+                                "status": "pending",
+                                "updated_at": datetime.utcnow().isoformat()
+                            })\
+                            .eq("id", product_id)\
+                            .execute()
+                        not_found_count += 1
+                    else:
+                        logger.error(f"❌ Failed to update product {product_id} with ASIN {asin}: {update_error}", exc_info=True)
+                        raise
             else:
                 # Not found - check retry count
                 new_attempts = current_attempts + 1
