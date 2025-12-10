@@ -164,35 +164,103 @@ def process_pending_asin_lookups(self, batch_size: int = 100):
         # Update products with ASINs
         found_count = 0
         not_found_count = 0
+        products_to_analyze = []
         
         for product in products:
             upc = product.get("upc")
+            product_id = product.get("id")
+            user_id = product.get("user_id")
+            current_attempts = product.get("lookup_attempts", 0) or 0
+            
             if not upc:
                 continue
+            
+            # Update status to "looking_up"
+            supabase.table("products").update({
+                "lookup_status": "looking_up",
+                "lookup_attempts": current_attempts + 1
+            }).eq("id", product_id).execute()
             
             asin = all_results.get(upc)
             
             if asin:
-                # Found ASIN
+                # Found ASIN - update product
                 supabase.table("products")\
                     .update({
                         "asin": asin,
                         "asin_status": "found",
+                        "lookup_status": "found",
+                        "asin_found_at": datetime.utcnow().isoformat(),
+                        "status": "pending",  # Ready for analysis
                         "updated_at": datetime.utcnow().isoformat()
                     })\
-                    .eq("id", product["id"])\
+                    .eq("id", product_id)\
                     .execute()
                 found_count += 1
+                
+                # Queue for analysis
+                if user_id:
+                    products_to_analyze.append((product_id, user_id))
             else:
-                # Not found
-                supabase.table("products")\
-                    .update({
-                        "asin_status": "not_found",
-                        "updated_at": datetime.utcnow().isoformat()
-                    })\
-                    .eq("id", product["id"])\
-                    .execute()
-                not_found_count += 1
+                # Not found - check retry count
+                new_attempts = current_attempts + 1
+                
+                if new_attempts >= 3:
+                    # Max retries reached
+                    supabase.table("products")\
+                        .update({
+                            "asin_status": "not_found",
+                            "lookup_status": "failed",
+                            "status": "pending",  # Keep as pending for manual entry
+                            "updated_at": datetime.utcnow().isoformat()
+                        })\
+                        .eq("id", product_id)\
+                        .execute()
+                    not_found_count += 1
+                    logger.warning(f"❌ ASIN lookup failed after 3 attempts for product {product_id} (UPC: {upc})")
+                else:
+                    # Will retry next run
+                    supabase.table("products")\
+                        .update({
+                            "lookup_status": "retry_pending",
+                            "updated_at": datetime.utcnow().isoformat()
+                        })\
+                        .eq("id", product_id)\
+                        .execute()
+                    logger.info(f"⏳ Will retry ASIN lookup for product {product_id} (attempt {new_attempts}/3)")
+        
+        # Queue analysis for products with found ASINs
+        if products_to_analyze:
+            try:
+                from app.tasks.analysis import batch_analyze_products
+                from uuid import uuid4
+                
+                # Group by user_id
+                from collections import defaultdict
+                user_products = defaultdict(list)
+                for product_id, user_id in products_to_analyze:
+                    user_products[user_id].append(product_id)
+                
+                # Queue analysis for each user
+                for user_id, product_ids in user_products.items():
+                    analysis_job_id = str(uuid4())
+                    supabase.table("jobs").insert({
+                        "id": analysis_job_id,
+                        "user_id": user_id,
+                        "type": "batch_analyze",
+                        "status": "pending",
+                        "total_items": len(product_ids),
+                        "metadata": {
+                            "triggered_by": "asin_lookup_job",
+                            "product_ids": product_ids
+                        }
+                    }).execute()
+                    
+                    # Queue analysis
+                    batch_analyze_products.delay(analysis_job_id, user_id, product_ids)
+                    logger.info(f"📊 Queued analysis for {len(product_ids)} products (user: {user_id})")
+            except Exception as e:
+                logger.error(f"Failed to queue analysis: {e}", exc_info=True)
         
         result = {
             "processed": len(products),
