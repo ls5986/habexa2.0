@@ -344,33 +344,78 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
     job = JobManager(job_id)
     
     try:
-        # Decode file contents
-        logger.info(f"Decoding base64 file contents for job {job_id}...")
-        contents = base64.b64decode(file_contents_b64)
-        logger.info(f"Decoded file contents: {len(contents)} bytes")
+        # ============================================================
+        # STEP 1: DECODE FILE
+        # ============================================================
+        logger.info("=" * 80)
+        logger.info("📥 STEP 1: DECODING FILE")
+        logger.info("=" * 80)
+        logger.info(f"Job ID: {job_id}")
+        logger.info(f"User ID: {user_id}")
+        logger.info(f"Supplier ID: {supplier_id}")
+        logger.info(f"Filename: {filename}")
+        logger.info(f"Base64 content length: {len(file_contents_b64) if file_contents_b64 else 'None'}")
         
-        # Parse file
+        try:
+            contents = base64.b64decode(file_contents_b64)
+            logger.info(f"✅ Decoded successfully: {len(contents)} bytes")
+        except Exception as decode_error:
+            error_msg = f"Failed to decode base64 file: {str(decode_error)}"
+            logger.error(f"❌ {error_msg}", exc_info=True)
+            job.fail(error_msg)
+            return
+        
+        # ============================================================
+        # STEP 2: PARSE FILE
+        # ============================================================
+        logger.info("=" * 80)
+        logger.info("📖 STEP 2: PARSING FILE")
+        logger.info("=" * 80)
+        
         job.start()
         job.set_status("parsing")
         job.update_progress(0, 0, success=0, errors=0, error_list=None)
         
-        if filename.lower().endswith('.csv'):
-            rows, headers = parse_csv(contents)
-        elif filename.lower().endswith(('.xlsx', '.xls')):
-            rows, headers = parse_excel(contents)
-        else:
-            job.fail(f"Unsupported file type: {filename}")
+        try:
+            if filename.lower().endswith('.csv'):
+                logger.info("📄 Detected CSV format")
+                rows, headers = parse_csv(contents)
+            elif filename.lower().endswith(('.xlsx', '.xls')):
+                logger.info("📊 Detected Excel format")
+                rows, headers = parse_excel(contents)
+            else:
+                error_msg = f"Unsupported file type: {filename}"
+                logger.error(f"❌ {error_msg}")
+                job.fail(error_msg)
+                return
+            
+            logger.info(f"✅ Parsed successfully: {len(rows)} rows, {len(headers)} columns")
+            logger.info(f"📋 Headers: {headers[:10]}{'...' if len(headers) > 10 else ''}")
+        except Exception as parse_error:
+            error_msg = f"Failed to parse file: {str(parse_error)}"
+            logger.error(f"❌ {error_msg}", exc_info=True)
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            job.fail(error_msg)
             return
         
         total = len(rows)
         if total == 0:
+            logger.warning("⚠️ No rows found in file")
             job.complete({"message": "No valid rows found"}, success=0, errors=0)
             return
         
-        # Detect KEHE format
+        # ============================================================
+        # STEP 3: DETECT FORMAT
+        # ============================================================
+        logger.info("=" * 80)
+        logger.info("🔍 STEP 3: DETECTING FORMAT")
+        logger.info("=" * 80)
+        
         is_kehe = is_kehe_format(headers)
         if is_kehe:
-            logger.info(f"Detected KEHE supplier format for file {filename}")
+            logger.info(f"✅ Detected KEHE supplier format")
+        else:
+            logger.info(f"📋 Standard format detected")
         
         job.set_status("processing")
         job.update_progress(0, total, success=0, errors=0, error_list=None)
@@ -404,14 +449,18 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
             
             batch_end = min(batch_start + BATCH_SIZE, total)
             batch = rows[batch_start:batch_end]
+            logger.info(f"📊 Batch contains {len(batch)} rows")
             
             # Parse rows
             parsed_rows = []
             asins = []
             upcs_to_convert = []
             
+            logger.info(f"🔍 Parsing {len(batch)} rows in batch...")
             for idx, row in enumerate(batch):
                 row_num = batch_start + idx + 2
+                if (idx + 1) % 10 == 0:
+                    logger.info(f"   Parsed {idx + 1}/{len(batch)} rows...")
                 
                 # Use KEHE format parsing if detected
                 if is_kehe:
@@ -709,15 +758,23 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
             unique_asins = list(set([p["asin"] for p in products_with_asin if p.get("asin") and p["asin"] not in product_cache]))
             
             if unique_asins:
-                # Get existing
-                existing = supabase.table("products")\
-                    .select("id, asin")\
-                    .eq("user_id", user_id)\
-                    .in_("asin", unique_asins)\
-                    .execute()
-                
-                for p in (existing.data or []):
-                    product_cache[p["asin"]] = p["id"]
+                logger.info(f"🔍 Checking for existing products with {len(unique_asins)} ASINs...")
+                try:
+                    # Get existing
+                    existing = supabase.table("products")\
+                        .select("id, asin")\
+                        .eq("user_id", user_id)\
+                        .in_("asin", unique_asins)\
+                        .execute()
+                    
+                    existing_count = len(existing.data or [])
+                    logger.info(f"✅ Found {existing_count} existing products")
+                    
+                    for p in (existing.data or []):
+                        product_cache[p["asin"]] = p["id"]
+                except Exception as check_error:
+                    logger.error(f"❌ Failed to check existing products: {check_error}", exc_info=True)
+                    error_list.append(f"Failed to check existing products: {str(check_error)}")
                 
                 # Create missing
                 missing_asins = [a for a in unique_asins if a not in product_cache]
@@ -816,9 +873,11 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                     new_products_no_asin.append(product_data)
                 
                 if new_products_no_asin:
+                    logger.info(f"💾 Inserting {len(new_products_no_asin)} products without ASINs...")
                     # Insert products without ASINs
                     try:
                         # Clean product data - remove None values and ensure proper types
+                        logger.info("🧹 Cleaning product data...")
                         cleaned_products = []
                         for p in new_products_no_asin:
                             cleaned = {}
@@ -839,7 +898,11 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                                     cleaned[key] = value
                             cleaned_products.append(cleaned)
                         
+                        logger.info(f"📤 Executing batch insert of {len(cleaned_products)} products without ASINs...")
                         created_no_asin = supabase.table("products").insert(cleaned_products).execute()
+                        created_count = len(created_no_asin.data or [])
+                        logger.info(f"✅ Successfully inserted {created_count} products without ASINs")
+                        
                         for p in (created_no_asin.data or []):
                             # Use a special key format for products without ASIN: "upc:{upc}"
                             upc_key = f"upc:{p.get('upc')}"
@@ -855,24 +918,30 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                                 results["needs_manual_asin"] += 1
                     except Exception as insert_error:
                         error_msg = f"Failed to insert products without ASINs: {str(insert_error)}"
-                        logger.error(error_msg, exc_info=True)
+                        logger.error(f"❌ {error_msg}", exc_info=True)
+                        logger.error(f"Traceback: {traceback.format_exc()}")
                         error_list.append(error_msg)
                         # Try to insert one by one to identify problematic records
+                        logger.info(f"🔄 Retrying one-by-one insert for {len(new_products_no_asin)} products...")
+                        success_count = 0
                         for idx, p in enumerate(new_products_no_asin):
                             try:
                                 cleaned = {k: v for k, v in p.items() if v is not None or k in ['asin', 'title', 'brand']}
                                 if 'potential_asins' in cleaned and cleaned['potential_asins']:
                                     if isinstance(cleaned['potential_asins'], dict):
                                         cleaned['potential_asins'] = [cleaned['potential_asins']]
+                                logger.debug(f"   Inserting product {idx + 1}/{len(new_products_no_asin)}: UPC {p.get('upc')}")
                                 result = supabase.table("products").insert(cleaned).execute()
                                 if result.data:
                                     product = result.data[0]
                                     upc_key = f"upc:{product.get('upc')}"
                                     product_cache[upc_key] = product["id"]
                                     results["products_created"] += 1
+                                    success_count += 1
                             except Exception as single_error:
-                                logger.error(f"Failed to insert product {idx}: {single_error}")
+                                logger.error(f"❌ Failed to insert product {idx + 1} (UPC {p.get('upc')}): {single_error}")
                                 error_list.append(f"Row {batch_start + idx + 2}: Failed to create product: {str(single_error)}")
+                        logger.info(f"✅ One-by-one insert complete: {success_count}/{len(new_products_no_asin)} succeeded")
             
             # Build deals for upsert
             # Use dict to deduplicate by (product_id, supplier_id) - keep last occurrence
@@ -917,12 +986,29 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
             
             # Batch upsert deals
             if deals:
-                result = supabase.table("product_sources")\
-                    .upsert(deals, on_conflict="product_id,supplier_id")\
-                    .execute()
-                results["deals_processed"] += len(result.data or [])
+                logger.info(f"💼 Upserting {len(deals)} deals...")
+                try:
+                    result = supabase.table("product_sources")\
+                        .upsert(deals, on_conflict="product_id,supplier_id")\
+                        .execute()
+                    deals_count = len(result.data or [])
+                    logger.info(f"✅ Successfully upserted {deals_count} deals")
+                    results["deals_processed"] += deals_count
+                except Exception as deals_error:
+                    error_msg = f"Failed to upsert deals: {str(deals_error)}"
+                    logger.error(f"❌ {error_msg}", exc_info=True)
+                    error_list.append(error_msg)
+            else:
+                logger.warning(f"⚠️ No deals to upsert for this batch")
+            
+            if missing_product_count > 0:
+                logger.warning(f"⚠️ {missing_product_count} rows skipped due to missing product_id")
             
             processed = batch_end
+            logger.info(f"📊 Batch {batch_num} complete: {processed}/{total} rows processed")
+            logger.info(f"   Products created: {results['products_created']}")
+            logger.info(f"   Deals processed: {results['deals_processed']}")
+            logger.info(f"   Errors: {len(error_list)}")
             job.update_progress(processed, total, results["deals_processed"], len(error_list), error_list)
         
         # Complete
