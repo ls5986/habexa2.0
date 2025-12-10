@@ -1390,12 +1390,38 @@ async def confirm_csv_upload(
                         continue
                 
                 # Calculate buy_cost from wholesale_cost_case + case_pack if needed
-                if 'buy_cost' not in product_data and 'wholesale_cost_case' in product_data and 'case_pack' in product_data:
-                    wholesale_case = product_data.get('wholesale_cost_case')
-                    case_pack = product_data.get('case_pack')
-                    if wholesale_case and case_pack and case_pack > 0:
-                        product_data['buy_cost'] = round(wholesale_case / case_pack, 2)
-                        logger.debug(f"Row {idx + 1}: Calculated buy_cost = {wholesale_case} / {case_pack} = {product_data['buy_cost']}")
+                # Check both product_data (from mapping) and row data (direct from CSV)
+                if 'buy_cost' not in product_data:
+                    # Try from mapped fields first
+                    if 'wholesale_cost_case' in product_data and 'case_pack' in product_data:
+                        wholesale_case = product_data.get('wholesale_cost_case')
+                        case_pack = product_data.get('case_pack')
+                        if wholesale_case is not None and case_pack is not None and case_pack > 0:
+                            try:
+                                product_data['buy_cost'] = round(float(wholesale_case) / float(case_pack), 2)
+                                logger.debug(f"Row {idx + 1}: Calculated buy_cost from mapped fields = {product_data['buy_cost']}")
+                            except (ValueError, TypeError) as e:
+                                logger.warning(f"Row {idx + 1}: Could not calculate from mapped fields: {e}")
+                    
+                    # If still not calculated, try to get from row data directly (check if columns are mapped)
+                    if 'buy_cost' not in product_data:
+                        wholesale_col = request.column_mapping.get('wholesale_cost_case')
+                        pack_col = request.column_mapping.get('case_pack')
+                        
+                        if wholesale_col and pack_col and wholesale_col in row.index and pack_col in row.index:
+                            wholesale_val = row[wholesale_col]
+                            pack_val = row[pack_col]
+                            
+                            if pd.notna(wholesale_val) and pd.notna(pack_val):
+                                try:
+                                    wholesale_case = float(wholesale_val) if not pd.isna(wholesale_val) else None
+                                    case_pack = float(pack_val) if not pd.isna(pack_val) else None
+                                    
+                                    if wholesale_case is not None and case_pack is not None and case_pack > 0:
+                                        product_data['buy_cost'] = round(wholesale_case / case_pack, 2)
+                                        logger.debug(f"Row {idx + 1}: Calculated buy_cost from CSV columns = {product_data['buy_cost']}")
+                                except (ValueError, TypeError) as e:
+                                    logger.warning(f"Row {idx + 1}: Could not calculate from CSV columns: {e}")
                 
                 # If still no buy_cost, try to get from calculated "Buy Cost" column (created by _calculate_buy_cost_from_wholesale_pack)
                 if 'buy_cost' not in product_data and 'Buy Cost' in df.columns:
@@ -1405,23 +1431,26 @@ async def confirm_csv_upload(
                             if isinstance(buy_cost_val, str):
                                 buy_cost_val = buy_cost_val.replace('$', '').replace(',', '').strip()
                             product_data['buy_cost'] = float(buy_cost_val)
-                            logger.debug(f"Row {idx + 1}: Using calculated Buy Cost = {product_data['buy_cost']}")
+                            logger.debug(f"Row {idx + 1}: Using calculated Buy Cost column = {product_data['buy_cost']}")
                         except (ValueError, TypeError) as e:
                             logger.warning(f"Row {idx + 1}: Could not use calculated Buy Cost value: {e}")
                 
                 # Validate buy_cost is present
                 if 'buy_cost' not in product_data or product_data.get('buy_cost') is None:
-                    # Check if we have the columns to calculate it
-                    has_wholesale = 'wholesale_cost_case' in product_data or any('wholesale' in str(k).lower() for k in row.index)
-                    has_pack = 'case_pack' in product_data or any('pack' in str(k).lower() for k in row.index)
+                    # Check what's mapped to provide helpful error
+                    has_cost_mapping = 'cost' in request.column_mapping
+                    has_wholesale_mapping = 'wholesale_cost_case' in request.column_mapping
+                    has_pack_mapping = 'case_pack' in request.column_mapping
                     
-                    error_msg = "Buy cost is required. "
-                    if has_wholesale and not has_pack:
+                    error_msg = "Buy cost is required but could not be determined. "
+                    if has_wholesale_mapping and not has_pack_mapping:
                         error_msg += "Map 'case_pack' to 'Pack' column to calculate buy cost from wholesale case cost."
-                    elif has_pack and not has_wholesale:
-                        error_msg += "Map 'cost' to 'Wholesale Cost' column, or map 'wholesale_cost_case' to calculate buy cost."
-                    else:
+                    elif has_pack_mapping and not has_wholesale_mapping:
+                        error_msg += "Map 'wholesale_cost_case' to 'Wholesale' column, or map 'cost' to 'Wholesale Cost' column."
+                    elif not has_cost_mapping and not (has_wholesale_mapping and has_pack_mapping):
                         error_msg += "Map 'cost' to 'Wholesale Cost' column, or map 'wholesale_cost_case' + 'case_pack' to calculate it."
+                    else:
+                        error_msg += "Values in mapped columns may be empty or invalid. Check your CSV data."
                     
                     errors.append({
                         'row': idx + 1,
