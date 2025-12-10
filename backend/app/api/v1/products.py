@@ -2549,6 +2549,61 @@ async def delete_deal(deal_id: str, current_user = Depends(get_current_user)):
         logger.error(f"Failed to delete deal: {e}")
         raise HTTPException(500, str(e))
 
+@router.post("/cleanup-orphaned")
+async def cleanup_orphaned_products(current_user = Depends(get_current_user)):
+    """
+    Clean up orphaned products that don't belong to any user or belong to deleted users.
+    This helps remove products that were created without a proper user_id.
+    """
+    user_id = str(current_user.id)
+    
+    try:
+        # Find products without user_id or with invalid user_id
+        # First, get all valid user IDs from profiles
+        valid_users = supabase.table("profiles")\
+            .select("id")\
+            .execute()
+        
+        valid_user_ids = {str(u["id"]) for u in (valid_users.data or [])}
+        
+        # Find orphaned products (no user_id or invalid user_id)
+        # Limit to 1000 at a time to avoid memory issues
+        all_products = supabase.table("products")\
+            .select("id, user_id, asin, title")\
+            .limit(1000)\
+            .execute()
+        
+        orphaned = []
+        for product in (all_products.data or []):
+            product_user_id = str(product.get("user_id")) if product.get("user_id") else None
+            if not product_user_id or product_user_id not in valid_user_ids:
+                orphaned.append(product["id"])
+        
+        if not orphaned:
+            return {
+                "message": "No orphaned products found",
+                "cleaned": 0
+            }
+        
+        # Delete orphaned products (cascade will handle product_sources)
+        deleted = supabase.table("products")\
+            .delete()\
+            .in_("id", orphaned)\
+            .execute()
+        
+        deleted_count = len(deleted.data or []) if deleted.data else 0
+        
+        logger.info(f"🧹 Cleaned up {deleted_count} orphaned products")
+        
+        return {
+            "message": f"Cleaned up {deleted_count} orphaned products",
+            "cleaned": deleted_count,
+            "orphaned_ids": orphaned[:10]  # Return first 10 for reference
+        }
+    except Exception as e:
+        logger.error(f"Failed to cleanup orphaned products: {e}", exc_info=True)
+        raise HTTPException(500, f"Failed to cleanup: {str(e)}")
+
 @router.post("/assign-supplier")
 async def assign_supplier_to_products(
     request: dict,
