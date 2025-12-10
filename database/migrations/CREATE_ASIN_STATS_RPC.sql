@@ -17,40 +17,44 @@ BEGIN
   -- Single aggregation query with FILTER clauses
   -- This is highly optimized and scales to millions of rows
   -- Excludes PENDING_* and Unknown placeholders from "asin_found"
+  -- CRITICAL: Only count products with active product_sources (deals)
+  -- This matches the filter_product_deals function which filters by ps.is_active = TRUE
   SELECT json_build_object(
-    'all', COUNT(*),
-    'asin_found', COUNT(*) FILTER (
-      WHERE asin IS NOT NULL 
-        AND asin != ''
-        AND asin NOT LIKE 'PENDING_%'
-        AND asin NOT LIKE 'Unknown%'
+    'all', COUNT(DISTINCT p.id),
+    'asin_found', COUNT(DISTINCT p.id) FILTER (
+      WHERE p.asin IS NOT NULL 
+        AND p.asin != ''
+        AND p.asin NOT LIKE 'PENDING_%'
+        AND p.asin NOT LIKE 'Unknown%'
     ),
-    'needs_selection', COUNT(*) FILTER (
-      WHERE status = 'needs_selection'
+    'needs_selection', COUNT(DISTINCT p.id) FILTER (
+      WHERE p.status = 'needs_selection'
     ),
-    'needs_asin', COUNT(*) FILTER (
-      WHERE upc IS NOT NULL 
-        AND upc != ''
+    'needs_asin', COUNT(DISTINCT p.id) FILTER (
+      WHERE p.upc IS NOT NULL 
+        AND p.upc != ''
         AND (
-          asin IS NULL 
-          OR asin = ''
-          OR asin LIKE 'PENDING_%'
-          OR asin LIKE 'Unknown%'
+          p.asin IS NULL 
+          OR p.asin = ''
+          OR p.asin LIKE 'PENDING_%'
+          OR p.asin LIKE 'Unknown%'
         )
     ),
-    'manual_entry', COUNT(*) FILTER (
-      WHERE (upc IS NULL OR upc = '')
+    'manual_entry', COUNT(DISTINCT p.id) FILTER (
+      WHERE (p.upc IS NULL OR p.upc = '')
         AND (
-          asin IS NULL 
-          OR asin = ''
-          OR asin LIKE 'PENDING_%'
-          OR asin LIKE 'Unknown%'
+          p.asin IS NULL 
+          OR p.asin = ''
+          OR p.asin LIKE 'PENDING_%'
+          OR p.asin LIKE 'Unknown%'
         )
     )
   )
   INTO result
-  FROM products
-  WHERE user_id = p_user_id;
+  FROM products p
+  INNER JOIN product_sources ps ON ps.product_id = p.id
+  WHERE p.user_id = p_user_id
+    AND ps.is_active = TRUE;  -- CRITICAL: Only count active deals
   
   RETURN result;
 END;
