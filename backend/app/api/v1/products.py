@@ -1130,7 +1130,18 @@ async def preview_csv_upload(
         sample_data = None
         if len(df) > 0:
             try:
-                sample_dict = df.iloc[0].to_dict()
+                sample_row = df.iloc[0]
+                # Extra safety: Clean any remaining NaN values
+                sample_row = sample_row.replace({pd.NA: None, pd.NaT: None, float('nan'): None, 'nan': None})
+                sample_row = sample_row.where(pd.notnull(sample_row), None)
+                
+                sample_dict = sample_row.to_dict()
+                
+                # Final safety pass: Replace any NaN that might have slipped through
+                for key, value in list(sample_dict.items()):
+                    if pd.isna(value) or (isinstance(value, float) and (value != value)):  # NaN check
+                        sample_dict[key] = None
+                
                 # Remove "Buy Cost" from sample data so it doesn't confuse AI mapping
                 if 'Buy Cost' in sample_dict:
                     del sample_dict['Buy Cost']
@@ -1158,7 +1169,19 @@ async def preview_csv_upload(
         # Get preview data (first 5 rows) - now safe from NaN values
         preview_data = []
         try:
-            preview_data = df.head(5).to_dict('records')
+            preview_df = df.head(5)
+            # Extra safety: Clean any remaining NaN values before converting to dict
+            preview_df = preview_df.replace({pd.NA: None, pd.NaT: None, float('nan'): None, 'nan': None})
+            preview_df = preview_df.where(pd.notnull(preview_df), None)
+            
+            # Convert to dict and clean any remaining NaN values
+            preview_data = preview_df.to_dict('records')
+            
+            # Final safety pass: Replace any NaN that might have slipped through
+            for row in preview_data:
+                for key, value in row.items():
+                    if pd.isna(value) or (isinstance(value, float) and (value != value)):  # NaN check
+                        row[key] = None
         except Exception as e:
             logger.error(f"Failed to convert preview data: {e}", exc_info=True)
             raise HTTPException(500, f"Failed to generate preview: {str(e)}")
