@@ -1492,18 +1492,15 @@ async def confirm_csv_upload(
                 # Remove None values from deal_fields (except supplier_id which can be None)
                 deal_fields = {k: v for k, v in deal_fields.items() if v is not None or k == 'supplier_id'}
                 
-                # Create product (only product fields)
-                result = supabase.table('products').insert(product_fields).execute()
-                if result.data:
-                    product = result.data[0]
-                    created_products.append(product)
-                    
-                    # Create product_source (deal) with deal fields
-                    if deal_fields.get('buy_cost'):  # Only create deal if we have buy_cost
-                        upsert_deal(product['id'], deal_fields.get('supplier_id'), deal_fields)
+                # Store for batch insert (with row index for error tracking)
+                products_to_insert.append({
+                    'row_idx': idx,
+                    'product_fields': product_fields,
+                    'deal_fields': deal_fields if deal_fields.get('buy_cost') else None
+                })
                 
             except Exception as e:
-                logger.error(f"Failed to create product from row {idx}: {e}")
+                logger.error(f"Failed to prepare product from row {idx + 1}: {e}")
                 # Convert row to dict, replacing any NaN values with None for JSON
                 error_row_data = row.to_dict()
                 error_row_data_clean = {k: (None if pd.isna(v) else v) for k, v in error_row_data.items()}
@@ -1513,7 +1510,73 @@ async def confirm_csv_upload(
                     'data': error_row_data_clean
                 })
         
-        logger.info(f"✅ Created {len(created_products)} products, {len(errors)} errors")
+        # Batch insert products (much faster than individual inserts)
+        if products_to_insert:
+            logger.info(f"📤 Batch inserting {len(products_to_insert)} products...")
+            
+            # Extract just product_fields for batch insert
+            product_batch = [item['product_fields'] for item in products_to_insert]
+            
+            try:
+                # Insert all products at once
+                result = supabase.table('products').insert(product_batch).execute()
+                
+                if result.data:
+                    # Map inserted products back to their deal data
+                    for i, product in enumerate(result.data):
+                        created_products.append(product)
+                        item = products_to_insert[i]
+                        
+                        # Create product_source (deal) if we have buy_cost
+                        if item['deal_fields']:
+                            try:
+                                upsert_deal(
+                                    product['id'],
+                                    item['deal_fields'].get('supplier_id'),
+                                    item['deal_fields']
+                                )
+                            except Exception as e:
+                                logger.warning(f"Failed to create deal for product {product['id']} (row {item['row_idx'] + 1}): {e}")
+                                errors.append({
+                                    'row': item['row_idx'] + 1,
+                                    'error': f"Product created but deal failed: {str(e)}",
+                                    'data': {}
+                                })
+                else:
+                    logger.error("Batch insert returned no data")
+                    # Fall back to individual inserts for error tracking
+                    for item in products_to_insert:
+                        errors.append({
+                            'row': item['row_idx'] + 1,
+                            'error': "Batch insert failed - no data returned",
+                            'data': {}
+                        })
+            except Exception as e:
+                logger.error(f"Batch insert failed: {e}", exc_info=True)
+                # Fall back to individual inserts for better error tracking
+                logger.info("Falling back to individual inserts...")
+                for item in products_to_insert:
+                    try:
+                        result = supabase.table('products').insert(item['product_fields']).execute()
+                        if result.data:
+                            product = result.data[0]
+                            created_products.append(product)
+                            
+                            if item['deal_fields']:
+                                upsert_deal(
+                                    product['id'],
+                                    item['deal_fields'].get('supplier_id'),
+                                    item['deal_fields']
+                                )
+                    except Exception as e:
+                        logger.error(f"Failed to create product from row {item['row_idx'] + 1}: {e}")
+                        errors.append({
+                            'row': item['row_idx'] + 1,
+                            'error': str(e),
+                            'data': {}
+                        })
+        
+        logger.info(f"✅ Created {len(created_products)} products, {len(errors)} errors out of {total_rows} total rows")
         
         return {
             'success': True,
