@@ -83,6 +83,11 @@ celery_app.conf.update(
             "schedule": 300.0,  # Every 5 minutes
             "args": (100,),  # Process 100 products per run
         },
+        "process-pending-asin-lookups-new": {
+            "task": "app.tasks.asin_lookup.process_pending_asin_lookups",
+            "schedule": 1800.0,  # Every 30 minutes (backup to the 5-minute job)
+            "args": (100,),
+        },
     },
 )
 

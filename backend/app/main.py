@@ -113,7 +113,10 @@ async def root():
 
 @app.on_event("startup")
 async def startup():
-    """Log Redis connection on startup."""
+    """Run on application startup."""
+    logger.info("Starting Habexa backend...")
+    
+    # Log Redis connection
     redis_url = os.getenv("REDIS_URL", "not set")
     # Redact password for security
     safe_url = re.sub(r'://[^:]+:[^@]+@', '://***:***@', redis_url)
@@ -132,6 +135,27 @@ async def startup():
             logger.warning("⚠️ Celery could not connect to Redis - tasks may not execute")
     except Exception as e:
         logger.warning(f"⚠️ Celery connection check failed: {e}")
+    
+    # Start background job scheduler
+    try:
+        from app.core.scheduler import start_scheduler
+        start_scheduler()
+    except Exception as e:
+        logger.error(f"Failed to start scheduler: {e}", exc_info=True)
+    
+    logger.info("✅ Application started successfully")
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    """Run on application shutdown."""
+    logger.info("Shutting down Habexa backend...")
+    try:
+        from app.core.scheduler import stop_scheduler
+        stop_scheduler()
+    except Exception as e:
+        logger.error(f"Error stopping scheduler: {e}")
+    logger.info("✅ Application stopped")
 
 
 @app.get("/health")

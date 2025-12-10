@@ -85,27 +85,30 @@ def cache_upc_asin(upc: str, asin: Optional[str]):
 # ASIN LOOKUP TASK
 # ============================================================================
 
-@celery_app.task
-def process_pending_asin_lookups(batch_size: int = 100):
+@celery_app.task(bind=True, max_retries=2)
+def process_pending_asin_lookups(self, batch_size: int = 100):
     """
     Process products that need ASIN lookup.
     
     This task:
-    1. Gets products with asin_status='pending_lookup'
+    1. Gets products with PENDING_ ASINs or lookup_status='pending'
     2. Checks UPC cache first
     3. Looks up uncached UPCs via SP-API
     4. Updates products with ASINs
-    5. Caches results
+    5. Queues analysis for found ASINs
+    6. Caches results
     
     Args:
         batch_size: Number of products to process per run
     """
     try:
-        # Get products needing lookup
+        # Get products needing lookup - check both old and new status fields
+        # Priority: lookup_status field (new), then asin_status (old), then PENDING_ ASINs
         products_result = supabase.table("products")\
-            .select("id, upc, asin_status")\
-            .eq("asin_status", "pending_lookup")\
+            .select("id, upc, asin, asin_status, lookup_status, lookup_attempts, user_id")\
+            .or_('lookup_status.eq.pending,lookup_status.eq.retry_pending,asin.like.PENDING_%,asin.like.Unknown%,asin.is.null')\
             .not_.is_("upc", "null")\
+            .neq("upc", "")\
             .limit(batch_size)\
             .execute()
         

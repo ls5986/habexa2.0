@@ -3212,3 +3212,146 @@ async def bulk_action(
     logger.info(f"✅ Bulk action '{action}': {results['success']} succeeded, {results['failed']} failed")
     
     return results
+
+
+@router.get("/lookup-status")
+async def get_lookup_status(current_user = Depends(get_current_user)):
+    """
+    Get real-time status of ASIN lookups.
+    Returns counts by status.
+    """
+    user_id = str(current_user.id)
+    
+    try:
+        result = supabase.table('products') \
+            .select('lookup_status') \
+            .eq('user_id', user_id) \
+            .execute()
+        
+        status_counts = {
+            'pending': 0,
+            'looking_up': 0,
+            'found': 0,
+            'retry_pending': 0,
+            'failed': 0,
+            'multiple_found': 0,
+            'no_upc': 0
+        }
+        
+        for product in (result.data or []):
+            status = product.get('lookup_status', 'pending')
+            if status in status_counts:
+                status_counts[status] += 1
+            else:
+                # Unknown status, count as pending
+                status_counts['pending'] += 1
+        
+        total = sum(status_counts.values())
+        complete = status_counts['found']
+        progress_percent = int((complete / total * 100)) if total > 0 else 0
+        
+        return {
+            'total': total,
+            'complete': complete,
+            'progress_percent': progress_percent,
+            'status_counts': status_counts
+        }
+    except Exception as e:
+        logger.error(f"Error getting lookup status: {e}", exc_info=True)
+        return {
+            'total': 0,
+            'complete': 0,
+            'progress_percent': 0,
+            'status_counts': {}
+        }
+
+
+@router.post("/retry-asin-lookup")
+async def retry_asin_lookup(
+    product_ids: List[str],
+    background_tasks: BackgroundTasks,
+    current_user = Depends(get_current_user)
+):
+    """
+    Manually retry ASIN lookup for specific products.
+    Useful for failed lookups.
+    """
+    user_id = str(current_user.id)
+    
+    try:
+        # Reset lookup status
+        supabase.table('products') \
+            .update({
+                'lookup_status': 'pending',
+                'lookup_attempts': 0
+            }) \
+            .in_('id', product_ids) \
+            .eq('user_id', user_id) \
+            .execute()
+        
+        # Trigger immediate lookup via Celery
+        try:
+            from app.tasks.asin_lookup import lookup_product_asins
+            task = lookup_product_asins.delay(product_ids)
+            logger.info(f"✅ Queued Celery ASIN lookup task {task.id} for {len(product_ids)} products")
+        except Exception as e:
+            logger.error(f"Failed to queue Celery task: {e}", exc_info=True)
+            raise HTTPException(500, f"Failed to queue lookup: {str(e)}")
+        
+        return {
+            'success': True,
+            'queued': len(product_ids),
+            'message': f'Queued {len(product_ids)} products for ASIN lookup'
+        }
+    except Exception as e:
+        logger.error(f"Error retrying ASIN lookup: {e}", exc_info=True)
+        raise HTTPException(500, f"Failed to retry lookup: {str(e)}")
+
+
+@router.post("/retry-all-failed")
+async def retry_all_failed_lookups(
+    background_tasks: BackgroundTasks,
+    current_user = Depends(get_current_user)
+):
+    """Retry all failed ASIN lookups for current user."""
+    user_id = str(current_user.id)
+    
+    try:
+        # Get failed products
+        result = supabase.table('products') \
+            .select('id') \
+            .eq('user_id', user_id) \
+            .eq('lookup_status', 'failed') \
+            .execute()
+        
+        product_ids = [p['id'] for p in (result.data or [])]
+        
+        if not product_ids:
+            return {'success': True, 'queued': 0, 'message': 'No failed lookups to retry'}
+        
+        # Reset and queue
+        supabase.table('products') \
+            .update({
+                'lookup_status': 'pending',
+                'lookup_attempts': 0
+            }) \
+            .in_('id', product_ids) \
+            .execute()
+        
+        # Trigger immediate lookup via Celery
+        try:
+            from app.tasks.asin_lookup import process_pending_asin_lookups
+            task = process_pending_asin_lookups.delay(100)  # Process up to 100 products
+            logger.info(f"✅ Queued Celery ASIN lookup task {task.id} for all failed products")
+        except Exception as e:
+            logger.error(f"Failed to queue Celery task: {e}", exc_info=True)
+            raise HTTPException(500, f"Failed to queue lookup: {str(e)}")
+        
+        return {
+            'success': True,
+            'queued': len(product_ids),
+            'message': f'Queued {len(product_ids)} products for retry'
+        }
+    except Exception as e:
+        logger.error(f"Error retrying all failed lookups: {e}", exc_info=True)
+        raise HTTPException(500, f"Failed to retry lookups: {str(e)}")
