@@ -1698,32 +1698,175 @@ async def confirm_csv_upload(
         total_rows = len(df)  # FIX: Define total_rows for logging
         logger.info(f"✅ Created {len(created_products)} products, {len(errors)} errors out of {total_rows} total rows")
         
-        # Queue ASIN lookup for products with UPCs (non-blocking)
+        # CRITICAL: IMMEDIATE UPC→ASIN conversion (not queued!)
+        # This is the FIRST PRIORITY - must happen immediately during upload
+        asin_lookup_results = {
+            'converted': 0,
+            'failed': 0,
+            'multiple_found': 0,
+            'not_found': 0,
+            'products_ready_for_analysis': []
+        }
+        
         if created_products:
-            product_ids_for_lookup = [
-                p['id'] for p in created_products 
+            products_needing_lookup = [
+                p for p in created_products 
                 if p.get('upc') and (not p.get('asin') or p.get('asin', '').startswith('PENDING_'))
             ]
             
-            if product_ids_for_lookup:
+            if products_needing_lookup:
+                logger.info(f"🔄 IMMEDIATE UPC→ASIN conversion for {len(products_needing_lookup)} products...")
+                
+                # Create job record for tracking
+                from uuid import uuid4
+                job_id = str(uuid4())
                 try:
-                    from app.tasks.asin_lookup import lookup_product_asins
-                    task = lookup_product_asins.delay(product_ids_for_lookup)
-                    logger.info(f"✅ Queued Celery ASIN lookup task {task.id} for {len(product_ids_for_lookup)} products")
-                except Exception as e:
-                    logger.error(f"Failed to queue Celery task for ASIN lookup: {e}", exc_info=True)
-                    # Fallback to FastAPI BackgroundTasks if Celery fails
+                    supabase.table("jobs").insert({
+                        "id": job_id,
+                        "user_id": user_id,
+                        "type": "asin_lookup",
+                        "status": "processing",
+                        "total_items": len(products_needing_lookup),
+                        "processed_items": 0,
+                        "progress": 0,
+                        "metadata": {
+                            "source": "csv_upload",
+                            "filename": request.filename
+                        }
+                    }).execute()
+                except Exception as job_error:
+                    logger.warning(f"Failed to create job record: {job_error}")
+                    job_id = None
+                
+                # IMMEDIATE conversion - do it NOW, not in background
+                from app.services.upc_converter import upc_converter
+                
+                # Process in batches of 20 (SP-API limit)
+                BATCH_SIZE = 20
+                processed = 0
+                
+                for i in range(0, len(products_needing_lookup), BATCH_SIZE):
+                    batch = products_needing_lookup[i:i + BATCH_SIZE]
+                    
+                    for product in batch:
+                        try:
+                            upc = product.get('upc')
+                            if not upc:
+                                continue
+                            
+                            # IMMEDIATE UPC→ASIN conversion (async - function is already async)
+                            asins, status = await upc_converter.upc_to_asins(upc)
+                            
+                            if status == "found" and asins:
+                                # Single ASIN found - update product immediately
+                                asin = asins[0].get('asin')
+                                supabase.table('products').update({
+                                    'asin': asin,
+                                    'lookup_status': 'found',
+                                    'asin_status': 'found',
+                                    'status': 'pending'  # Ready for analysis
+                                }).eq('id', product['id']).execute()
+                                
+                                asin_lookup_results['converted'] += 1
+                                asin_lookup_results['products_ready_for_analysis'].append({
+                                    'product_id': product['id'],
+                                    'asin': asin
+                                })
+                                logger.info(f"✅ IMMEDIATE: UPC {upc} → ASIN {asin}")
+                                
+                            elif status == "multiple" and asins:
+                                # Multiple ASINs - store for user selection
+                                supabase.table('products').update({
+                                    'asin_status': 'multiple_found',
+                                    'potential_asins': [a.get('asin') for a in asins],
+                                    'lookup_status': 'multiple_found'
+                                }).eq('id', product['id']).execute()
+                                
+                                asin_lookup_results['multiple_found'] += 1
+                                logger.info(f"⚠️ Multiple ASINs found for UPC {upc}: {len(asins)} matches")
+                                
+                            elif status == "not_found":
+                                supabase.table('products').update({
+                                    'lookup_status': 'not_found',
+                                    'asin_status': 'not_found'
+                                }).eq('id', product['id']).execute()
+                                
+                                asin_lookup_results['not_found'] += 1
+                                logger.warning(f"❌ No ASIN found for UPC {upc}")
+                                
+                            else:
+                                asin_lookup_results['failed'] += 1
+                                
+                            processed += 1
+                            
+                            # Update job progress
+                            if job_id:
+                                try:
+                                    progress = int((processed / len(products_needing_lookup)) * 100)
+                                    supabase.table("jobs").update({
+                                        "processed_items": processed,
+                                        "progress": progress
+                                    }).eq("id", job_id).execute()
+                                except:
+                                    pass
+                                    
+                        except Exception as e:
+                            logger.error(f"Failed to convert UPC {product.get('upc')}: {e}", exc_info=True)
+                            asin_lookup_results['failed'] += 1
+                            processed += 1
+                
+                # Mark job as complete
+                if job_id:
                     try:
-                        from app.tasks.asin_lookup import lookup_product_asins
-                        # Execute synchronously as fallback (not ideal but ensures processing)
-                        logger.warning(f"⚠️ Falling back to synchronous ASIN lookup for {len(product_ids_for_lookup)} products")
-                        lookup_product_asins(product_ids_for_lookup)
-                    except Exception as fallback_error:
-                        logger.error(f"Fallback ASIN lookup also failed: {fallback_error}", exc_info=True)
-                        # FIX: Don't fail the entire upload if ASIN lookup fails - products are still created
-                        logger.warning(f"⚠️ Products created but ASIN lookup failed. Products will be processed in background job.")
-                        # FIX: Don't fail the entire upload if ASIN lookup fails - products are still created
-                        logger.warning(f"⚠️ Products created but ASIN lookup failed. Products will be processed in background job.")
+                        supabase.table("jobs").update({
+                            "status": "completed",
+                            "processed_items": processed,
+                            "progress": 100,
+                            "success_count": asin_lookup_results['converted'],
+                            "error_count": asin_lookup_results['failed'] + asin_lookup_results['not_found']
+                        }).eq("id", job_id).execute()
+                    except:
+                        pass
+                
+                logger.info(f"✅ IMMEDIATE UPC→ASIN conversion complete: {asin_lookup_results['converted']} converted, {asin_lookup_results['failed']} failed, {asin_lookup_results['multiple_found']} multiple, {asin_lookup_results['not_found']} not found")
+                
+                # IMMEDIATE: Trigger analysis for products with ASINs (SP-API + Keepa)
+                if asin_lookup_results['products_ready_for_analysis']:
+                    logger.info(f"🚀 IMMEDIATE: Triggering analysis for {len(asin_lookup_results['products_ready_for_analysis'])} products with ASINs...")
+                    
+                    try:
+                        from app.tasks.analysis import batch_analyze_products
+                        from uuid import uuid4
+                        
+                        analysis_product_ids = [p['product_id'] for p in asin_lookup_results['products_ready_for_analysis']]
+                        analysis_job_id = str(uuid4())
+                        
+                        # Create analysis job
+                        supabase.table("jobs").insert({
+                            "id": analysis_job_id,
+                            "user_id": user_id,
+                            "type": "batch_analyze",
+                            "status": "pending",
+                            "total_items": len(analysis_product_ids),
+                            "metadata": {
+                                "triggered_by": "immediate_asin_lookup",
+                                "source": "csv_upload"
+                            }
+                        }).execute()
+                        
+                        # Queue analysis (SP-API + Keepa)
+                        batch_analyze_products.delay(analysis_job_id, user_id, analysis_product_ids)
+                        logger.info(f"✅ Queued IMMEDIATE analysis for {len(analysis_product_ids)} products (job: {analysis_job_id})")
+                        
+                    except Exception as analysis_error:
+                        logger.error(f"Failed to queue immediate analysis: {analysis_error}", exc_info=True)
+        
+        # Build response message
+        message_parts = [f"{len(created_products)} products created"]
+        if asin_lookup_results.get('converted', 0) > 0:
+            message_parts.append(f"{asin_lookup_results['converted']} UPC→ASIN conversions completed immediately")
+        if asin_lookup_results.get('products_ready_for_analysis'):
+            message_parts.append(f"{len(asin_lookup_results['products_ready_for_analysis'])} products queued for immediate analysis")
         
         return {
             'success': True,
@@ -1732,7 +1875,8 @@ async def confirm_csv_upload(
             'failed': len(errors),
             'errors': errors[:10],  # Return first 10 errors
             'buy_cost_calculation': buy_cost_status,
-            'message': f"{len(created_products)} products created. ASIN lookup queued in background." if created_products else "No products created."
+            'asin_lookup': asin_lookup_results,
+            'message': ". ".join(message_parts) if message_parts else "No products created."
         }
         
     except Exception as e:
