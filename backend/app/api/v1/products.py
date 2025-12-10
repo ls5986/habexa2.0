@@ -3338,11 +3338,11 @@ async def retry_all_failed_lookups(
             .in_('id', product_ids) \
             .execute()
         
-        # Trigger immediate lookup via Celery
+        # Trigger immediate lookup via Celery for specific products
         try:
-            from app.tasks.asin_lookup import process_pending_asin_lookups
-            task = process_pending_asin_lookups.delay(100)  # Process up to 100 products
-            logger.info(f"✅ Queued Celery ASIN lookup task {task.id} for all failed products")
+            from app.tasks.asin_lookup import lookup_product_asins
+            task = lookup_product_asins.delay(product_ids)
+            logger.info(f"✅ Queued Celery ASIN lookup task {task.id} for {len(product_ids)} failed products")
         except Exception as e:
             logger.error(f"Failed to queue Celery task: {e}", exc_info=True)
             raise HTTPException(500, f"Failed to queue lookup: {str(e)}")
