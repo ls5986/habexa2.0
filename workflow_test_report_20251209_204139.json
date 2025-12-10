@@ -1,0 +1,157 @@
+{
+  "timestamp": "2025-12-09T20:41:39.355732",
+  "workflows": [
+    {
+      "name": "Product Analysis",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Analyze UPC",
+          "success": true,
+          "error": "",
+          "duration": 603.1930446624756
+        },
+        {
+          "step": 2,
+          "action": "Quick ASIN Analysis",
+          "success": true,
+          "error": "",
+          "duration": 311.39612197875977
+        },
+        {
+          "step": 4,
+          "action": "Add Product",
+          "success": true,
+          "error": "",
+          "duration": 716.4239883422852
+        }
+      ],
+      "success": true,
+      "duration": 2375.030994415283,
+      "test_data": {
+        "asin": "B0CV4FL9WM",
+        "product_id": "2e774fea-fb40-47bc-a40e-cff7d4266f7c",
+        "deal_id": "037fc13d-175f-4aff-ae8f-708110932776"
+      }
+    },
+    {
+      "name": "CSV Upload",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Upload Preview",
+          "success": true,
+          "error": "",
+          "duration": 2453.2039165496826
+        },
+        {
+          "step": 2,
+          "action": "Confirm Upload",
+          "success": false,
+          "error": "{\"detail\":\"Failed to process upload: name 'products_to_insert' is not defined\"}",
+          "duration": 266.14999771118164
+        }
+      ],
+      "success": false,
+      "duration": 2722.7377891540527,
+      "test_data": {}
+    },
+    {
+      "name": "Favorites",
+      "steps": [],
+      "success": false,
+      "duration": 1167.7780151367188,
+      "test_data": {}
+    },
+    {
+      "name": "Bulk Actions",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Bulk Analyze",
+          "success": false,
+          "error": "{\"detail\":{\"error\":\"products_missing_suppliers\",\"message\":\"2 selected deal(s) have no supplier assigned. Please assign a supplier to these deals before analyzing.\",\"count\":2,\"products\":[{\"id\":\"2e774fe",
+          "duration": 406.1918258666992
+        },
+        {
+          "step": 2,
+          "action": "Bulk Move",
+          "success": true,
+          "error": "",
+          "duration": 446.0160732269287
+        },
+        {
+          "step": 3,
+          "action": "Bulk Delete",
+          "success": true,
+          "error": "",
+          "duration": 559.3230724334717
+        }
+      ],
+      "success": true,
+      "duration": 1927.7009963989258,
+      "test_data": {
+        "deal_ids": [
+          "037fc13d-175f-4aff-ae8f-708110932776",
+          "e9e78c17-2fac-4692-803a-a15ad7dcbb43"
+        ]
+      }
+    },
+    {
+      "name": "Product Management",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Create Product",
+          "success": true,
+          "error": "",
+          "duration": 664.3900871276855
+        },
+        {
+          "step": 2,
+          "action": "Update MOQ",
+          "success": true,
+          "error": "",
+          "duration": 573.7888813018799
+        },
+        {
+          "step": 2,
+          "action": "Update MOQ",
+          "success": true,
+          "error": "",
+          "duration": 573.7888813018799
+        },
+        {
+          "step": 3,
+          "action": "View Product",
+          "success": true,
+          "error": "",
+          "duration": 542.4818992614746
+        },
+        {
+          "step": 4,
+          "action": "Delete Product",
+          "success": true,
+          "error": "",
+          "duration": 478.6801338195801
+        }
+      ],
+      "success": true,
+      "duration": 2266.824960708618,
+      "test_data": {
+        "product_id": "fb2f83bb-e5e2-4a25-87cf-947c9cae287e",
+        "deal_id": "d1404d6a-568a-4778-854e-ad006d862a41"
+      }
+    }
+  ],
+  "summary": {
+    "total_workflows": 5,
+    "successful_workflows": 3,
+    "total_steps": 13,
+    "successful_steps": 11,
+    "workflow_score": 60.0,
+    "step_score": 84.61538461538461,
+    "overall_score": 69.84615384615384
+  },
+  "recommendation": "NO-GO"
+}

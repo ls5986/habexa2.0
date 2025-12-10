@@ -813,10 +813,14 @@ async def create_product(
         delete_cached(cache_key)
         logger.debug(f"🗑️  Cache invalidated: {cache_key}")
         
+        # FIX: Return both object format and ID format for compatibility
+        deal = deal_result.get("deal")
         return {
             "success": True,
             "product": product,
-            "deal": deal_result.get("deal"),
+            "product_id": product.get("id"),  # Add product_id for compatibility
+            "deal": deal,
+            "deal_id": deal.get("id") if deal else None,  # Add deal_id for compatibility
             "message": "Product added successfully"
         }
         
@@ -1304,6 +1308,7 @@ async def confirm_csv_upload(
         # Process each row
         created_products = []
         errors = []
+        products_to_insert = []  # FIX: Initialize products_to_insert list for batch insert
         
         for idx, row in df.iterrows():
             try:
@@ -1599,6 +1604,7 @@ async def confirm_csv_upload(
                             'data': {}
                         })
         
+        total_rows = len(df)  # FIX: Define total_rows for logging
         logger.info(f"✅ Created {len(created_products)} products, {len(errors)} errors out of {total_rows} total rows")
         
         # Queue ASIN lookup for products with UPCs (non-blocking)
@@ -2037,29 +2043,11 @@ async def bulk_analyze(req: AnalyzeBatchRequest, current_user = Depends(get_curr
                         "title": products.get("title")
                     })
         
+        # FIX: Make supplier optional - allow analysis without suppliers
+        # Only warn if suppliers are missing, but don't block analysis
         if deals_without_suppliers:
-            # Get unique products without suppliers
-            products_data = []
-            asins = []
-            for deal_info in deals_without_suppliers:
-                if deal_info["asin"]:
-                    products_data.append({
-                        "id": deal_info["product_id"],
-                        "asin": deal_info["asin"],
-                        "title": deal_info.get("title")
-                    })
-                    asins.append(deal_info["asin"])
-            
-            raise HTTPException(
-                status_code=400,
-                detail={
-                    "error": "products_missing_suppliers",
-                    "message": f"{len(deals_without_suppliers)} selected deal(s) have no supplier assigned. Please assign a supplier to these deals before analyzing.",
-                    "count": len(deals_without_suppliers),
-                    "products": products_data,
-                    "asins": asins
-                }
-            )
+            logger.warning(f"⚠️ {len(deals_without_suppliers)} deal(s) have no supplier assigned. Analysis will proceed without supplier-specific cost settings.")
+            # Continue with analysis - supplier is optional for analysis
         
         if not product_ids:
             raise HTTPException(404, "No products found")

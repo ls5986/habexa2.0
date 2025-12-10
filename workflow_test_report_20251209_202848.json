@@ -1,0 +1,160 @@
+{
+  "timestamp": "2025-12-09T20:28:48.754516",
+  "workflows": [
+    {
+      "name": "Product Analysis",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Analyze UPC",
+          "success": true,
+          "error": "",
+          "duration": 549.9389171600342
+        },
+        {
+          "step": 2,
+          "action": "Quick ASIN Analysis",
+          "success": true,
+          "error": "",
+          "duration": 220.4151153564453
+        },
+        {
+          "step": 4,
+          "action": "Add Product",
+          "success": true,
+          "error": "",
+          "duration": 1068.2849884033203
+        }
+      ],
+      "success": true,
+      "duration": 2404.3779373168945,
+      "test_data": {
+        "asin": "B0CV4FL9WM",
+        "product_id": null,
+        "deal_id": null
+      }
+    },
+    {
+      "name": "CSV Upload",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Upload Preview",
+          "success": true,
+          "error": "",
+          "duration": 4802.462816238403
+        },
+        {
+          "step": 2,
+          "action": "Confirm Upload",
+          "success": false,
+          "error": "{\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\",\"column_mapping\"],\"msg\":\"Field required\",\"input\":{\"filename\":\"test_workflow.csv\",\"mapping\":{\"upc\":\"UPC\",\"title\":\"ITEM\",\"cost\":\"WHOLESALE\",\"case_pack\":\"PACK\",",
+          "duration": 273.69093894958496
+        }
+      ],
+      "success": false,
+      "duration": 5078.1409740448,
+      "test_data": {}
+    },
+    {
+      "name": "Favorites",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Add to Favorites",
+          "success": true,
+          "error": "",
+          "duration": 641.063928604126
+        },
+        {
+          "step": 2,
+          "action": "View Favorites",
+          "success": true,
+          "error": "",
+          "duration": 505.47194480895996
+        },
+        {
+          "step": 3,
+          "action": "Remove from Favorites",
+          "success": true,
+          "error": "",
+          "duration": 556.0779571533203
+        }
+      ],
+      "success": true,
+      "duration": 2024.3809223175049,
+      "test_data": {
+        "deal_id": "c814ccac-c21f-4b28-bd92-24bfa6da9e7f"
+      }
+    },
+    {
+      "name": "Bulk Actions",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Bulk Analyze",
+          "success": false,
+          "error": "{\"detail\":{\"error\":\"products_missing_suppliers\",\"message\":\"2 selected deal(s) have no supplier assigned. Please assign a supplier to these deals before analyzing.\",\"count\":2,\"products\":[{\"id\":\"fb2f83b",
+          "duration": 365.28778076171875
+        },
+        {
+          "step": 2,
+          "action": "Bulk Move",
+          "success": false,
+          "error": "{\"detail\":[{\"type\":\"missing\",\"loc\":[\"query\",\"stage\"],\"msg\":\"Field required\",\"input\":null,\"url\":\"https://errors.pydantic.dev/2.5/v/missing\"},{\"type\":\"list_type\",\"loc\":[\"body\"],\"msg\":\"Input should be a ",
+          "duration": 241.6367530822754
+        },
+        {
+          "step": 3,
+          "action": "Bulk Delete",
+          "success": true,
+          "error": "",
+          "duration": 630.5317878723145
+        }
+      ],
+      "success": true,
+      "duration": 1865.80491065979,
+      "test_data": {
+        "deal_ids": [
+          "85ec9c18-b418-4829-be04-22c83e7a2c0a",
+          "c814ccac-c21f-4b28-bd92-24bfa6da9e7f"
+        ]
+      }
+    },
+    {
+      "name": "Product Management",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Create Product",
+          "success": true,
+          "error": "",
+          "duration": 750.7967948913574
+        },
+        {
+          "step": 3,
+          "action": "View Product",
+          "success": true,
+          "error": "",
+          "duration": 244.2770004272461
+        }
+      ],
+      "success": false,
+      "duration": 1006.5231323242188,
+      "test_data": {
+        "product_id": null,
+        "deal_id": null
+      }
+    }
+  ],
+  "summary": {
+    "total_workflows": 5,
+    "successful_workflows": 3,
+    "total_steps": 13,
+    "successful_steps": 10,
+    "workflow_score": 60.0,
+    "step_score": 76.92307692307693,
+    "overall_score": 66.76923076923077
+  },
+  "recommendation": "NO-GO"
+}

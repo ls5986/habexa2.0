@@ -1,0 +1,74 @@
+{
+  "timestamp": "2025-12-09T20:24:05.623551",
+  "workflows": [
+    {
+      "name": "Product Analysis",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Analyze UPC",
+          "success": false,
+          "error": "{\"detail\":\"Invalid authentication credentials\"}",
+          "duration": 316.694974899292
+        }
+      ],
+      "success": false,
+      "duration": 318.16983222961426,
+      "test_data": {}
+    },
+    {
+      "name": "CSV Upload",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Upload Preview",
+          "success": false,
+          "error": "{\"detail\":\"Invalid authentication credentials\"}",
+          "duration": 218.353271484375
+        }
+      ],
+      "success": false,
+      "duration": 219.62618827819824,
+      "test_data": {}
+    },
+    {
+      "name": "Favorites",
+      "steps": [],
+      "success": false,
+      "duration": 304.3029308319092,
+      "test_data": {}
+    },
+    {
+      "name": "Bulk Actions",
+      "steps": [],
+      "success": false,
+      "duration": 208.3108425140381,
+      "test_data": {}
+    },
+    {
+      "name": "Product Management",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Create Product",
+          "success": false,
+          "error": "{\"detail\":\"Invalid authentication credentials\"}",
+          "duration": 207.5519561767578
+        }
+      ],
+      "success": false,
+      "duration": 208.85682106018066,
+      "test_data": {}
+    }
+  ],
+  "summary": {
+    "total_workflows": 5,
+    "successful_workflows": 0,
+    "total_steps": 3,
+    "successful_steps": 0,
+    "workflow_score": 0.0,
+    "step_score": 0.0,
+    "overall_score": 0.0
+  },
+  "recommendation": "NO-GO"
+}

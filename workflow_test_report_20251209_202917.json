@@ -1,0 +1,160 @@
+{
+  "timestamp": "2025-12-09T20:29:17.307186",
+  "workflows": [
+    {
+      "name": "Product Analysis",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Analyze UPC",
+          "success": true,
+          "error": "",
+          "duration": 605.3328514099121
+        },
+        {
+          "step": 2,
+          "action": "Quick ASIN Analysis",
+          "success": true,
+          "error": "",
+          "duration": 225.48723220825195
+        },
+        {
+          "step": 4,
+          "action": "Add Product",
+          "success": true,
+          "error": "",
+          "duration": 706.9377899169922
+        }
+      ],
+      "success": true,
+      "duration": 2244.4190979003906,
+      "test_data": {
+        "asin": "B0CV4FL9WM",
+        "product_id": null,
+        "deal_id": null
+      }
+    },
+    {
+      "name": "CSV Upload",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Upload Preview",
+          "success": true,
+          "error": "",
+          "duration": 2378.4310817718506
+        },
+        {
+          "step": 2,
+          "action": "Confirm Upload",
+          "success": false,
+          "error": "{\"detail\":\"Failed to process upload: (400, 'Invalid file data encoding: Invalid base64-encoded string: number of data characters (109) cannot be 1 more than a multiple of 4')\"}",
+          "duration": 219.30480003356934
+        }
+      ],
+      "success": false,
+      "duration": 2599.562883377075,
+      "test_data": {}
+    },
+    {
+      "name": "Favorites",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Add to Favorites",
+          "success": true,
+          "error": "",
+          "duration": 619.7619438171387
+        },
+        {
+          "step": 2,
+          "action": "View Favorites",
+          "success": true,
+          "error": "",
+          "duration": 471.82703018188477
+        },
+        {
+          "step": 3,
+          "action": "Remove from Favorites",
+          "success": true,
+          "error": "",
+          "duration": 585.1471424102783
+        }
+      ],
+      "success": true,
+      "duration": 1950.6421089172363,
+      "test_data": {
+        "deal_id": "5dc2204b-2afb-429c-bac7-bafae5451764"
+      }
+    },
+    {
+      "name": "Bulk Actions",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Bulk Analyze",
+          "success": false,
+          "error": "{\"detail\":{\"error\":\"products_missing_suppliers\",\"message\":\"2 selected deal(s) have no supplier assigned. Please assign a supplier to these deals before analyzing.\",\"count\":2,\"products\":[{\"id\":\"fb2f83b",
+          "duration": 403.98383140563965
+        },
+        {
+          "step": 2,
+          "action": "Bulk Move",
+          "success": false,
+          "error": "{\"detail\":[{\"type\":\"list_type\",\"loc\":[\"body\"],\"msg\":\"Input should be a valid list\",\"input\":{\"deal_ids\":[\"5901c15a-14be-4480-8090-b88d6e120bfa\",\"5dc2204b-2afb-429c-bac7-bafae5451764\"]},\"url\":\"https://e",
+          "duration": 213.08279037475586
+        },
+        {
+          "step": 3,
+          "action": "Bulk Delete",
+          "success": true,
+          "error": "",
+          "duration": 547.8038787841797
+        }
+      ],
+      "success": true,
+      "duration": 1741.4579391479492,
+      "test_data": {
+        "deal_ids": [
+          "5901c15a-14be-4480-8090-b88d6e120bfa",
+          "5dc2204b-2afb-429c-bac7-bafae5451764"
+        ]
+      }
+    },
+    {
+      "name": "Product Management",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Create Product",
+          "success": true,
+          "error": "",
+          "duration": 797.4159717559814
+        },
+        {
+          "step": 3,
+          "action": "View Product",
+          "success": true,
+          "error": "",
+          "duration": 247.47800827026367
+        }
+      ],
+      "success": false,
+      "duration": 1049.232006072998,
+      "test_data": {
+        "product_id": null,
+        "deal_id": null
+      }
+    }
+  ],
+  "summary": {
+    "total_workflows": 5,
+    "successful_workflows": 3,
+    "total_steps": 13,
+    "successful_steps": 10,
+    "workflow_score": 60.0,
+    "step_score": 76.92307692307693,
+    "overall_score": 66.76923076923077
+  },
+  "recommendation": "NO-GO"
+}
