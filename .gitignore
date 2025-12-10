@@ -3,3 +3,6 @@
 .env.*.local
 *.env
 .env.local-reference
+# Test configuration (contains password)
+.env.test
+test_report_*.json
