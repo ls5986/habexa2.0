@@ -1445,6 +1445,37 @@ async def confirm_csv_upload(
                                 })
                                 continue
                             product_data['asin'] = asin_str
+                        elif our_field == 'percent_off':
+                            # Handle percent off (e.g., 15 for 15% off)
+                            try:
+                                if isinstance(value, str):
+                                    # Remove % sign if present
+                                    value = value.replace('%', '').strip()
+                                percent_off = float(value)
+                                if percent_off < 0 or percent_off > 100:
+                                    raise ValueError(f"Percent off must be between 0 and 100: {percent_off}")
+                                product_data['percent_off'] = percent_off
+                            except (ValueError, TypeError) as e:
+                                errors.append({
+                                    'row': idx + 1,
+                                    'error': f"Invalid percent off value '{value}' in column '{csv_column}': {str(e)}",
+                                    'data': {k: (None if pd.isna(v) else v) for k, v in row.to_dict().items()}
+                                })
+                                continue
+                        elif our_field == 'promo_qty':
+                            # Handle promotional quantity
+                            try:
+                                promo_qty = int(float(value))  # Allow float input, convert to int
+                                if promo_qty < 1:
+                                    raise ValueError(f"Promo qty must be at least 1: {promo_qty}")
+                                product_data['promo_qty'] = promo_qty
+                            except (ValueError, TypeError) as e:
+                                errors.append({
+                                    'row': idx + 1,
+                                    'error': f"Invalid promo qty value '{value}' in column '{csv_column}': {str(e)}",
+                                    'data': {k: (None if pd.isna(v) else v) for k, v in row.to_dict().items()}
+                                })
+                                continue
                         else:
                             # Generic field mapping
                             product_data[our_field] = value
