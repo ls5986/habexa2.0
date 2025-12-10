@@ -33,7 +33,9 @@ class ColumnMapper:
         'moq': 'Minimum order quantity',
         'case_pack': 'Items per case/pack size',
         'wholesale_cost_case': 'Wholesale cost per case',
-        'supplier_name': 'Supplier name'
+        'supplier_name': 'Supplier name',
+        'percent_off': 'Percent off / discount percentage (e.g., 15 for 15% off)',
+        'promo_qty': 'Promotional quantity / minimum quantity for promo'
     }
     
     def __init__(self):
@@ -179,7 +181,9 @@ Return the JSON mapping now:"""
             'moq': ['moq', 'minimum order', 'min qty', 'min_qty'],
             'case_pack': ['case pack', 'pack', 'pack size', 'units per case', 'case_pack', 'pack_size'],
             'wholesale_cost_case': ['wholesale cost case', 'case cost', 'total deal cost', 'wholesale'],  # "wholesale" alone = case cost
-            'supplier_name': ['supplier', 'supplier name', 'vendor', 'vendor name']
+            'supplier_name': ['supplier', 'supplier name', 'vendor', 'vendor name'],
+            'percent_off': ['percent off', 'percent_off', '% off', 'discount %', 'discount percent', 'promo %', 'promo percent', 'off %'],
+            'promo_qty': ['promo qty', 'promo_qty', 'promotional quantity', 'promo quantity', 'min promo qty', 'promo min']
         }
         
         for field, patterns in rules.items():

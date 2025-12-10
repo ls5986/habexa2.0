@@ -45,7 +45,9 @@ export default function ColumnMappingDialog({
     { key: 'moq', label: 'MOQ', required: false },
     { key: 'case_pack', label: 'Case Pack', required: false },
     { key: 'wholesale_cost_case', label: 'Wholesale Cost (Case)', required: false },
-    { key: 'supplier_name', label: 'Supplier', required: false }
+    { key: 'supplier_name', label: 'Supplier', required: false },
+    { key: 'percent_off', label: 'Percent Off (%)', required: false },
+    { key: 'promo_qty', label: 'Promo Qty', required: false }
   ];
   
   // Check if Buy Cost can be calculated (wholesale_cost_case + case_pack both mapped)
