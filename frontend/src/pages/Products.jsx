@@ -1115,6 +1115,7 @@ export default function Products() {
                 onSelectAsin={(deal) => setAsinSelectionDialog({ open: true, product: deal })}
                 onEnterAsin={(deal) => setManualAsinDialog({ open: true, product: deal, asinInput: '' })}
                 onOpenManualPrice={(deal, analysis) => setManualPriceDialog({ open: true, deal, analysis })}
+                onMoveToBuyList={handleMoveToBuyList}
                 analysis={deal.analysis}
               />
             ))}
