@@ -1,5 +1,10 @@
 -- Add pack_size, wholesale_cost, percent_off, promo_qty to product_deals view
 -- These fields exist in product_sources but weren't being returned
+--
+-- IMPORTANT: Run these migrations in order:
+-- 1. ADD_PACK_AND_WHOLESALE_COLUMNS.sql (adds pack_size, wholesale_cost)
+-- 2. ADD_SALES_COLUMNS_TO_PRODUCT_SOURCES.sql (adds percent_off, promo_qty)
+-- 3. This file (updates the view to include all fields)
 
 -- Drop and recreate the view with new fields
 DROP VIEW IF EXISTS product_deals CASCADE;
