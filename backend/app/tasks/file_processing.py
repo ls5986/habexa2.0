@@ -755,8 +755,7 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                                 "asin_status": "found",  # ASIN was found via UPC conversion
                                 "upload_source": "csv" if filename.lower().endswith('.csv') else "excel",
                                 "source_filename": filename,
-                                "uploaded_at": datetime.utcnow().isoformat(),
-                                "original_upload_data": original_row  # Store entire CSV row as JSON
+                                "uploaded_at": datetime.utcnow().isoformat()
                             }
                             new_products.append(product_data)
                     
@@ -812,8 +811,7 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                         "potential_asins": potential_asins if potential_asins else None,  # JSONB array of ASIN options
                         "upload_source": "csv" if filename.lower().endswith('.csv') else "excel",
                         "source_filename": filename,
-                        "uploaded_at": datetime.utcnow().isoformat(),
-                        "original_upload_data": original_row  # Store entire CSV row as JSON
+                        "uploaded_at": datetime.utcnow().isoformat()
                     }
                     new_products_no_asin.append(product_data)
                 
