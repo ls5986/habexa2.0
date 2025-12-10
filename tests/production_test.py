@@ -58,22 +58,46 @@ def test_auth():
     print_info("Testing authentication...")
     
     # Method 1: Use TEST_TOKEN if provided (from browser localStorage)
-    if TEST_TOKEN:
+    if TEST_TOKEN and TEST_TOKEN.strip():
+        token = TEST_TOKEN.strip()
         try:
-            # Verify token works by calling /me endpoint
+            # Check if token is expired (decode without verification)
+            try:
+                import jwt
+                decoded = jwt.decode(token, options={"verify_signature": False})
+                import time
+                exp = decoded.get("exp", 0)
+                now = int(time.time())
+                if exp < now:
+                    print_warning(f"TEST_TOKEN is EXPIRED (expired {now - exp} seconds ago)")
+                    print_info("Get a fresh token: Log in to frontend → F12 → localStorage.getItem('sb-habexa-auth-token')")
+                    # Don't return None yet, try it anyway in case backend is lenient
+                else:
+                    expires_in = exp - now
+                    print_info(f"Token expires in {expires_in // 3600}h {(expires_in % 3600) // 60}m")
+            except:
+                pass  # Can't decode, try anyway
+            
+            # Try /products endpoint first (simpler, doesn't require full user object)
             response = requests.get(
-                f"{BASE_URL}/auth/me",
-                headers={"Authorization": f"Bearer {TEST_TOKEN}"},
+                f"{BASE_URL}/products?limit=1",
+                headers={"Authorization": f"Bearer {token}"},
                 timeout=10
             )
             if response.status_code == 200:
                 print_success(f"Login successful (using TEST_TOKEN)")
-                return TEST_TOKEN
+                return token
+            elif response.status_code == 401:
+                # Token might be expired or invalid
+                print_warning(f"TEST_TOKEN returned 401 - token expired or invalid")
+                print_info("Get a fresh token: Log in to https://habexa.onrender.com → F12 → localStorage.getItem('sb-habexa-auth-token')")
+            else:
+                print_warning(f"TEST_TOKEN validation failed: {response.status_code}")
         except Exception as e:
             print_warning(f"TEST_TOKEN failed: {e}")
     
-    # Method 2: Try Supabase Auth API if credentials provided
-    if SUPABASE_URL and SUPABASE_ANON_KEY:
+    # Method 2: Try Supabase Auth API if credentials provided (and not placeholder)
+    if SUPABASE_URL and SUPABASE_ANON_KEY and SUPABASE_ANON_KEY != "your_anon_key_here":
         try:
             auth_url = f"{SUPABASE_URL}/auth/v1/token?grant_type=password"
             headers = {
