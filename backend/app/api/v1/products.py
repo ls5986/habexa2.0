@@ -1459,38 +1459,48 @@ async def confirm_csv_upload(
                     })
                     continue
                 
-                # Store original row data (NaN already replaced with None above)
-                # Convert any remaining NaN values to None for JSON serialization
-                original_data = row.to_dict()
-                product_data['original_upload_data'] = {k: (None if pd.isna(v) else v) for k, v in original_data.items()}
+                # Separate product fields from deal/source fields
+                # Products table fields: user_id, asin, title, image_url, category, brand, sell_price, fees_total, bsr, seller_count, fba_seller_count, amazon_sells, analysis_id, status, upc
+                # Product_sources table fields: product_id, supplier_id, buy_cost, moq, source, source_detail, stage, notes
                 
-                # Add supplier_id if provided
+                product_fields = {
+                    'user_id': user_id,
+                    'asin': product_data.get('asin') or f"PENDING_{product_data.get('upc', 'UNKNOWN')}",
+                    'title': product_data.get('uploaded_title') or product_data.get('title'),
+                    'brand': product_data.get('uploaded_brand') or product_data.get('brand'),
+                    'category': product_data.get('uploaded_category') or product_data.get('category'),
+                    'status': 'pending',
+                    'upc': product_data.get('upc')
+                }
+                
+                # Remove None values from product_fields
+                product_fields = {k: v for k, v in product_fields.items() if v is not None}
+                
+                # Deal/source fields (for product_sources table)
+                deal_fields = {
+                    'buy_cost': product_data.get('buy_cost'),
+                    'moq': product_data.get('moq', 1),
+                    'source': 'csv',
+                    'source_detail': request.filename,
+                    'stage': 'new'
+                }
+                
+                # Add supplier_id to deal_fields if provided
                 if request.supplier_id:
-                    product_data['supplier_id'] = request.supplier_id
+                    deal_fields['supplier_id'] = request.supplier_id
                 
-                # Determine ASIN status
-                if product_data.get('asin'):
-                    product_data['asin_status'] = 'found'
-                elif product_data.get('upc'):
-                    product_data['asin_status'] = 'pending_lookup'
-                else:
-                    product_data['asin_status'] = 'needs_input'
+                # Remove None values from deal_fields (except supplier_id which can be None)
+                deal_fields = {k: v for k, v in deal_fields.items() if v is not None or k == 'supplier_id'}
                 
-                # Create product
-                result = supabase.table('products').insert(product_data).execute()
+                # Create product (only product fields)
+                result = supabase.table('products').insert(product_fields).execute()
                 if result.data:
                     product = result.data[0]
                     created_products.append(product)
                     
-                    # Create product_source (deal) if supplier_id is provided
-                    if request.supplier_id and product_data.get('buy_cost'):
-                        upsert_deal(product['id'], request.supplier_id, {
-                            'buy_cost': product_data.get('buy_cost'),
-                            'moq': product_data.get('moq', 1),
-                            'source': 'csv',
-                            'source_detail': request.filename,
-                            'stage': 'new'
-                        })
+                    # Create product_source (deal) with deal fields
+                    if deal_fields.get('buy_cost'):  # Only create deal if we have buy_cost
+                        upsert_deal(product['id'], deal_fields.get('supplier_id'), deal_fields)
                 
             except Exception as e:
                 logger.error(f"Failed to create product from row {idx}: {e}")
