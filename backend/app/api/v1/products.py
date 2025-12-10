@@ -3365,6 +3365,7 @@ async def toggle_favorite(
 ):
     """
     Toggle product favorite status via deal_id.
+    Uses the favorites table (not products.is_favorite).
     """
     user_id = str(current_user.id)
     
@@ -3379,31 +3380,47 @@ async def toggle_favorite(
     
     product_id = deal_result.data[0]['product_id']
     
-    # Get current product
-    result = supabase.table('products') \
-        .select('id, is_favorite') \
-        .eq('id', product_id) \
+    # Check if already in favorites
+    existing = supabase.table('favorites') \
+        .select('id') \
         .eq('user_id', user_id) \
-        .single() \
+        .eq('product_id', product_id) \
+        .limit(1) \
         .execute()
     
-    if not result.data:
-        raise HTTPException(404, "Product not found")
-    
-    current_favorite = result.data.get('is_favorite', False)
-    
-    # Toggle favorite
-    supabase.table('products').update({
-        'is_favorite': not current_favorite,
-        'updated_at': datetime.utcnow().isoformat()
-    }).eq('id', product_id).execute()
-    
-    logger.info(f"{'⭐ Added to' if not current_favorite else '❌ Removed from'} favorites: {product_id}")
-    
-    return {
-        'success': True,
-        'is_favorite': not current_favorite
-    }
+    if existing.data:
+        # Remove from favorites
+        supabase.table('favorites') \
+            .delete() \
+            .eq('id', existing.data[0]['id']) \
+            .execute()
+        logger.info(f"❌ Removed from favorites: {product_id}")
+        return {
+            'success': True,
+            'is_favorite': False
+        }
+    else:
+        # Add to favorites
+        # Get ASIN for caching
+        product = supabase.table('products') \
+            .select('asin') \
+            .eq('id', product_id) \
+            .single() \
+            .execute()
+        
+        asin = product.data.get('asin') if product.data else None
+        
+        supabase.table('favorites').insert({
+            'user_id': user_id,
+            'product_id': product_id,
+            'asin': asin
+        }).execute()
+        
+        logger.info(f"⭐ Added to favorites: {product_id}")
+        return {
+            'success': True,
+            'is_favorite': True
+        }
 
 
 @router.post("/deal/{deal_id}/move-to-orders")

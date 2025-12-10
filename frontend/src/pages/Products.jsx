@@ -372,6 +372,20 @@ const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, on
       
       {/* Actions */}
       <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
+        {deal.stage !== 'buy_list' && (
+          <Tooltip title="Move to Buy List">
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                onMoveToBuyList && onMoveToBuyList(deal);
+              }}
+              sx={{ color: 'success.main' }}
+            >
+              <ShoppingCart size={14} />
+            </IconButton>
+          </Tooltip>
+        )}
         <Tooltip title="View on Amazon">
           <IconButton
             size="small"
@@ -792,6 +806,17 @@ export default function Products() {
       const errorMsg = err.response?.data?.detail || err.message || 'Failed to delete product';
       showToast(errorMsg, 'error');
       setDeleteDialog(prev => ({ ...prev, deleting: false }));
+    }
+  };
+
+  const handleMoveToBuyList = async (deal) => {
+    try {
+      await api.patch(`/products/deal/${deal.deal_id}`, { stage: 'buy_list' });
+      showToast(`Product "${deal.asin}" moved to Buy List`, 'success');
+      fetchData(true);
+    } catch (err) {
+      console.error('Failed to move to buy list:', err);
+      showToast('Failed to move to buy list: ' + (err.response?.data?.detail || err.message), 'error');
     }
   };
 
