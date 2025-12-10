@@ -52,6 +52,8 @@ async def global_exception_handler(request: Request, exc: Exception):
     origin = request.headers.get("origin")
     allowed_origin = origin if origin in [
         settings.FRONTEND_URL,
+        PRODUCTION_FRONTEND_URL,
+        PRODUCTION_FRONTEND_URL_ALT,
         "http://localhost:3002",
         "http://localhost:5173",
         "http://localhost:5189",
