@@ -60,8 +60,15 @@ async def add_favorite(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error adding favorite: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error adding favorite: {e}", exc_info=True)
+        # Check if it's a table not found error
+        error_str = str(e).lower()
+        if "does not exist" in error_str or "relation" in error_str:
+            raise HTTPException(
+                status_code=500, 
+                detail="Favorites table not found. Please run the CREATE_FAVORITES_TABLE.sql migration."
+            )
+        raise HTTPException(status_code=500, detail=f"Failed to add favorite: {str(e)}")
 
 
 @router.delete("/{product_id}")
