@@ -47,7 +47,7 @@ function useDebounce(value, delay) {
 }
 
 // Memoized Deal Row Component
-const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, onDelete, onSetAsin, onOpenManualPrice, onSelectAsin, onEnterAsin, analysis }) => {
+const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, onDelete, onSetAsin, onOpenManualPrice, onSelectAsin, onEnterAsin, onMoveToBuyList, analysis }) => {
   const roi = deal.roi || 0;
   const profit = deal.profit || 0;
   const moq = deal.moq || 1;
