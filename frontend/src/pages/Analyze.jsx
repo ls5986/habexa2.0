@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Box, Typography, TextField, Button, Card, CardContent, 
   RadioGroup, FormControlLabel, Radio, Select, MenuItem, 
-  FormControl, InputLabel, Alert, Chip, Divider, CircularProgress, Grid
+  FormControl, InputLabel, Alert, Chip, Divider, CircularProgress, Grid,
+  ToggleButtonGroup, ToggleButton, Checkbox, InputAdornment
 } from '@mui/material';
 import { Zap, ExternalLink, TrendingUp, DollarSign, RefreshCw, Plus, Trash2 } from 'lucide-react';
 import { useAnalysis } from '../hooks/useAnalysis';
@@ -16,16 +17,31 @@ import api from '../services/api';
 const Analyze = () => {
   const navigate = useNavigate();
   const [mode, setMode] = useState('single');
+  const [identifierType, setIdentifierType] = useState('asin'); // 'asin' or 'upc'
   const [asin, setAsin] = useState('');
+  const [upc, setUpc] = useState('');
+  const [quantity, setQuantity] = useState(1); // Pack quantity for UPC
   const [buyCost, setBuyCost] = useState('');
+  const [isPack, setIsPack] = useState(false);
+  const [packSize, setPackSize] = useState(1);
+  const [wholesaleCost, setWholesaleCost] = useState('');
   const [moq, setMoq] = useState(1);
   const [supplierId, setSupplierId] = useState('');
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [addingToProducts, setAddingToProducts] = useState(false);
+  const [savingProduct, setSavingProduct] = useState(false);
   const [recentAnalyses, setRecentAnalyses] = useState([]);
   const pollingCleanupRef = useRef(null);
+  
+  // Calculate per-unit buy cost (same as Quick Analyze)
+  const calculatedBuyCost = useMemo(() => {
+    if (isPack && packSize > 0 && wholesaleCost) {
+      return (parseFloat(wholesaleCost) / packSize).toFixed(4);
+    }
+    return buyCost;
+  }, [isPack, packSize, wholesaleCost, buyCost]);
   
   // Batch mode state
   const [batchItems, setBatchItems] = useState([{ asin: '', buy_cost: '', moq: 1 }]);
@@ -77,8 +93,18 @@ const Analyze = () => {
   };
 
   const handleSingleAnalyze = async () => {
-    if (!asin || !buyCost) {
-      showToast('Please enter ASIN and buy cost', 'error');
+    const identifier = identifierType === 'asin' ? asin : upc;
+    if (!identifier) {
+      showToast(`Please enter ${identifierType.toUpperCase()}`, 'error');
+      return;
+    }
+    
+    const finalBuyCost = isPack 
+      ? parseFloat(wholesaleCost) / packSize 
+      : parseFloat(buyCost);
+    
+    if (!finalBuyCost || finalBuyCost <= 0) {
+      showToast('Please enter a valid buy cost', 'error');
       return;
     }
     
@@ -93,7 +119,18 @@ const Analyze = () => {
     }
     
     try {
-      const response = await analyzeSingle(asin, parseFloat(buyCost), moq, supplierId || null);
+      const response = await analyzeSingle(
+        identifier,
+        finalBuyCost,
+        moq,
+        supplierId || null,
+        identifierType,
+        quantity,
+        {
+          pack_size: isPack ? packSize : null,
+          wholesale_cost: isPack ? parseFloat(wholesaleCost) : null,
+        }
+      );
       
       console.log('✅ Analysis API response:', response); // DEBUG
       
@@ -413,87 +450,51 @@ const Analyze = () => {
     setBatchResults(null);
     setError(null);
     setAnalyzing(false);
+    setIdentifierType('asin');
     setAsin('');
+    setUpc('');
+    setQuantity(1);
     setBuyCost('');
+    setIsPack(false);
+    setPackSize(1);
+    setWholesaleCost('');
     setMoq(1);
     setSupplierId('');
     setBatchItems([{ asin: '', buy_cost: '', moq: 1 }]);
   };
 
-  const handleAddToProducts = async () => {
-    // Validate we have analysis result
-    if (!result) {
-      showToast('No analysis result to add', 'error');
+  const handleSaveProduct = async () => {
+    if (!result || !result.asin) {
+      showToast('No analysis result to save', 'error');
       return;
     }
-    
-    setAddingToProducts(true);
-    
+
+    setSavingProduct(true);
     try {
-      console.log('🔄 Adding product to database...', result);
-      
-      // Build request payload
-      const productData = {
-        // Identifiers
-        asin: result.asin || asin,
-        upc: result.upc || null,
-        sku: result.sku || null,
-        
-        // Product info
-        title: result.title || null,
-        brand: result.brand || null,
-        image_url: result.image_url || result.image || null,
-        category: result.category || null,
-        
-        // Pricing
-        buy_cost: parseFloat(buyCost),
-        sell_price: result.sell_price || result.price || null,
-        fees: result.fees || result.fees_total || null,
-        profit: result.profit || null,
-        roi: result.roi || null,
-        
-        // Other
-        moq: parseInt(moq) || 1,
+      const saveData = {
+        asin: result.asin,
+        buy_cost: parseFloat(calculatedBuyCost) || parseFloat(buyCost) || 0,
+        moq: moq || 1,
         supplier_id: supplierId || null,
-        
-        // Keepa data
-        bsr: result.bsr || null,
-        sales_estimate: result.sales_estimate || null,
-        parent_asin: result.parent_asin || null
+        notes: null,
+        upc: upc || null,
+        pack_size: isPack ? packSize : null,
+        wholesale_cost: isPack && wholesaleCost ? parseFloat(wholesaleCost) : null
       };
+
+      const response = await api.post('/analyze/save-product', saveData);
       
-      console.log('📦 Product payload:', productData);
+      showToast(response.data.message || 'Product saved! Full analysis is running in the background.', 'success');
       
-      // Make API call
-      const response = await api.post('/products', productData);
-      
-      console.log('📡 API response status:', response.status);
-      console.log('✅ Product created:', response.data);
-      
-      // Show success message
-      showToast('Product added successfully!', 'success');
-      
-      // Wait a moment before redirecting
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Navigate to products page
-      if (result.asin || asin) {
-        navigate(`/products?asin=${result.asin || asin}`);
-      } else {
+      // Navigate to products page after a short delay
+      setTimeout(() => {
         navigate('/products');
-      }
-      
+      }, 1500);
     } catch (error) {
-      console.error('❌ Failed to add product:', error);
-      
-      const errorMessage = error.response?.data?.detail || 
-                          error.response?.data?.message || 
-                          error.message || 
-                          'Failed to add product. Please try again.';
-      
-      showToast(errorMessage, 'error');
+      console.error('Failed to save product:', error);
+      showToast(error.response?.data?.detail || 'Failed to save product', 'error');
     } finally {
-      setAddingToProducts(false);
+      setSavingProduct(false);
     }
   };
 
@@ -548,13 +549,42 @@ const Analyze = () => {
 
             {mode === 'single' ? (
               <>
+                {/* ASIN/UPC Toggle - Same as Quick Analyze */}
+                <Box>
+                  <Typography variant="body2" color="text.secondary" mb={1}>
+                    Identifier Type
+                  </Typography>
+                  <ToggleButtonGroup
+                    value={identifierType}
+                    exclusive
+                    onChange={(e, newValue) => {
+                      if (newValue !== null) {
+                        setIdentifierType(newValue);
+                        setAsin('');
+                        setUpc('');
+                      }
+                    }}
+                    fullWidth
+                    disabled={!!result}
+                  >
+                    <ToggleButton value="asin">ASIN</ToggleButton>
+                    <ToggleButton value="upc">UPC</ToggleButton>
+                  </ToggleButtonGroup>
+                </Box>
+
                 <Box display="flex" gap={2}>
                   <TextField
                     fullWidth
-                    label="ASIN"
-                    placeholder="B08XYZ1234"
-                    value={asin}
-                    onChange={(e) => setAsin(e.target.value.toUpperCase())}
+                    label={identifierType === 'asin' ? 'ASIN' : 'UPC'}
+                    placeholder={identifierType === 'asin' ? 'B08XYZ1234' : '123456789012'}
+                    value={identifierType === 'asin' ? asin : upc}
+                    onChange={(e) => {
+                      if (identifierType === 'asin') {
+                        setAsin(e.target.value.toUpperCase());
+                      } else {
+                        setUpc(e.target.value);
+                      }
+                    }}
                     sx={{ fontFamily: 'monospace' }}
                     disabled={!!result}
                   />
@@ -562,7 +592,7 @@ const Analyze = () => {
                     variant="contained"
                     startIcon={analyzing ? <CircularProgress size={16} color="inherit" /> : <Zap size={16} />}
                     onClick={handleAnalyze}
-                    disabled={loading || analyzing || !asin || !buyCost || !!result}
+                    disabled={loading || analyzing || !(identifierType === 'asin' ? asin : upc) || (!buyCost && !wholesaleCost) || !!result}
                     sx={{
                       backgroundColor: habexa.purple.main,
                       '&:hover': { backgroundColor: habexa.purple.dark },
@@ -573,21 +603,61 @@ const Analyze = () => {
                   </Button>
                 </Box>
 
-                <Box display="flex" gap={2}>
+                {/* Pack Checkbox - Same as Quick Analyze */}
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={isPack}
+                      onChange={(e) => setIsPack(e.target.checked)}
+                      disabled={!!result}
+                    />
+                  }
+                  label="This is a pack/case (wholesale pricing)"
+                />
+
+                {isPack ? (
+                  <>
+                    <Box display="flex" gap={2}>
+                      <TextField
+                        label="Pack Size"
+                        type="number"
+                        value={packSize}
+                        onChange={(e) => setPackSize(parseInt(e.target.value) || 1)}
+                        helperText="Units per pack"
+                        sx={{ flex: 1 }}
+                        disabled={!!result}
+                      />
+                      <TextField
+                        label="Wholesale Cost (per pack)"
+                        type="number"
+                        value={wholesaleCost}
+                        onChange={(e) => setWholesaleCost(e.target.value)}
+                        InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+                        helperText={`Per unit: $${calculatedBuyCost || '0.00'}`}
+                        sx={{ flex: 1 }}
+                        disabled={!!result}
+                      />
+                    </Box>
+                  </>
+                ) : (
                   <TextField
-                    label="Your Cost"
+                    label="Your Cost (per unit)"
                     type="number"
                     value={buyCost}
                     onChange={(e) => setBuyCost(e.target.value)}
-                    InputProps={{ startAdornment: '$' }}
-                    sx={{ flex: 1 }}
+                    InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+                    fullWidth
                     disabled={!!result}
                   />
+                )}
+
+                <Box display="flex" gap={2}>
                   <TextField
                     label="MOQ"
                     type="number"
                     value={moq}
                     onChange={(e) => setMoq(parseInt(e.target.value) || 1)}
+                    helperText="Minimum Order Quantity"
                     sx={{ flex: 1 }}
                     disabled={!!result}
                   />
@@ -844,28 +914,33 @@ const Analyze = () => {
                 </Box>
               )}
 
-              {/* Action Buttons */}
+              {/* Action Buttons - Same as Quick Analyze */}
               <Box display="flex" gap={2} mt={3}>
                 <Button
                   variant="contained"
-                  startIcon={<Plus size={16} />}
-                  onClick={handleAddToProducts}
-                  disabled={addingToProducts || !result}
+                  startIcon={<ExternalLink size={16} />}
+                  onClick={handleViewDetails}
+                  disabled={!result}
                   sx={{
                     backgroundColor: habexa.purple.main,
                     '&:hover': { backgroundColor: habexa.purple.dark },
                     flex: 1,
                   }}
                 >
-                  {addingToProducts ? 'Adding...' : 'Add to Products'}
+                  View Full Analysis
                 </Button>
                 <Button
-                  variant="outlined"
-                  startIcon={<ExternalLink size={16} />}
-                  onClick={handleViewDetails}
-                  sx={{ flex: 1 }}
+                  variant="contained"
+                  startIcon={<Plus size={16} />}
+                  onClick={handleSaveProduct}
+                  disabled={savingProduct || !result}
+                  sx={{
+                    backgroundColor: habexa.success?.main || '#4caf50',
+                    '&:hover': { backgroundColor: habexa.success?.dark || '#45a049' },
+                    flex: 1,
+                  }}
                 >
-                  View Full Details
+                  {savingProduct ? 'Saving...' : 'Save as Product'}
                 </Button>
                 <Button
                   variant="outlined"
