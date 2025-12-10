@@ -105,48 +105,52 @@ def process_pending_asin_lookups(self, batch_size: int = 100):
         # Get products needing lookup
         # Priority: lookup_status='pending' or 'retry_pending', then PENDING_ ASINs
         # CRITICAL: Only get products with UPCs (can't lookup without UPC)
-        # FIX: Use proper Supabase query syntax - filter by user_id if provided in product_ids
+        # FIX: Simplified query - get products with pending lookup status OR PENDING_ ASINs
         try:
-            # If product_ids provided, use them directly
-            if hasattr(self, 'request') and hasattr(self.request, 'args') and self.request.args:
-                # Called with specific product_ids
-                product_ids = self.request.args[0] if isinstance(self.request.args, tuple) else []
-                if product_ids:
-                    products_result = supabase.table("products")\
-                        .select("id, upc, asin, asin_status, lookup_status, lookup_attempts, user_id")\
-                        .in_("id", product_ids)\
-                        .not_.is_("upc", "null")\
-                        .neq("upc", "")\
-                        .limit(batch_size)\
-                        .execute()
-                else:
-                    # Fall through to general query
-                    products_result = supabase.table("products")\
-                        .select("id, upc, asin, asin_status, lookup_status, lookup_attempts, user_id")\
-                        .or_('lookup_status.eq.pending,lookup_status.eq.retry_pending,asin.like.PENDING_%,asin.like.Unknown%')\
-                        .not_.is_("upc", "null")\
-                        .neq("upc", "")\
-                        .limit(batch_size)\
-                        .execute()
-            else:
-                # General query for periodic job
-                products_result = supabase.table("products")\
+            # Try query with lookup_status first (most reliable)
+            products_result = supabase.table("products")\
+                .select("id, upc, asin, asin_status, lookup_status, lookup_attempts, user_id")\
+                .or_('lookup_status.eq.pending,lookup_status.eq.retry_pending')\
+                .not_.is_("upc", "null")\
+                .neq("upc", "")\
+                .limit(batch_size)\
+                .execute()
+            
+            products = products_result.data or []
+            
+            # If not enough products, also get ones with PENDING_ ASINs but no lookup_status set
+            if len(products) < batch_size:
+                pending_asin_result = supabase.table("products")\
                     .select("id, upc, asin, asin_status, lookup_status, lookup_attempts, user_id")\
-                    .or_('lookup_status.eq.pending,lookup_status.eq.retry_pending,asin.like.PENDING_%,asin.like.Unknown%')\
+                    .like("asin", "PENDING_%")\
+                    .is_("lookup_status", "null")\
                     .not_.is_("upc", "null")\
                     .neq("upc", "")\
-                    .limit(batch_size)\
+                    .limit(batch_size - len(products))\
                     .execute()
+                
+                additional = pending_asin_result.data or []
+                products.extend(additional)
+                
+                # Update these products to have lookup_status='pending'
+                if additional:
+                    product_ids_to_update = [p['id'] for p in additional]
+                    supabase.table("products")\
+                        .update({"lookup_status": "pending", "lookup_attempts": 0})\
+                        .in_("id", product_ids_to_update)\
+                        .execute()
+                    logger.info(f"✅ Updated {len(product_ids_to_update)} products with PENDING_ ASINs to lookup_status='pending'")
         except Exception as e:
             logger.error(f"Error querying products: {e}", exc_info=True)
             # Fallback to simple query
             products_result = supabase.table("products")\
                 .select("id, upc, asin, asin_status, lookup_status, lookup_attempts, user_id")\
-                .or_('lookup_status.eq.pending,asin.like.PENDING_%')\
+                .like("asin", "PENDING_%")\
                 .not_.is_("upc", "null")\
                 .neq("upc", "")\
                 .limit(batch_size)\
                 .execute()
+            products = products_result.data or []
         
         products = products_result.data or []
         
