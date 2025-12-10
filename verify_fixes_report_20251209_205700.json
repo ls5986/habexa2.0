@@ -1,0 +1,175 @@
+{
+  "timestamp": "2025-12-09T20:57:00.525280",
+  "previous": {
+    "total": 14,
+    "passed": 10,
+    "failed": 0,
+    "skipped": [
+      "POST /products/analyze-upc",
+      "POST /products/analyze-asin",
+      "GET /orders",
+      "POST /products/bulk-action"
+    ],
+    "score": 71.4,
+    "broken": [],
+    "working": [
+      "GET /products",
+      "POST /products",
+      "PATCH /products/deal/{deal_id}/favorite",
+      "GET /products?favorite=true",
+      "POST /products/upload/preview",
+      "GET /products?asin_status=needs_asin",
+      "GET /products?search=test",
+      "GET /suppliers",
+      "GET /products/stats/asin-status",
+      "GET /products/lookup-status"
+    ]
+  },
+  "current": {
+    "total": 14,
+    "passed": 11,
+    "failed": 0,
+    "skipped": 3,
+    "score": 78.57142857142857
+  },
+  "improvement": {
+    "features_fixed": 1,
+    "score_improvement": 7.171428571428564
+  },
+  "fixed_features": [
+    "POST /products/analyze-upc",
+    "POST /products/analyze-asin",
+    "PATCH /products/deal/{deal_id}/favorite"
+  ],
+  "broken_features": [],
+  "recommendation": "GO (with monitoring)",
+  "all_results": [
+    {
+      "category": "Analysis",
+      "name": "POST /products/analyze-upc",
+      "status": "PASS",
+      "success": true,
+      "error": "",
+      "duration": 605.5350303649902,
+      "was_skipped": true
+    },
+    {
+      "category": "Analysis",
+      "name": "POST /products/analyze-asin",
+      "status": "PASS",
+      "success": true,
+      "error": "",
+      "duration": 233.71505737304688,
+      "was_skipped": true
+    },
+    {
+      "category": "Management",
+      "name": "GET /products",
+      "status": "PASS",
+      "success": true,
+      "error": "",
+      "duration": 524.4121551513672,
+      "was_working": true
+    },
+    {
+      "category": "Management",
+      "name": "POST /products",
+      "status": "PASS",
+      "success": true,
+      "error": "",
+      "duration": 718.1413173675537,
+      "was_working": true
+    },
+    {
+      "category": "Management",
+      "name": "PATCH /products/deal/{deal_id}/favorite",
+      "status": "SKIP",
+      "success": false,
+      "error": "No deal ID available",
+      "duration": 0,
+      "was_working": true,
+      "was_fixed": true
+    },
+    {
+      "category": "Management",
+      "name": "GET /products?favorite=true",
+      "status": "PASS",
+      "success": true,
+      "error": "",
+      "duration": 258.17131996154785,
+      "was_working": true
+    },
+    {
+      "category": "CSV Upload",
+      "name": "POST /products/upload/preview",
+      "status": "PASS",
+      "success": true,
+      "error": "",
+      "duration": 1758.1441402435303,
+      "was_working": true
+    },
+    {
+      "category": "Bulk Actions",
+      "name": "POST /products/bulk-action",
+      "status": "SKIP",
+      "success": false,
+      "error": "No deal ID available",
+      "duration": 0,
+      "was_skipped": true
+    },
+    {
+      "category": "Filtering",
+      "name": "GET /products?asin_status=needs_asin",
+      "status": "PASS",
+      "success": true,
+      "error": "",
+      "duration": 564.1100406646729,
+      "was_working": true
+    },
+    {
+      "category": "Filtering",
+      "name": "GET /products?search=test",
+      "status": "PASS",
+      "success": true,
+      "error": "",
+      "duration": 434.79299545288086,
+      "was_working": true
+    },
+    {
+      "category": "Orders",
+      "name": "GET /orders",
+      "status": "SKIP",
+      "success": false,
+      "error": "Endpoint not found (404)",
+      "duration": 130.0952434539795,
+      "was_skipped": true
+    },
+    {
+      "category": "Suppliers",
+      "name": "GET /suppliers",
+      "status": "PASS",
+      "success": true,
+      "error": "",
+      "duration": 523.216724395752,
+      "was_working": true
+    },
+    {
+      "category": "Stats",
+      "name": "GET /products/stats/asin-status",
+      "status": "PASS",
+      "success": true,
+      "error": "",
+      "duration": 452.15702056884766,
+      "was_working": true
+    },
+    {
+      "category": "Stats",
+      "name": "GET /products/lookup-status",
+      "status": "PASS",
+      "success": true,
+      "error": "",
+      "duration": 376.4069080352783,
+      "was_working": true
+    }
+  ]
+}

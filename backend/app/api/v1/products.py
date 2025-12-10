@@ -5,6 +5,7 @@ Optimized with Redis caching and query batching.
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form, BackgroundTasks
 from app.tasks.file_processing import process_file_upload
 import base64
+import binascii
 from app.api.deps import get_current_user
 from app.services.supabase_client import supabase
 from app.services.redis_client import cached
@@ -1240,14 +1241,25 @@ async def confirm_csv_upload(
         raise HTTPException(400, "Column mapping is required")
     
     try:
+        # FIX: Validate file_data is not empty before decoding
+        if not request.file_data or not request.file_data.strip():
+            raise HTTPException(400, "File data is empty or missing")
+        
         # Read file (from base64) with error handling
         try:
-            file_bytes = base64.b64decode(request.file_data)
+            file_bytes = base64.b64decode(request.file_data, validate=True)
+        except binascii.Error as e:
+            raise HTTPException(400, f"Invalid base64 encoding: {str(e)}. Please ensure file data is properly base64 encoded.")
         except Exception as e:
             raise HTTPException(400, f"Invalid file data encoding: {str(e)}")
         
         if len(file_bytes) == 0:
-            raise HTTPException(400, "File data is empty")
+            raise HTTPException(400, "File data is empty after decoding")
+        
+        # FIX: Validate file size (max 10MB)
+        MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+        if len(file_bytes) > MAX_FILE_SIZE:
+            raise HTTPException(400, f"File too large: {len(file_bytes)} bytes. Maximum size is {MAX_FILE_SIZE} bytes (10MB).")
         
         # Parse file with comprehensive error handling
         try:
@@ -1324,12 +1336,15 @@ async def confirm_csv_upload(
                 # Apply column mapping with error handling
                 for our_field, csv_column in request.column_mapping.items():
                     if csv_column not in row:
+                        # FIX: Log missing column but continue (column might be optional)
+                        logger.debug(f"Row {idx + 1}: Column '{csv_column}' not found in row, skipping field '{our_field}'")
                         continue
                     
                     value = row[csv_column]
                     
-                    # Skip None/NaN values
+                    # Skip None/NaN values (but log for debugging)
                     if pd.isna(value) or value is None:
+                        logger.debug(f"Row {idx + 1}: Column '{csv_column}' has None/NaN value, skipping field '{our_field}'")
                         continue
                     
                     try:
@@ -1406,6 +1421,30 @@ async def confirm_csv_upload(
                             else:
                                 # Log warning but don't fail - supplier might be created later
                                 logger.warning(f"Supplier '{supplier_name}' not found for row {idx + 1}")
+                        elif our_field == 'upc':
+                            # FIX: Validate UPC format
+                            upc_str = str(value).strip()
+                            # Remove any non-digit characters
+                            upc_clean = ''.join(filter(str.isdigit, upc_str))
+                            if len(upc_clean) < 8 or len(upc_clean) > 14:
+                                errors.append({
+                                    'row': idx + 1,
+                                    'error': f"Invalid UPC format: '{upc_str}' (must be 8-14 digits)",
+                                    'data': {k: (None if pd.isna(v) else v) for k, v in row.to_dict().items()}
+                                })
+                                continue
+                            product_data['upc'] = upc_clean
+                        elif our_field == 'asin':
+                            # FIX: Validate ASIN format
+                            asin_str = str(value).strip().upper()
+                            if len(asin_str) != 10:
+                                errors.append({
+                                    'row': idx + 1,
+                                    'error': f"Invalid ASIN format: '{asin_str}' (must be 10 characters)",
+                                    'data': {k: (None if pd.isna(v) else v) for k, v in row.to_dict().items()}
+                                })
+                                continue
+                            product_data['asin'] = asin_str
                         else:
                             # Generic field mapping
                             product_data[our_field] = value
@@ -1629,6 +1668,10 @@ async def confirm_csv_upload(
                         lookup_product_asins(product_ids_for_lookup)
                     except Exception as fallback_error:
                         logger.error(f"Fallback ASIN lookup also failed: {fallback_error}", exc_info=True)
+                        # FIX: Don't fail the entire upload if ASIN lookup fails - products are still created
+                        logger.warning(f"⚠️ Products created but ASIN lookup failed. Products will be processed in background job.")
+                        # FIX: Don't fail the entire upload if ASIN lookup fails - products are still created
+                        logger.warning(f"⚠️ Products created but ASIN lookup failed. Products will be processed in background job.")
         
         return {
             'success': True,

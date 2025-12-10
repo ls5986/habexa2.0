@@ -1,0 +1,157 @@
+{
+  "timestamp": "2025-12-09T20:54:55.156590",
+  "workflows": [
+    {
+      "name": "Product Analysis",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Analyze UPC",
+          "success": true,
+          "error": "",
+          "duration": 994.9560165405273
+        },
+        {
+          "step": 2,
+          "action": "Quick ASIN Analysis",
+          "success": true,
+          "error": "",
+          "duration": 310.3320598602295
+        },
+        {
+          "step": 4,
+          "action": "Add Product",
+          "success": true,
+          "error": "",
+          "duration": 737.354040145874
+        }
+      ],
+      "success": true,
+      "duration": 2639.6849155426025,
+      "test_data": {
+        "asin": "B0CV4FL9WM",
+        "product_id": "2e774fea-fb40-47bc-a40e-cff7d4266f7c",
+        "deal_id": "89de3865-c218-40d8-ad0b-90592ab7b792"
+      }
+    },
+    {
+      "name": "CSV Upload",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Upload Preview",
+          "success": true,
+          "error": "",
+          "duration": 2963.695764541626
+        },
+        {
+          "step": 2,
+          "action": "Confirm Upload",
+          "success": true,
+          "error": "",
+          "duration": 918.7307357788086
+        }
+      ],
+      "success": true,
+      "duration": 3887.9170417785645,
+      "test_data": {}
+    },
+    {
+      "name": "Favorites",
+      "steps": [],
+      "success": false,
+      "duration": 1285.5169773101807,
+      "test_data": {}
+    },
+    {
+      "name": "Bulk Actions",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Bulk Analyze",
+          "success": true,
+          "error": "",
+          "duration": 622.7049827575684
+        },
+        {
+          "step": 2,
+          "action": "Bulk Move",
+          "success": true,
+          "error": "",
+          "duration": 484.64322090148926
+        },
+        {
+          "step": 3,
+          "action": "Bulk Delete",
+          "success": true,
+          "error": "",
+          "duration": 621.7553615570068
+        }
+      ],
+      "success": true,
+      "duration": 2211.3428115844727,
+      "test_data": {
+        "deal_ids": [
+          "8aed7f75-b7ab-4ae6-b3da-016b9196f71c",
+          "89de3865-c218-40d8-ad0b-90592ab7b792"
+        ]
+      }
+    },
+    {
+      "name": "Product Management",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Create Product",
+          "success": true,
+          "error": "",
+          "duration": 717.2427177429199
+        },
+        {
+          "step": 2,
+          "action": "Update MOQ",
+          "success": true,
+          "error": "",
+          "duration": 439.298152923584
+        },
+        {
+          "step": 2,
+          "action": "Update MOQ",
+          "success": true,
+          "error": "",
+          "duration": 439.298152923584
+        },
+        {
+          "step": 3,
+          "action": "View Product",
+          "success": true,
+          "error": "",
+          "duration": 463.7730121612549
+        },
+        {
+          "step": 4,
+          "action": "Delete Product",
+          "success": true,
+          "error": "",
+          "duration": 518.9800262451172
+        }
+      ],
+      "success": true,
+      "duration": 2149.7719287872314,
+      "test_data": {
+        "product_id": "fb2f83bb-e5e2-4a25-87cf-947c9cae287e",
+        "deal_id": "8242f785-4a6d-4035-8400-96d1ab33e4ad"
+      }
+    }
+  ],
+  "summary": {
+    "total_workflows": 5,
+    "successful_workflows": 4,
+    "total_steps": 13,
+    "successful_steps": 13,
+    "workflow_score": 80.0,
+    "step_score": 100.0,
+    "overall_score": 88.0
+  },
+  "recommendation": "GO"
+}

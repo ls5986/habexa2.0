@@ -323,34 +323,50 @@ def workflow_3_favorites(headers: Dict) -> Dict:
         return workflow_result
     
     deals = data.get("deals", []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
-    if not deals:
+    if not deals or len(deals) == 0:
         print_warning("No products available to favorite - creating one...")
         # Create a product first
         success, data, error, _ = api_call("POST", "/products", headers, json_data={
             "asin": TEST_ASIN,
             "title": "Test Favorite Product",
             "brand": "Test Brand",
-            "buy_cost": 10.00
+            "buy_cost": 10.00,
+            "moq": 1
         })
         if success and data:
-            deal_id = data.get("deal_id")
+            # FIX: Handle both response formats
+            deal_id = data.get("deal_id") or (data.get("deal", {}).get("id") if isinstance(data.get("deal"), dict) else None)
             if deal_id:
                 test_data_to_cleanup["deals"].append(deal_id)
+                # Use the created product directly
+                deal = {"deal_id": deal_id, "id": deal_id}
+                deals = [deal]
+            else:
+                print_error("Could not get deal_id from created product")
+                workflow_result["duration"] = (time.time() - start_time) * 1000
+                return workflow_result
         else:
-            print_error("Could not create test product")
+            print_error(f"Could not create test product: {error}")
             workflow_result["duration"] = (time.time() - start_time) * 1000
             return workflow_result
-        # Get it again
+    else:
+        # Get it again to ensure we have fresh data
         success, data, error, _ = api_call("GET", "/products?limit=1", headers)
-        deals = data.get("deals", []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
+        if success and data:
+            deals = data.get("deals", []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
     
-    if not deals:
+    if not deals or len(deals) == 0:
         print_error("No products available for favorites test")
         workflow_result["duration"] = (time.time() - start_time) * 1000
         return workflow_result
     
     deal = deals[0]
     deal_id = deal.get("deal_id") or deal.get("id")
+    if not deal_id:
+        print_error("No deal_id found in product")
+        workflow_result["duration"] = (time.time() - start_time) * 1000
+        return workflow_result
+    
     workflow_result["test_data"]["deal_id"] = deal_id
     
     print_success(f"Using deal: {deal_id}")

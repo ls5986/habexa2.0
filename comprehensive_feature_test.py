@@ -451,12 +451,12 @@ def test_category_6_orders(headers: Dict):
     print(f"{BLUE}CATEGORY 6: Orders{RESET}")
     print(f"{BLUE}{'='*70}{RESET}\n")
     
-    # Test 6.1: List orders (endpoint exists at /api/v1/orders)
+    # Test 6.1: List orders (endpoint exists at /api/v1/orders, router prefix is /orders)
     status, success, error, duration = test_endpoint(
         "Orders",
         "GET /orders",
         "GET",
-        f"{BASE_URL}/orders",
+        f"{BASE_URL}/orders",  # Full path: /api/v1/orders
         headers=headers
     )
     results.append({

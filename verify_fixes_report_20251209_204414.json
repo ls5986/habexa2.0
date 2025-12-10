@@ -1,0 +1,218 @@
+{
+  "timestamp": "2025-12-09T20:44:14.503115",
+  "previous": {
+    "total": 14,
+    "passed": 10,
+    "failed": 0,
+    "skipped": [
+      "POST /products/analyze-upc",
+      "POST /products/analyze-asin",
+      "GET /orders",
+      "POST /products/bulk-action"
+    ],
+    "score": 71.4,
+    "broken": [],
+    "working": [
+      "GET /products",
+      "POST /products",
+      "PATCH /products/deal/{deal_id}/favorite",
+      "GET /products?favorite=true",
+      "POST /products/upload/preview",
+      "GET /products?asin_status=needs_asin",
+      "GET /products?search=test",
+      "GET /suppliers",
+      "GET /products/stats/asin-status",
+      "GET /products/lookup-status"
+    ]
+  },
+  "current": {
+    "total": 14,
+    "passed": 0,
+    "failed": 11,
+    "skipped": 3,
+    "score": 0.0
+  },
+  "improvement": {
+    "features_fixed": -10,
+    "score_improvement": -71.4
+  },
+  "fixed_features": [
+    "PATCH /products/deal/{deal_id}/favorite"
+  ],
+  "broken_features": [
+    {
+      "name": "POST /products/analyze-upc",
+      "error": "401: {\"detail\":\"Invalid authentication credentials\"}"
+    },
+    {
+      "name": "POST /products/analyze-asin",
+      "error": "401: {\"detail\":\"Invalid authentication credentials\"}"
+    },
+    {
+      "name": "GET /products",
+      "error": "401: {\"detail\":\"Invalid authentication credentials\"}"
+    },
+    {
+      "name": "POST /products",
+      "error": "401: {\"detail\":\"Invalid authentication credentials\"}"
+    },
+    {
+      "name": "GET /products?favorite=true",
+      "error": "401: {\"detail\":\"Invalid authentication credentials\"}"
+    },
+    {
+      "name": "POST /products/upload/preview",
+      "error": "401: {\"detail\":\"Invalid authentication credentials\"}"
+    },
+    {
+      "name": "GET /products?asin_status=needs_asin",
+      "error": "401: {\"detail\":\"Invalid authentication credentials\"}"
+    },
+    {
+      "name": "GET /products?search=test",
+      "error": "401: {\"detail\":\"Invalid authentication credentials\"}"
+    },
+    {
+      "name": "GET /suppliers",
+      "error": "401: {\"detail\":\"Invalid authentication credentials\"}"
+    },
+    {
+      "name": "GET /products/stats/asin-status",
+      "error": "401: {\"detail\":\"Invalid authentication credentials\"}"
+    },
+    {
+      "name": "GET /products/lookup-status",
+      "error": "401: {\"detail\":\"Invalid authentication credentials\"}"
+    }
+  ],
+  "recommendation": "NO-GO",
+  "all_results": [
+    {
+      "category": "Analysis",
+      "name": "POST /products/analyze-upc",
+      "status": "FAIL",
+      "success": false,
+      "error": "401: {\"detail\":\"Invalid authentication credentials\"}",
+      "duration": 409.5110893249512,
+      "was_skipped": true
+    },
+    {
+      "category": "Analysis",
+      "name": "POST /products/analyze-asin",
+      "status": "FAIL",
+      "success": false,
+      "error": "401: {\"detail\":\"Invalid authentication credentials\"}",
+      "duration": 222.6889133453369,
+      "was_skipped": true
+    },
+    {
+      "category": "Management",
+      "name": "GET /products",
+      "status": "FAIL",
+      "success": false,
+      "error": "401: {\"detail\":\"Invalid authentication credentials\"}",
+      "duration": 232.11908340454102,
+      "was_working": true
+    },
+    {
+      "category": "Management",
+      "name": "POST /products",
+      "status": "FAIL",
+      "success": false,
+      "error": "401: {\"detail\":\"Invalid authentication credentials\"}",
+      "duration": 218.6131477355957,
+      "was_working": true
+    },
+    {
+      "category": "Management",
+      "name": "PATCH /products/deal/{deal_id}/favorite",
+      "status": "SKIP",
+      "success": false,
+      "error": "No deal ID available",
+      "duration": 0,
+      "was_working": true,
+      "was_fixed": true
+    },
+    {
+      "category": "Management",
+      "name": "GET /products?favorite=true",
+      "status": "FAIL",
+      "success": false,
+      "error": "401: {\"detail\":\"Invalid authentication credentials\"}",
+      "duration": 239.88580703735352,
+      "was_working": true
+    },
+    {
+      "category": "CSV Upload",
+      "name": "POST /products/upload/preview",
+      "status": "FAIL",
+      "success": false,
+      "error": "401: {\"detail\":\"Invalid authentication credentials\"}",
+      "duration": 247.4682331085205,
+      "was_working": true
+    },
+    {
+      "category": "Bulk Actions",
+      "name": "POST /products/bulk-action",
+      "status": "SKIP",
+      "success": false,
+      "error": "No deal ID available",
+      "duration": 0,
+      "was_skipped": true
+    },
+    {
+      "category": "Filtering",
+      "name": "GET /products?asin_status=needs_asin",
+      "status": "FAIL",
+      "success": false,
+      "error": "401: {\"detail\":\"Invalid authentication credentials\"}",
+      "duration": 272.05586433410645,
+      "was_working": true
+    },
+    {
+      "category": "Filtering",
+      "name": "GET /products?search=test",
+      "status": "FAIL",
+      "success": false,
+      "error": "401: {\"detail\":\"Invalid authentication credentials\"}",
+      "duration": 218.35613250732422,
+      "was_working": true
+    },
+    {
+      "category": "Orders",
+      "name": "GET /orders",
+      "status": "SKIP",
+      "success": false,
+      "error": "Endpoint not found (404)",
+      "duration": 125.02288818359375,
+      "was_skipped": true
+    },
+    {
+      "category": "Suppliers",
+      "name": "GET /suppliers",
+      "status": "FAIL",
+      "success": false,
+      "error": "401: {\"detail\":\"Invalid authentication credentials\"}",
+      "duration": 219.19703483581543,
+      "was_working": true
+    },
+    {
+      "category": "Stats",
+      "name": "GET /products/stats/asin-status",
+      "status": "FAIL",
+      "success": false,
+      "error": "401: {\"detail\":\"Invalid authentication credentials\"}",
+      "duration": 239.60208892822266,
+      "was_working": true
+    },
+    {
+      "category": "Stats",
+      "name": "GET /products/lookup-status",
+      "status": "FAIL",
+      "success": false,
+      "error": "401: {\"detail\":\"Invalid authentication credentials\"}",
+      "duration": 245.76210975646973,
+      "was_working": true
+    }
+  ]
+}
