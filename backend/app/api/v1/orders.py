@@ -191,6 +191,7 @@ async def create_order(
 async def get_orders(
     status: Optional[str] = Query(None),
     supplier_id: Optional[str] = Query(None),
+    limit: int = Query(100, le=1000),
     current_user=Depends(get_current_user)
 ):
     """
@@ -199,32 +200,104 @@ async def get_orders(
     """
     user_id = str(current_user.id)
     
-    query = supabase.table('orders') \
-        .select('*, supplier:suppliers(id, name, contact_name, contact_email), items:order_items(*, product:products(*))') \
-        .eq('user_id', user_id) \
-        .order('created_at', desc=True)
-    
-    if status:
-        query = query.eq('status', status)
-    
-    if supplier_id:
-        query = query.eq('supplier_id', supplier_id)
-    
-    result = query.execute()
-    
-    # Calculate items_count and format response
-    orders = result.data or []
-    for order in orders:
-        items = order.get('items', [])
-        order['items_count'] = len(items)
-        # Calculate subtotals for each item
-        for item in items:
-            quantity = item.get('quantity', 1)
-            unit_cost = item.get('unit_cost', 0) or 0
-            discount = item.get('discount', 0) or 0
-            item['subtotal'] = round((quantity * float(unit_cost)) - float(discount), 2)
-    
-    return orders
+    try:
+        # Start with base query
+        query = supabase.table('orders') \
+            .select('*, supplier:suppliers(id, name, contact_name, contact_email), items:order_items(*, product:products(*))') \
+            .eq('user_id', user_id) \
+            .order('created_at', desc=True) \
+            .limit(limit)
+        
+        if status:
+            query = query.eq('status', status)
+        
+        if supplier_id:
+            query = query.eq('supplier_id', supplier_id)
+        
+        result = query.execute()
+        
+        # Calculate items_count and format response
+        orders = result.data or []
+        for order in orders:
+            items = order.get('items', []) or []
+            order['items_count'] = len(items)
+            # Calculate subtotals for each item
+            for item in items:
+                quantity = item.get('quantity', 1) or 1
+                unit_cost = item.get('unit_cost', 0) or 0
+                discount = item.get('discount', 0) or 0
+                item['subtotal'] = round((quantity * float(unit_cost)) - float(discount), 2)
+        
+        logger.info(f"✅ Retrieved {len(orders)} orders for user {user_id}")
+        return orders
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to get orders: {e}", exc_info=True)
+        # Try simpler query without nested joins as fallback
+        try:
+            logger.info("🔄 Retrying with simpler query (no nested joins)...")
+            query = supabase.table('orders') \
+                .select('*') \
+                .eq('user_id', user_id) \
+                .order('created_at', desc=True) \
+                .limit(limit)
+            
+            if status:
+                query = query.eq('status', status)
+            
+            if supplier_id:
+                query = query.eq('supplier_id', supplier_id)
+            
+            result = query.execute()
+            orders = result.data or []
+            
+            # Manually fetch supplier and items for each order
+            for order in orders:
+                order['items_count'] = 0
+                order['items'] = []
+                
+                # Get supplier
+                if order.get('supplier_id'):
+                    try:
+                        supplier_result = supabase.table('suppliers') \
+                            .select('id, name, contact_name, contact_email') \
+                            .eq('id', order['supplier_id']) \
+                            .eq('user_id', user_id) \
+                            .single() \
+                            .execute()
+                        if supplier_result.data:
+                            order['supplier'] = supplier_result.data
+                    except:
+                        order['supplier'] = None
+                
+                # Get items
+                try:
+                    items_result = supabase.table('order_items') \
+                        .select('*, product:products(*)') \
+                        .eq('order_id', order['id']) \
+                        .execute()
+                    
+                    items = items_result.data or []
+                    order['items'] = items
+                    order['items_count'] = len(items)
+                    
+                    # Calculate subtotals
+                    for item in items:
+                        quantity = item.get('quantity', 1) or 1
+                        unit_cost = item.get('unit_cost', 0) or 0
+                        discount = item.get('discount', 0) or 0
+                        item['subtotal'] = round((quantity * float(unit_cost)) - float(discount), 2)
+                except Exception as items_error:
+                    logger.warning(f"Failed to fetch items for order {order.get('id')}: {items_error}")
+                    order['items'] = []
+                    order['items_count'] = 0
+            
+            logger.info(f"✅ Retrieved {len(orders)} orders (fallback query)")
+            return orders
+            
+        except Exception as fallback_error:
+            logger.error(f"❌ Fallback query also failed: {fallback_error}", exc_info=True)
+            raise HTTPException(500, f"Failed to retrieve orders: {str(fallback_error)}")
 
 
 @router.get("/{order_id}")
