@@ -30,7 +30,6 @@ const Analyze = () => {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
-  const [addingToProducts, setAddingToProducts] = useState(false);
   const [savingProduct, setSavingProduct] = useState(false);
   const [recentAnalyses, setRecentAnalyses] = useState([]);
   const pollingCleanupRef = useRef(null);
