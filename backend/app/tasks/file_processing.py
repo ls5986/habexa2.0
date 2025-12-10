@@ -440,16 +440,29 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
         error_list = []
         processed = 0
         
-        # Process in batches
+            # Process in batches
+        logger.info("=" * 80)
+        logger.info("🔄 STEP 4: PROCESSING IN BATCHES")
+        logger.info("=" * 80)
+        logger.info(f"   Total rows to process: {total}")
+        logger.info(f"   Batch size: {BATCH_SIZE}")
+        logger.info(f"   Number of batches: {(total + BATCH_SIZE - 1) // BATCH_SIZE}")
+        
         for batch_start in range(0, total, BATCH_SIZE):
+            batch_num = (batch_start // BATCH_SIZE) + 1
+            total_batches = (total + BATCH_SIZE - 1) // BATCH_SIZE
+            
             # Check for cancellation
             if job.is_cancelled():
+                logger.warning("⚠️ Job was cancelled by user")
                 job.complete(results, results["deals_processed"], len(error_list), error_list)
                 return
             
             batch_end = min(batch_start + BATCH_SIZE, total)
             batch = rows[batch_start:batch_end]
-            logger.info(f"📊 Batch contains {len(batch)} rows")
+            logger.info("=" * 80)
+            logger.info(f"📦 BATCH {batch_num}/{total_batches}: Processing rows {batch_start + 1}-{batch_end} ({len(batch)} rows)")
+            logger.info("=" * 80)
             
             # Parse rows
             parsed_rows = []
@@ -750,15 +763,24 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                                 error_list.append(f"Row {row_num}: Error converting UPC {upc}: {str(e)}")
             
             # Batch get/create products
+            logger.info("=" * 80)
+            logger.info(f"💾 STEP 5: CREATING PRODUCTS (Batch {batch_num}/{total_batches})")
+            logger.info("=" * 80)
+            logger.info(f"   Total parsed rows in this batch: {len(parsed_rows)}")
+            
             # Separate products with ASINs and products without ASINs
             products_with_asin = [p for p in parsed_rows if p.get("asin")]
             products_without_asin = [p for p in parsed_rows if not p.get("asin")]
+            
+            logger.info(f"   Products WITH ASIN: {len(products_with_asin)}")
+            logger.info(f"   Products WITHOUT ASIN: {len(products_without_asin)}")
             
             # Process products WITH ASINs (existing logic)
             unique_asins = list(set([p["asin"] for p in products_with_asin if p.get("asin") and p["asin"] not in product_cache]))
             
             if unique_asins:
-                logger.info(f"🔍 Checking for existing products with {len(unique_asins)} ASINs...")
+                logger.info(f"🔍 Checking for existing products with {len(unique_asins)} unique ASINs...")
+                logger.info(f"   Sample ASINs: {unique_asins[:5]}{'...' if len(unique_asins) > 5 else ''}")
                 try:
                     # Get existing
                     existing = supabase.table("products")\
@@ -768,17 +790,23 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                         .execute()
                     
                     existing_count = len(existing.data or [])
-                    logger.info(f"✅ Found {existing_count} existing products")
+                    logger.info(f"✅ Found {existing_count} existing products in database")
+                    if existing_count > 0:
+                        logger.info(f"   Sample existing product IDs: {[p['id'][:8] + '...' for p in (existing.data or [])[:3]]}")
                     
                     for p in (existing.data or []):
                         product_cache[p["asin"]] = p["id"]
                 except Exception as check_error:
                     logger.error(f"❌ Failed to check existing products: {check_error}", exc_info=True)
+                    logger.error(f"   Error type: {type(check_error).__name__}")
+                    logger.error(f"   Full traceback:\n{traceback.format_exc()}")
                     error_list.append(f"Failed to check existing products: {str(check_error)}")
                 
                 # Create missing
                 missing_asins = [a for a in unique_asins if a not in product_cache]
+                logger.info(f"   Products to create: {len(missing_asins)} (missing from database)")
                 if missing_asins:
+                    logger.info(f"   Sample missing ASINs: {missing_asins[:5]}{'...' if len(missing_asins) > 5 else ''}")
                     # Create products with brand if available (for KEHE format)
                     new_products = []
                     for parsed in products_with_asin:
@@ -825,15 +853,48 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                             seen_asins.add(p["asin"])
                     
                     if unique_products:
-                        created = supabase.table("products").insert(unique_products).execute()
-                        for p in (created.data or []):
-                            product_cache[p["asin"]] = p["id"]
-                            results["products_created"] += 1
+                        logger.info(f"💾 Inserting {len(unique_products)} new products WITH ASINs...")
+                        logger.info(f"   Sample product data keys: {list(unique_products[0].keys()) if unique_products else []}")
+                        try:
+                            created = supabase.table("products").insert(unique_products).execute()
+                            created_count = len(created.data or [])
+                            logger.info(f"✅ Successfully created {created_count} products with ASINs")
+                            
+                            for p in (created.data or []):
+                                product_cache[p["asin"]] = p["id"]
+                                results["products_created"] += 1
+                            
+                            logger.info(f"   Product cache now contains {len(product_cache)} entries")
                             results.setdefault("analyzed", 0)
                             # Note: Will be analyzed later by the auto-analysis job
+                        except Exception as insert_error:
+                            logger.error(f"❌ Failed to insert products with ASINs: {insert_error}", exc_info=True)
+                            logger.error(f"   Error type: {type(insert_error).__name__}")
+                            logger.error(f"   Attempting to insert {len(unique_products)} products")
+                            logger.error(f"   First product sample: {unique_products[0] if unique_products else 'N/A'}")
+                            logger.error(f"   Full traceback:\n{traceback.format_exc()}")
+                            error_list.append(f"Failed to insert products: {str(insert_error)}")
+                            
+                            # Try one-by-one to identify problematic records
+                            logger.info("🔄 Attempting one-by-one insert to identify problematic records...")
+                            for idx, prod in enumerate(unique_products):
+                                try:
+                                    single_result = supabase.table("products").insert([prod]).execute()
+                                    if single_result.data:
+                                        product_cache[prod["asin"]] = single_result.data[0]["id"]
+                                        results["products_created"] += 1
+                                        logger.info(f"   ✅ Product {idx + 1}/{len(unique_products)} inserted: {prod.get('asin')}")
+                                except Exception as single_error:
+                                    logger.error(f"   ❌ Product {idx + 1}/{len(unique_products)} failed: {prod.get('asin')} - {single_error}")
+                                    error_list.append(f"Row {batch_start + idx + 1}: Failed to create product {prod.get('asin')}: {str(single_error)}")
             
             # Process products WITHOUT ASINs (new logic)
             if products_without_asin:
+                logger.info("=" * 80)
+                logger.info(f"💾 STEP 6: CREATING PRODUCTS WITHOUT ASINs (Batch {batch_num}/{total_batches})")
+                logger.info("=" * 80)
+                logger.info(f"   Products without ASIN: {len(products_without_asin)}")
+                
                 new_products_no_asin = []
                 for parsed in products_without_asin:
                     # Check if product with this UPC already exists
@@ -873,11 +934,13 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                     new_products_no_asin.append(product_data)
                 
                 if new_products_no_asin:
-                    logger.info(f"💾 Inserting {len(new_products_no_asin)} products without ASINs...")
+                    logger.info(f"💾 Preparing to insert {len(new_products_no_asin)} products without ASINs...")
+                    logger.info(f"   Sample UPCs: {[p.get('upc') for p in new_products_no_asin[:5]]}")
+                    
                     # Insert products without ASINs
                     try:
                         # Clean product data - remove None values and ensure proper types
-                        logger.info("🧹 Cleaning product data...")
+                        logger.info("🧹 Cleaning product data (removing None values, ensuring proper types)...")
                         cleaned_products = []
                         for p in new_products_no_asin:
                             cleaned = {}
