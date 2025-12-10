@@ -817,20 +817,62 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                 
                 if new_products_no_asin:
                     # Insert products without ASINs
-                    created_no_asin = supabase.table("products").insert(new_products_no_asin).execute()
-                    for p in (created_no_asin.data or []):
-                        # Use a special key format for products without ASIN: "upc:{upc}"
-                        upc_key = f"upc:{p.get('upc')}"
-                        product_cache[upc_key] = p["id"]
-                        results["products_created"] += 1
+                    try:
+                        # Clean product data - remove None values and ensure proper types
+                        cleaned_products = []
+                        for p in new_products_no_asin:
+                            cleaned = {}
+                            for key, value in p.items():
+                                # Skip None values for optional fields (except where NULL is meaningful)
+                                if value is None and key not in ['asin', 'title', 'brand']:
+                                    continue
+                                # Ensure proper types for JSONB fields
+                                if key == 'potential_asins' and value:
+                                    # Ensure it's a list, not a dict
+                                    if isinstance(value, dict):
+                                        cleaned[key] = [value]
+                                    elif isinstance(value, list):
+                                        cleaned[key] = value
+                                    else:
+                                        cleaned[key] = [value] if value else None
+                                else:
+                                    cleaned[key] = value
+                            cleaned_products.append(cleaned)
                         
-                        # Track different result types
-                        if p.get("asin_status") == "multiple_found":
-                            results.setdefault("needs_asin_selection", 0)
-                            results["needs_asin_selection"] += 1
-                        elif p.get("asin_status") == "not_found":
-                            results.setdefault("needs_manual_asin", 0)
-                            results["needs_manual_asin"] += 1
+                        created_no_asin = supabase.table("products").insert(cleaned_products).execute()
+                        for p in (created_no_asin.data or []):
+                            # Use a special key format for products without ASIN: "upc:{upc}"
+                            upc_key = f"upc:{p.get('upc')}"
+                            product_cache[upc_key] = p["id"]
+                            results["products_created"] += 1
+                            
+                            # Track different result types
+                            if p.get("asin_status") == "multiple_found":
+                                results.setdefault("needs_asin_selection", 0)
+                                results["needs_asin_selection"] += 1
+                            elif p.get("asin_status") == "not_found":
+                                results.setdefault("needs_manual_asin", 0)
+                                results["needs_manual_asin"] += 1
+                    except Exception as insert_error:
+                        error_msg = f"Failed to insert products without ASINs: {str(insert_error)}"
+                        logger.error(error_msg, exc_info=True)
+                        error_list.append(error_msg)
+                        # Try to insert one by one to identify problematic records
+                        for idx, p in enumerate(new_products_no_asin):
+                            try:
+                                cleaned = {k: v for k, v in p.items() if v is not None or k in ['asin', 'title', 'brand']}
+                                if 'potential_asins' in cleaned and cleaned['potential_asins']:
+                                    if isinstance(cleaned['potential_asins'], dict):
+                                        cleaned['potential_asins'] = [cleaned['potential_asins']]
+                                result = supabase.table("products").insert(cleaned).execute()
+                                if result.data:
+                                    product = result.data[0]
+                                    upc_key = f"upc:{product.get('upc')}"
+                                    product_cache[upc_key] = product["id"]
+                                    results["products_created"] += 1
+                            except Exception as single_error:
+                                logger.error(f"Failed to insert product {idx}: {single_error}")
+                                error_list.append(f"Row {batch_start + idx + 2}: Failed to create product: {str(single_error)}")
             
             # Build deals for upsert
             # Use dict to deduplicate by (product_id, supplier_id) - keep last occurrence
@@ -974,29 +1016,3 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
             raise  # Re-raise for sync version
 
 
-def process_file_upload_sync(job_id: str, user_id: str, supplier_id: str, file_contents_b64: str, filename: str):
-    """
-    Synchronous wrapper for process_file_upload.
-    Can be called directly without Celery (for BackgroundTasks fallback).
-    """
-    logger.info(f"Running process_file_upload_sync for job {job_id}")
-    try:
-        # Call the actual processing logic directly (pass None as self to skip Celery retry)
-        process_file_upload(None, job_id, user_id, supplier_id, file_contents_b64, filename)
-    except Exception as e:
-        logger.error(f"process_file_upload_sync failed for job {job_id}: {e}", exc_info=True)
-        raise
-
-
-def process_file_upload_sync(job_id: str, user_id: str, supplier_id: str, file_contents_b64: str, filename: str):
-    """
-    Synchronous wrapper for process_file_upload.
-    Can be called directly without Celery (for BackgroundTasks fallback).
-    """
-    logger.info(f"Running process_file_upload_sync for job {job_id}")
-    try:
-        # Call the actual processing logic (pass None as self since it's not a Celery task)
-        process_file_upload(None, job_id, user_id, supplier_id, file_contents_b64, filename)
-    except Exception as e:
-        logger.error(f"process_file_upload_sync failed for job {job_id}: {e}", exc_info=True)
-        raise
