@@ -413,7 +413,6 @@ export default function Products() {
   const [filters, setFilters] = useState({ minRoi: '', minProfit: '', search: '', supplier: '', asinStatus: 'all', pricingStatus: 'all' });
   const [showPromoOnly, setShowPromoOnly] = useState(false);
   const [suppliers, setSuppliers] = useState([]);
-  const [showAddDialog, setShowAddDialog] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, deal: null });
@@ -826,11 +825,6 @@ export default function Products() {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" fontWeight="700">Products</Typography>
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-          <BatchAnalyzeButton
-            analyzeAllPending={true}
-            buttonText="Analyze All Pending"
-            onComplete={() => setTimeout(() => fetchData(), 1000)}
-          />
           {selected.length > 0 && (
             <BatchAnalyzeButton
               productIds={selected}
@@ -847,13 +841,6 @@ export default function Products() {
             onClick={() => setShowUploadModal(true)}
           >
             Upload File
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<Plus size={16} />}
-            onClick={() => setShowAddDialog(true)}
-          >
-            Add ASIN
           </Button>
         </Box>
       </Box>
@@ -1045,10 +1032,14 @@ export default function Products() {
           <Package size={48} color={habexa.gray[400]} />
           <Typography variant="h6" sx={{ mt: 2 }}>No deals found</Typography>
           <Typography color="text.secondary" sx={{ mb: 2 }}>
-            Upload a CSV or Excel file or add ASINs manually to get started
+            Upload a CSV or Excel file to get started
           </Typography>
-          <Button variant="contained" startIcon={<Plus size={16} />} onClick={() => setShowAddDialog(true)}>
-            Add Your First ASIN
+          <Button 
+            variant="contained" 
+            startIcon={<Upload size={16} />} 
+            onClick={() => setShowUploadModal(true)}
+          >
+            Upload File
           </Button>
         </Card>
       ) : (
@@ -1171,13 +1162,6 @@ export default function Products() {
         </Card>
       )}
 
-      {/* Add Product Dialog */}
-      <AddProductDialog
-        open={showAddDialog}
-        onClose={() => setShowAddDialog(false)}
-        onAdded={() => { setShowAddDialog(false); fetchData(); }}
-        suppliers={suppliers}
-      />
 
       {/* File Upload Modal */}
       <FileUploadModal
