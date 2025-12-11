@@ -954,27 +954,49 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                 logger.info("=" * 80)
                 logger.info(f"   Products without ASIN: {len(products_without_asin)}")
                 
+                # Get all UPCs we're trying to insert
+                upcs_to_insert = [p.get("upc") for p in products_without_asin if p.get("upc")]
+                
+                # Check which already exist by UPC (to avoid duplicates)
+                logger.info(f"🔍 Checking for existing products by UPC...")
+                existing_result = supabase.table('products')\
+                    .select('id, upc, asin')\
+                    .eq('user_id', user_id)\
+                    .in_('upc', upcs_to_insert)\
+                    .execute()
+                
+                existing_upcs = {p['upc']: p for p in (existing_result.data or [])}
+                logger.info(f"   Found {len(existing_upcs)} existing products by UPC")
+                
                 new_products_no_asin = []
+                skipped_products = []
+                
                 for parsed in products_without_asin:
-                    # Check if product with this UPC already exists
                     upc = parsed.get("upc")
                     if not upc:
+                        continue
+                    
+                    # ✅ Check if this UPC already exists - skip duplicates
+                    if upc in existing_upcs:
+                        existing_product = existing_upcs[upc]
+                        logger.info(f"   ⚠️ UPC {upc} already exists (product_id: {existing_product.get('id')}) - skipping duplicate")
+                        skipped_products.append(upc)
+                        row_num = parsed.get("original_row", {}).get("row_num") if isinstance(parsed.get("original_row"), dict) else None
+                        if row_num:
+                            error_list.append(f"Row {row_num}: Product with UPC {upc} already exists - skipped duplicate")
                         continue
                     
                     asin_status = parsed.get("asin_status", "not_found")
                     potential_asins = parsed.get("potential_asins")
                     
-                    # Use placeholder ASIN since column is NOT NULL (unless DB allows NULL after migration)
-                    # Format: PENDING_{UPC} - will be updated when ASIN is found
-                    placeholder_asin = f"PENDING_{upc}"
-                    
+                    # ✅ ALWAYS use NULL for asin when no ASIN is found (never create fake PENDING_ values)
                     # Extract all CSV columns from original row
                     original_row = parsed.get("original_row", {})
                     
                     # Build product data with all new fields
                     product_data = {
                         "user_id": user_id,
-                        "asin": None if asin_status == "multiple_found" else placeholder_asin,  # NULL if multiple ASINs (user must choose), placeholder otherwise
+                        "asin": None,  # ✅ NULL - no fake ASINs! This prevents duplicate key errors
                         "upc": upc,  # Store UPC for manual lookup
                         "title": None,  # Will be filled from Amazon once ASIN is set
                         "supplier_title": original_row.get("title") or original_row.get("product_name") or original_row.get("name") or original_row.get("DESCRIPTION") or original_row.get("description") or parsed.get("supplier_title") or parsed.get("title"),
@@ -986,6 +1008,9 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                         "lookup_status": "not_found" if asin_status == "not_found" else "pending_selection" if asin_status == "multiple_found" else "pending"
                     }
                     new_products_no_asin.append(product_data)
+                
+                if skipped_products:
+                    logger.info(f"⚠️ Skipped {len(skipped_products)} duplicate products (already exist by UPC)")
                 
                 if new_products_no_asin:
                     logger.info(f"💾 Preparing to insert {len(new_products_no_asin)} products without ASINs...")
@@ -1015,11 +1040,22 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                                     cleaned[key] = value
                             cleaned_products.append(cleaned)
                         
-                        logger.info(f"📤 Executing batch insert of {len(cleaned_products)} products without ASINs...")
+                        logger.info(f"📤 Executing batch upsert of {len(cleaned_products)} products without ASINs...")
                         # Clean and normalize products before insert
                         final_cleaned = [clean_product_for_insert(p) for p in cleaned_products]
                         normalized_products = normalize_product_batch(final_cleaned)
-                        created_no_asin = supabase.table("products").insert(normalized_products).execute()
+                        
+                        # Use UPSERT with conflict resolution on (user_id, upc) to handle edge cases gracefully
+                        # This will update existing products if they somehow exist, or insert new ones
+                        try:
+                            created_no_asin = supabase.table("products").upsert(
+                                normalized_products,
+                                on_conflict="user_id,upc"  # Update if UPC already exists for this user
+                            ).execute()
+                        except Exception as upsert_error:
+                            # If upsert fails (e.g., constraint doesn't exist), fall back to insert
+                            logger.warning(f"⚠️ UPSERT failed (may not have unique constraint on upc), falling back to INSERT: {upsert_error}")
+                            created_no_asin = supabase.table("products").insert(normalized_products).execute()
                         created_count = len(created_no_asin.data or [])
                         logger.info(f"✅ Successfully inserted {created_count} products without ASINs")
                         
@@ -1046,6 +1082,22 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                         success_count = 0
                         for idx, p in enumerate(new_products_no_asin):
                             try:
+                                upc = p.get('upc')
+                                
+                                # Double-check for existing product before inserting
+                                if upc:
+                                    existing = supabase.table('products')\
+                                        .select('id')\
+                                        .eq('user_id', user_id)\
+                                        .eq('upc', upc)\
+                                        .limit(1)\
+                                        .execute()
+                                    
+                                    if existing.data:
+                                        logger.debug(f"   Product {idx + 1}/{len(new_products_no_asin)}: UPC {upc} already exists - skipping")
+                                        success_count += 1  # Count as success (already exists)
+                                        continue
+                                
                                 cleaned = {k: v for k, v in p.items() if v is not None or k in ['asin', 'title', 'brand']}
                                 if 'potential_asins' in cleaned and cleaned['potential_asins']:
                                     if isinstance(cleaned['potential_asins'], dict):
