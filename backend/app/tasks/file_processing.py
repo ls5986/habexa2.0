@@ -24,6 +24,44 @@ except ImportError:
 
 BATCH_SIZE = 100
 
+# Valid columns in products table - ONLY use these when inserting
+VALID_PRODUCT_COLUMNS = {
+    'user_id', 'asin', 'title', 'image_url', 'category', 'brand_id', 
+    'brand_name', 'sell_price', 'fees_total', 'bsr', 'seller_count',
+    'fba_seller_count', 'amazon_sells', 'analysis_id', 'status',
+    'upc', 'asin_status', 'brand', 'potential_asins', 'parent_asin',
+    'is_variation', 'variation_count', 'variation_theme', 'supplier_title',
+    'is_favorite', 'lookup_status', 'lookup_attempts', 'asin_found_at'
+}
+
+def clean_product_for_insert(product_dict):
+    """
+    Remove any keys not in the products table schema.
+    This prevents PGRST204 'column not found' errors.
+    """
+    return {k: v for k, v in product_dict.items() if k in VALID_PRODUCT_COLUMNS}
+
+def normalize_product_batch(products):
+    """
+    Ensure all products in a batch have exactly the same keys.
+    This prevents PGRST102 'All object keys must match' errors.
+    """
+    if not products:
+        return []
+    
+    # Get union of all keys across all products
+    all_keys = set()
+    for p in products:
+        all_keys.update(p.keys())
+    
+    # Normalize each product to have all keys (with None for missing)
+    normalized = []
+    for p in products:
+        normalized_product = {key: p.get(key) for key in all_keys}
+        normalized.append(normalized_product)
+    
+    return normalized
+
 
 def parse_csv(contents: bytes) -> Tuple[List[Dict], List[str]]:
     """Parse CSV with BOM handling. Returns (rows, headers)."""
@@ -829,18 +867,13 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                                 "user_id": user_id,
                                 "asin": parsed["asin"],
                                 "upc": parsed.get("upc"),
-                                # Note: sku column doesn't exist in products table - removed
                                 "title": amazon_title,  # Amazon title (from SP-API)
-                                "supplier_title": parsed.get("supplier_title") or parsed.get("title"),  # Supplier's title
-                                "uploaded_title": original_row.get("title") or original_row.get("product_name") or original_row.get("name") or original_row.get("DESCRIPTION") or original_row.get("description"),
-                                "uploaded_brand": original_row.get("brand") or original_row.get("BRAND") or parsed.get("brand"),
-                                "uploaded_category": original_row.get("category") or original_row.get("CATEGORY"),
-                                "brand": parsed.get("brand"),
+                                "supplier_title": original_row.get("title") or original_row.get("product_name") or original_row.get("name") or original_row.get("DESCRIPTION") or original_row.get("description") or parsed.get("supplier_title") or parsed.get("title"),
+                                "brand": original_row.get("brand") or original_row.get("BRAND") or parsed.get("brand"),
+                                "category": original_row.get("category") or original_row.get("CATEGORY"),
                                 "status": "pending",
                                 "asin_status": "found",  # ASIN was found via UPC conversion
-                                "upload_source": "csv" if filename.lower().endswith('.csv') else "excel",
-                                "source_filename": filename,
-                                "uploaded_at": datetime.utcnow().isoformat()
+                                "lookup_status": "found"
                             }
                             new_products.append(product_data)
                     
@@ -856,7 +889,10 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                         logger.info(f"💾 Inserting {len(unique_products)} new products WITH ASINs...")
                         logger.info(f"   Sample product data keys: {list(unique_products[0].keys()) if unique_products else []}")
                         try:
-                            created = supabase.table("products").insert(unique_products).execute()
+                            # Clean and normalize products before insert
+                            cleaned_products = [clean_product_for_insert(p) for p in unique_products]
+                            normalized_products = normalize_product_batch(cleaned_products)
+                            created = supabase.table("products").insert(normalized_products).execute()
                             created_count = len(created.data or [])
                             logger.info(f"✅ Successfully created {created_count} products with ASINs")
                             
@@ -879,7 +915,8 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                             logger.info("🔄 Attempting one-by-one insert to identify problematic records...")
                             for idx, prod in enumerate(unique_products):
                                 try:
-                                    single_result = supabase.table("products").insert([prod]).execute()
+                                    cleaned_prod = clean_product_for_insert(prod)
+                                    single_result = supabase.table("products").insert([cleaned_prod]).execute()
                                     if single_result.data:
                                         product_cache[prod["asin"]] = single_result.data[0]["id"]
                                         results["products_created"] += 1
@@ -917,19 +954,14 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                         "user_id": user_id,
                         "asin": None if asin_status == "multiple_found" else placeholder_asin,  # NULL if multiple ASINs (user must choose), placeholder otherwise
                         "upc": upc,  # Store UPC for manual lookup
-                        # Note: sku column doesn't exist in products table - removed
                         "title": None,  # Will be filled from Amazon once ASIN is set
-                        "supplier_title": parsed.get("supplier_title") or parsed.get("title"),  # Supplier's name for the product
-                        "uploaded_title": original_row.get("title") or original_row.get("product_name") or original_row.get("name") or original_row.get("DESCRIPTION") or original_row.get("description"),
-                        "uploaded_brand": original_row.get("brand") or original_row.get("BRAND") or parsed.get("brand"),
-                        "uploaded_category": original_row.get("category") or original_row.get("CATEGORY"),
-                        "brand": parsed.get("brand"),
+                        "supplier_title": original_row.get("title") or original_row.get("product_name") or original_row.get("name") or original_row.get("DESCRIPTION") or original_row.get("description") or parsed.get("supplier_title") or parsed.get("title"),
+                        "brand": original_row.get("brand") or original_row.get("BRAND") or parsed.get("brand"),
+                        "category": original_row.get("category") or original_row.get("CATEGORY"),
                         "status": "pending",
                         "asin_status": asin_status,  # 'not_found' or 'multiple_found'
                         "potential_asins": potential_asins if potential_asins else None,  # JSONB array of ASIN options
-                        "upload_source": "csv" if filename.lower().endswith('.csv') else "excel",
-                        "source_filename": filename,
-                        "uploaded_at": datetime.utcnow().isoformat()
+                        "lookup_status": "not_found" if asin_status == "not_found" else "pending_selection" if asin_status == "multiple_found" else "pending"
                     }
                     new_products_no_asin.append(product_data)
                 
@@ -962,7 +994,10 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                             cleaned_products.append(cleaned)
                         
                         logger.info(f"📤 Executing batch insert of {len(cleaned_products)} products without ASINs...")
-                        created_no_asin = supabase.table("products").insert(cleaned_products).execute()
+                        # Clean and normalize products before insert
+                        final_cleaned = [clean_product_for_insert(p) for p in cleaned_products]
+                        normalized_products = normalize_product_batch(final_cleaned)
+                        created_no_asin = supabase.table("products").insert(normalized_products).execute()
                         created_count = len(created_no_asin.data or [])
                         logger.info(f"✅ Successfully inserted {created_count} products without ASINs")
                         
@@ -994,7 +1029,8 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                                     if isinstance(cleaned['potential_asins'], dict):
                                         cleaned['potential_asins'] = [cleaned['potential_asins']]
                                 logger.debug(f"   Inserting product {idx + 1}/{len(new_products_no_asin)}: UPC {p.get('upc')}")
-                                result = supabase.table("products").insert(cleaned).execute()
+                                cleaned_product = clean_product_for_insert(cleaned)
+                                result = supabase.table("products").insert([cleaned_product]).execute()
                                 if result.data:
                                     product = result.data[0]
                                     upc_key = f"upc:{product.get('upc')}"
