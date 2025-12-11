@@ -1477,7 +1477,7 @@ export default function Products() {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setAsinSelectionDialog({ open: false, product: null })}>Cancel</Button>
+          <Button onClick={() => setAsinSelectionDialog({ open: false, product: null, asinDetails: [] })}>Cancel</Button>
         </DialogActions>
       </Dialog>
 
