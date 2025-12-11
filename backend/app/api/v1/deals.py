@@ -445,9 +445,9 @@ async def get_deal(deal_id: str, current_user=Depends(get_current_user)):
     user_id = str(current_user.id)
     
     try:
-        # Try product_deals view first (new schema) - join with analyses and products in ONE query
+        # Try product_deals view first (new schema) - join with analyses in ONE query
         result = (supabase.table("product_deals")
-            .select("*, analyses(*), products!product_deals_product_id_fkey(sp_api_raw_response, keepa_raw_response, sp_api_last_fetched, keepa_last_fetched)")
+            .select("*, analyses(*)")
             .eq("deal_id", deal_id)
             .eq("user_id", user_id)
             .limit(1)
@@ -464,29 +464,35 @@ async def get_deal(deal_id: str, current_user=Depends(get_current_user)):
                 elif isinstance(deal["analyses"], dict):
                     analysis = deal["analyses"]
             
-            # Extract product data with raw API responses
-            product = None
+            # Fetch raw API data from products table separately
             raw_api_data = {
                 "sp_api": None,
                 "keepa": None
             }
-            if deal.get("products"):
-                if isinstance(deal["products"], list) and len(deal["products"]) > 0:
-                    product = deal["products"][0]
-                elif isinstance(deal["products"], dict):
-                    product = deal["products"]
-                
-                if product:
-                    raw_api_data = {
-                        "sp_api": {
-                            "raw_response": product.get("sp_api_raw_response"),
-                            "last_fetched": product.get("sp_api_last_fetched"),
-                        },
-                        "keepa": {
-                            "raw_response": product.get("keepa_raw_response"),
-                            "last_fetched": product.get("keepa_last_fetched"),
+            product_id = deal.get("product_id")
+            if product_id:
+                try:
+                    product_result = supabase.table("products")\
+                        .select("sp_api_raw_response, keepa_raw_response, sp_api_last_fetched, keepa_last_fetched")\
+                        .eq("id", product_id)\
+                        .eq("user_id", user_id)\
+                        .limit(1)\
+                        .execute()
+                    
+                    if product_result.data and len(product_result.data) > 0:
+                        product = product_result.data[0]
+                        raw_api_data = {
+                            "sp_api": {
+                                "raw_response": product.get("sp_api_raw_response"),
+                                "last_fetched": product.get("sp_api_last_fetched"),
+                            },
+                            "keepa": {
+                                "raw_response": product.get("keepa_raw_response"),
+                                "last_fetched": product.get("keepa_last_fetched"),
+                            }
                         }
-                    }
+                except Exception as e:
+                    logger.warning(f"Failed to fetch raw API data for product {product_id}: {e}")
             
             # Build complete response with ALL data from database
             return {
