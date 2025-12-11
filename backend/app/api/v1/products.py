@@ -3188,13 +3188,26 @@ async def refetch_single_product(
     user_id = str(current_user.id)
     
     try:
+        # Validate ASIN - reject PENDING_ and invalid ASINs
+        if not asin or asin.startswith('PENDING_') or asin.startswith('Unknown'):
+            raise HTTPException(400, f"Invalid ASIN: {asin}. Product needs a valid ASIN before API data can be fetched.")
+        
+        # Basic ASIN format validation (10 characters, alphanumeric)
+        if len(asin) != 10 or not asin.replace(' ', '').isalnum():
+            raise HTTPException(400, f"Invalid ASIN format: {asin}. ASINs must be 10 alphanumeric characters.")
+        
         # Verify user owns a product with this ASIN
-        product_result = supabase.table('products').select('id, asin').eq(
+        product_result = supabase.table('products').select('id, asin, asin_status').eq(
             'asin', asin
         ).eq('user_id', user_id).limit(1).execute()
         
         if not product_result.data or len(product_result.data) == 0:
             raise HTTPException(404, f"No product found with ASIN {asin}")
+        
+        # Check if ASIN status indicates it needs selection
+        product = product_result.data[0]
+        if product.get('asin_status') in ['multiple_found', 'not_found', 'needs_selection']:
+            raise HTTPException(400, f"ASIN {asin} needs to be selected or resolved before API data can be fetched. Current status: {product.get('asin_status')}")
         
         logger.info(f"🔥 Manual refetch requested for {asin} by user {user_id}")
         

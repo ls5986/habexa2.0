@@ -168,6 +168,18 @@ export default function DealDetail() {
       return;
     }
     
+    // Validate ASIN - reject PENDING_ and invalid ASINs
+    if (deal.asin.startsWith('PENDING_') || deal.asin.startsWith('Unknown')) {
+      setApiDataError('This product needs a valid ASIN before API data can be fetched. Please select an ASIN from the multiple options or enter one manually.');
+      return;
+    }
+    
+    // Basic ASIN validation
+    if (deal.asin.length !== 10 || !deal.asin.replace(' ', '').match(/^[A-Z0-9]+$/)) {
+      setApiDataError('Invalid ASIN format. ASINs must be 10 alphanumeric characters.');
+      return;
+    }
+    
     setReanalyzing(true);
     setApiDataError(null);
     setApiDataSuccess(null);
@@ -189,7 +201,8 @@ export default function DealDetail() {
       }
     } catch (err) {
       console.error('Reanalyze failed:', err);
-      setApiDataError(err.response?.data?.detail || 'Failed to fetch API data. Please try again.');
+      const errorMessage = err.response?.data?.detail || err.response?.data?.message || 'Failed to fetch API data. Please try again.';
+      setApiDataError(errorMessage);
     } finally {
       setReanalyzing(false);
     }
@@ -989,7 +1002,7 @@ export default function DealDetail() {
                     size="large"
                     startIcon={reanalyzing ? <CircularProgress size={20} /> : <RefreshCw size={20} />}
                     onClick={handleReanalyze}
-                    disabled={reanalyzing || !deal?.asin}
+                    disabled={reanalyzing || !deal?.asin || deal?.asin?.startsWith('PENDING_') || deal?.asin?.startsWith('Unknown')}
                   >
                     {reanalyzing ? 'Fetching...' : 'Fetch All API Data'}
                   </Button>
@@ -1166,7 +1179,7 @@ export default function DealDetail() {
                       size="small"
                       sx={{ mt: 2 }}
                       onClick={handleReanalyze}
-                      disabled={reanalyzing || !deal?.asin}
+                      disabled={reanalyzing || !deal?.asin || deal?.asin?.startsWith('PENDING_') || deal?.asin?.startsWith('Unknown')}
                       startIcon={reanalyzing ? <CircularProgress size={16} /> : <RefreshCw size={16} />}
                     >
                       {reanalyzing ? 'Fetching...' : 'Fetch API Data Now'}
