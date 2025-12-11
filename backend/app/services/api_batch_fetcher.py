@@ -102,19 +102,25 @@ class APIBatchFetcher:
                 logger.info(f"  📡 SP-API Batch {batch_num}/{total_batches}: Fetching {len(batch)} ASINs")
                 
                 # Call SP-API - returns dict of {asin: {processed, raw}}
-                response = await sp_api_client.get_catalog_items(
-                    asins=batch,
-                    marketplace_id='ATVPDKIKX0DER',
-                    included_data=['summaries', 'images', 'attributes', 'salesRanks']
-                )
-                
-                # Store both processed and raw
-                for asin, data in response.items():
-                    if data:
-                        sp_data[asin] = data
-                        results['sp_api_success'] += 1
-                        raw_size = len(str(data.get('raw', {})))
-                        logger.debug(f"    ✓ {asin}: {raw_size} chars raw response")
+                try:
+                    response = await sp_api_client.get_catalog_items(
+                        asins=batch,
+                        marketplace_id='ATVPDKIKX0DER',
+                        included_data=['summaries', 'images', 'attributes', 'salesRanks']
+                    )
+                    
+                    # Store both processed and raw
+                    for asin_key, data in response.items():
+                        if data:
+                            sp_data[asin_key] = data
+                            results['sp_api_success'] += 1
+                            raw_size = len(str(data.get('raw', {}))) if isinstance(data, dict) and 'raw' in data else len(str(data))
+                            logger.debug(f"    ✓ {asin_key}: {raw_size} chars raw response")
+                except Exception as e:
+                    logger.error(f"  ❌ SP-API batch {batch_num} call failed: {e}", exc_info=True)
+                    results['sp_api_failed'] += len(batch)
+                    results['errors'].append(f"SP-API batch {batch_num} call: {str(e)}")
+                    continue
                 
                 logger.info(f"  ✅ Batch {batch_num} complete: {len(response)} items")
                 
@@ -228,19 +234,29 @@ class APIBatchFetcher:
                 if asin in keepa_data:
                     try:
                         keepa_item = keepa_data[asin]
-                        product_data = keepa_item.get('product', {})
-                        raw_response = keepa_item.get('raw_response', {})
                         
-                        keepa_extracted = KeepaExtractor.extract_all({
-                            'products': [product_data]
-                        }, asin=asin)
+                        # Handle different Keepa response structures
+                        if isinstance(keepa_item, dict):
+                            product_data = keepa_item.get('product', keepa_item)  # Fallback to item itself
+                            raw_response = keepa_item.get('raw_response', keepa_item)  # Fallback to item itself
+                        else:
+                            # Direct product data
+                            product_data = keepa_item
+                            raw_response = keepa_item
                         
-                        update_data.update(keepa_extracted)
-                        update_data['keepa_raw_response'] = raw_response
-                        update_data['keepa_last_fetched'] = datetime.utcnow().isoformat()
-                        logger.debug(f"    {asin}: Extracted {len(keepa_extracted)} Keepa fields")
+                        if product_data:
+                            keepa_extracted = KeepaExtractor.extract_all({
+                                'products': [product_data] if isinstance(product_data, dict) else product_data
+                            }, asin=asin)
+                            
+                            update_data.update(keepa_extracted)
+                            update_data['keepa_raw_response'] = raw_response
+                            update_data['keepa_last_fetched'] = datetime.utcnow().isoformat()
+                            logger.debug(f"    {asin}: Extracted {len(keepa_extracted)} Keepa fields")
+                        else:
+                            logger.warning(f"    {asin}: Keepa product_data is None")
                     except Exception as e:
-                        logger.error(f"    {asin}: Keepa extraction failed: {e}")
+                        logger.error(f"    {asin}: Keepa extraction failed: {e}", exc_info=True)
                         results['errors'].append(f"{asin} Keepa extraction: {str(e)}")
                 
                 # ===== UPDATE DATABASE =====
