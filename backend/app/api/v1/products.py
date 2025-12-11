@@ -224,6 +224,10 @@ class UpdateDealRequest(BaseModel):
     notes: Optional[str] = None
     supplier_id: Optional[str] = None
 
+class UpdateProductStatusRequest(BaseModel):
+    status: str  # 'pending', 'analyzed', 'saved', 'ordered', 'dismissed', 'passed'
+    pass_reason: Optional[str] = None  # Reason for passing (stored in notes)
+
 class AnalyzeBatchRequest(BaseModel):
     deal_ids: List[str]
 
@@ -3509,6 +3513,126 @@ async def toggle_favorite(
             'is_favorite': True
         }
 
+
+@router.post("/deal/{deal_id}/move-to-buy-list")
+async def move_to_buy_list(
+    deal_id: str,
+    current_user=Depends(get_current_user)
+):
+    """
+    Move product to buy list by setting stage to 'buy_list'.
+    """
+    user_id = str(current_user.id)
+    
+    try:
+        # Verify ownership
+        deal = supabase.table("product_sources")\
+            .select("id, products!inner(user_id)")\
+            .eq("id", deal_id)\
+            .limit(1)\
+            .execute()
+        
+        if not deal.data:
+            raise HTTPException(404, "Deal not found")
+        
+        deal_data = deal.data[0]
+        products = deal_data.get("products", {})
+        if not isinstance(products, dict) or products.get("user_id") != user_id:
+            raise HTTPException(404, "Deal not found")
+        
+        # Update stage to buy_list
+        result = supabase.table("product_sources")\
+            .update({
+                "stage": "buy_list",
+                "updated_at": datetime.utcnow().isoformat()
+            })\
+            .eq("id", deal_id)\
+            .execute()
+        
+        logger.info(f"✅ Moved deal {deal_id} to buy_list")
+        return {
+            "success": True,
+            "message": "Product moved to buy list",
+            "deal": result.data[0] if result.data else None
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to move to buy list: {e}")
+        raise HTTPException(500, str(e))
+
+@router.patch("/deal/{deal_id}/status")
+async def update_product_status(
+    deal_id: str,
+    request: UpdateProductStatusRequest,
+    current_user=Depends(get_current_user)
+):
+    """
+    Update product status (pass/pass reason).
+    Status can be: 'pending', 'analyzed', 'saved', 'ordered', 'dismissed', 'passed'
+    If status is 'passed', pass_reason is stored in product_sources.notes
+    """
+    user_id = str(current_user.id)
+    
+    try:
+        # Verify ownership
+        deal = supabase.table("product_sources")\
+            .select("id, product_id, products!inner(user_id)")\
+            .eq("id", deal_id)\
+            .limit(1)\
+            .execute()
+        
+        if not deal.data:
+            raise HTTPException(404, "Deal not found")
+        
+        deal_data = deal.data[0]
+        products = deal_data.get("products", {})
+        if not isinstance(products, dict) or products.get("user_id") != user_id:
+            raise HTTPException(404, "Deal not found")
+        
+        product_id = deal_data.get("product_id")
+        
+        # Valid statuses
+        valid_statuses = ['pending', 'analyzed', 'saved', 'ordered', 'dismissed', 'passed']
+        if request.status not in valid_statuses:
+            raise HTTPException(400, f"Invalid status. Must be one of: {', '.join(valid_statuses)}")
+        
+        # Update product status
+        product_update = {"status": request.status}
+        if request.status == 'passed' and request.pass_reason:
+            product_update["status"] = "passed"
+        
+        supabase.table("products")\
+            .update(product_update)\
+            .eq("id", product_id)\
+            .execute()
+        
+        # Update product_sources notes if pass_reason provided
+        deal_update = {}
+        if request.status == 'passed' and request.pass_reason:
+            deal_update["notes"] = f"PASSED: {request.pass_reason}"
+        elif request.status != 'passed':
+            # Clear pass reason if status changed from passed
+            deal_update["notes"] = None
+        
+        if deal_update:
+            deal_update["updated_at"] = datetime.utcnow().isoformat()
+            supabase.table("product_sources")\
+                .update(deal_update)\
+                .eq("id", deal_id)\
+                .execute()
+        
+        logger.info(f"✅ Updated product status: {request.status} for deal {deal_id}")
+        return {
+            "success": True,
+            "message": f"Product status updated to {request.status}",
+            "status": request.status
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to update product status: {e}")
+        raise HTTPException(500, str(e))
 
 @router.post("/deal/{deal_id}/move-to-orders")
 async def move_to_orders(

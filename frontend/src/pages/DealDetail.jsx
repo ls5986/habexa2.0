@@ -756,6 +756,28 @@ export default function DealDetail() {
                 >
                   View on Amazon
                 </Button>
+                
+                {/* Buy Product Button */}
+                <Button 
+                  variant="contained" 
+                  fullWidth
+                  color="success"
+                  startIcon={<ShoppingCart size={16} />}
+                  onClick={async () => {
+                    try {
+                      await api.post(`/products/deal/${deal.deal_id || deal.id}/move-to-buy-list`);
+                      alert('Product moved to buy list!');
+                      fetchDeal(); // Refresh to show updated stage
+                    } catch (err) {
+                      console.error('Failed to move to buy list:', err);
+                      alert('Failed to move to buy list. Please try again.');
+                    }
+                  }}
+                  disabled={deal?.stage === 'buy_list'}
+                >
+                  {deal?.stage === 'buy_list' ? 'In Buy List' : 'Buy Product'}
+                </Button>
+                
                 <Button 
                   variant="outlined" 
                   fullWidth
@@ -765,6 +787,52 @@ export default function DealDetail() {
                 >
                   {reanalyzing ? 'Re-analyzing...' : 'Re-analyze'}
                 </Button>
+                
+                {/* Status Actions */}
+                <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                  <Button 
+                    variant="outlined" 
+                    size="small"
+                    fullWidth
+                    color="error"
+                    onClick={async () => {
+                      const reason = prompt('Why are you passing on this product? (optional)');
+                      try {
+                        await api.patch(`/products/deal/${deal.deal_id || deal.id}/status`, {
+                          status: 'passed',
+                          pass_reason: reason || 'No reason provided'
+                        });
+                        alert('Product marked as passed');
+                        fetchDeal();
+                      } catch (err) {
+                        console.error('Failed to update status:', err);
+                        alert('Failed to update status. Please try again.');
+                      }
+                    }}
+                  >
+                    Pass
+                  </Button>
+                  <Button 
+                    variant="outlined" 
+                    size="small"
+                    fullWidth
+                    color="success"
+                    onClick={async () => {
+                      try {
+                        await api.patch(`/products/deal/${deal.deal_id || deal.id}/status`, {
+                          status: 'saved'
+                        });
+                        alert('Product saved');
+                        fetchDeal();
+                      } catch (err) {
+                        console.error('Failed to update status:', err);
+                        alert('Failed to update status. Please try again.');
+                      }
+                    }}
+                  >
+                    Save
+                  </Button>
+                </Box>
                 
                 {/* Last analyzed timestamp */}
                 {deal?.analyzed_at && (
