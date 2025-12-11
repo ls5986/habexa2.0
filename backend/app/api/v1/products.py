@@ -3174,6 +3174,164 @@ async def get_product_variations(
 class SelectASINRequest(BaseModel):
     asin: str  # The chosen ASIN from potential_asins
 
+@router.post("/fetch-by-asin/{asin}")
+async def refetch_single_product(
+    asin: str,
+    current_user = Depends(get_current_user)
+):
+    """
+    Manually refetch API data for a single product by ASIN.
+    Used by the "Fetch Now" buttons in the UI.
+    
+    Example: POST /products/fetch-by-asin/B07VRZ8TK3
+    """
+    user_id = str(current_user.id)
+    
+    try:
+        # Verify user owns a product with this ASIN
+        product_result = supabase.table('products').select('id, asin').eq(
+            'asin', asin
+        ).eq('user_id', user_id).limit(1).execute()
+        
+        if not product_result.data or len(product_result.data) == 0:
+            raise HTTPException(404, f"No product found with ASIN {asin}")
+        
+        logger.info(f"🔥 Manual refetch requested for {asin} by user {user_id}")
+        
+        # Import here to avoid circular imports
+        from app.services.api_batch_fetcher import fetch_api_data_for_asins
+        
+        # Fetch API data
+        results = await fetch_api_data_for_asins(
+            asins=[asin],
+            user_id=user_id,
+            force_refetch=True  # Always fetch fresh data for manual requests
+        )
+        
+        # Return detailed results
+        return {
+            'success': results['updated'] > 0,
+            'asin': asin,
+            'sp_api_fetched': results['sp_api_success'] > 0,
+            'keepa_fetched': results['keepa_success'] > 0,
+            'errors': results['errors'],
+            'message': f"Fetched data from {results['sp_api_success'] + results['keepa_success']} APIs"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Refetch failed for {asin}: {e}", exc_info=True)
+        raise HTTPException(500, f"Refetch failed: {str(e)}")
+
+
+@router.post("/bulk-refetch")
+async def bulk_refetch_products(
+    product_ids: List[str] = Body(...),
+    current_user = Depends(get_current_user)
+):
+    """
+    Refetch API data for multiple products at once.
+    
+    Body: {
+        "product_ids": ["uuid1", "uuid2", ...]
+    }
+    """
+    user_id = str(current_user.id)
+    
+    try:
+        # Get ASINs for these products
+        products_result = supabase.table('products').select('asin').in_(
+            'id', product_ids
+        ).eq('user_id', user_id).execute()
+        
+        if not products_result.data:
+            raise HTTPException(404, "No products found")
+        
+        asins = [p['asin'] for p in products_result.data if p.get('asin')]
+        
+        if not asins:
+            raise HTTPException(400, "No valid ASINs found in selected products")
+        
+        logger.info(f"🔥 Bulk refetch requested for {len(asins)} ASINs")
+        
+        # Import here to avoid circular imports
+        from app.services.api_batch_fetcher import fetch_api_data_for_asins
+        
+        # Fetch API data
+        results = await fetch_api_data_for_asins(
+            asins=asins,
+            user_id=user_id,
+            force_refetch=True
+        )
+        
+        return {
+            'success': True,
+            'total': len(asins),
+            'results': results
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Bulk refetch failed: {e}", exc_info=True)
+        raise HTTPException(500, str(e))
+
+
+@router.get("/{product_id}/api-data")
+async def get_product_api_data(
+    product_id: str,
+    current_user = Depends(get_current_user)
+):
+    """
+    Get the raw API responses for a product to display in the UI.
+    Used by the API Data tab.
+    """
+    user_id = str(current_user.id)
+    
+    try:
+        product_result = supabase.table('products').select(
+            'asin, '
+            'sp_api_raw_response, keepa_raw_response, '
+            'sp_api_last_fetched, keepa_last_fetched, '
+            'title, image_url, current_sales_rank, fba_seller_count, seller_count'
+        ).eq('id', product_id).eq('user_id', user_id).limit(1).execute()
+        
+        if not product_result.data or len(product_result.data) == 0:
+            raise HTTPException(404, "Product not found")
+        
+        product = product_result.data[0]
+        
+        return {
+            'asin': product.get('asin'),
+            'title': product.get('title'),
+            'image_url': product.get('image_url'),
+            'sp_api': {
+                'has_data': product.get('sp_api_raw_response') is not None,
+                'data': product.get('sp_api_raw_response'),
+                'last_fetched': product.get('sp_api_last_fetched'),
+                'size_bytes': len(str(product.get('sp_api_raw_response', '')))
+            },
+            'keepa': {
+                'has_data': product.get('keepa_raw_response') is not None,
+                'data': product.get('keepa_raw_response'),
+                'last_fetched': product.get('keepa_last_fetched'),
+                'size_bytes': len(str(product.get('keepa_raw_response', '')))
+            },
+            'extracted_fields': {
+                'bsr': product.get('current_sales_rank'),
+                'fba_sellers': product.get('fba_seller_count'),
+                'total_sellers': product.get('seller_count')
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting API data: {e}", exc_info=True)
+        raise HTTPException(500, str(e))
+
+
 @router.get("/pending-asin-selection")
 async def get_products_pending_asin_selection(
     current_user = Depends(get_current_user)
