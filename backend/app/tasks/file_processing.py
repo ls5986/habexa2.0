@@ -954,6 +954,58 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                                     logger.warning(f"   ⚠️ {len(api_results['errors'])} errors occurred")
                                     for error in api_results['errors'][:5]:  # Log first 5 errors
                                         logger.warning(f"      - {error}")
+                                
+                                # ========================================
+                                # CALCULATE PROFITABILITY AFTER API FETCH
+                                # ========================================
+                                # Note: Profitability will be calculated again after product_sources are created
+                                # This initial calculation uses product data only (no supplier costs yet)
+                                logger.info(f"💰 Calculating profitability metrics for {len(asins)} products...")
+                                try:
+                                    from app.services.profitability_calculator import ProfitabilityCalculator
+                                    
+                                    # Fetch products with latest API data
+                                    products_with_data = supabase.table("products")\
+                                        .select("*")\
+                                        .eq("user_id", user_id)\
+                                        .in_("asin", asins)\
+                                        .execute()
+                                    
+                                    if products_with_data.data:
+                                        # For now, calculate with default costs (will recalculate after product_sources)
+                                        for product in products_with_data.data:
+                                            # Create minimal product_source data for calculation
+                                            default_source = {
+                                                'buy_cost': 0,  # Will be updated after product_sources are created
+                                                'wholesale_cost': 0,
+                                                'pack_size': 1,
+                                                'moq': 1
+                                            }
+                                            
+                                            # Only calculate if we have sell_price
+                                            if product.get('sell_price') or product.get('amazon_price_current'):
+                                                calculated = ProfitabilityCalculator.calculate(
+                                                    product_data=product,
+                                                    product_source_data=default_source
+                                                )
+                                                
+                                                # Update product with calculated metrics (except profit/ROI which need buy_cost)
+                                                update_data = {
+                                                    'break_even_price': calculated.get('break_even_price'),
+                                                    'risk_level': calculated.get('risk_level'),
+                                                    'est_monthly_sales': calculated.get('est_monthly_sales')
+                                                }
+                                                
+                                                # Only update if we have meaningful data
+                                                if any(update_data.values()):
+                                                    supabase.table("products")\
+                                                        .update(update_data)\
+                                                        .eq("id", product['id'])\
+                                                        .execute()
+                                        
+                                        logger.info(f"✅ Initial profitability metrics calculated (will recalculate after supplier costs)")
+                                except Exception as calc_error:
+                                    logger.warning(f"⚠️ Profitability calculation failed (non-critical): {calc_error}")
                             else:
                                 logger.info("⚠️ No products with ASINs to fetch API data for")
                             
@@ -1203,6 +1255,97 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                     deals_count = len(result.data or [])
                     logger.info(f"✅ Successfully upserted {deals_count} deals")
                     results["deals_processed"] += deals_count
+                    
+                    # ========================================
+                    # CALCULATE PROFITABILITY AFTER DEALS CREATED
+                    # ========================================
+                    # Now we have both product data (from API) and supplier costs (from product_sources)
+                    # Calculate full profitability metrics
+                    if deals_count > 0:
+                        logger.info(f"💰 Calculating profitability for {deals_count} products with supplier costs...")
+                        try:
+                            from app.services.profitability_calculator import ProfitabilityCalculator
+                            
+                            # Get all product IDs from created deals
+                            deal_product_ids = [d.get('product_id') for d in deals if d.get('product_id')]
+                            
+                            if deal_product_ids:
+                                # Fetch products with full API data
+                                products_result = supabase.table("products")\
+                                    .select("*")\
+                                    .eq("user_id", user_id)\
+                                    .in_("id", deal_product_ids)\
+                                    .execute()
+                                
+                                # Fetch product_sources with supplier costs
+                                sources_result = supabase.table("product_sources")\
+                                    .select("*")\
+                                    .in_("product_id", deal_product_ids)\
+                                    .execute()
+                                
+                                if products_result.data and sources_result.data:
+                                    # Create lookup for sources by product_id
+                                    sources_by_product = {s['product_id']: s for s in sources_result.data}
+                                    
+                                    profitability_updates = []
+                                    for product in products_result.data:
+                                        product_id = product['id']
+                                        source_data = sources_by_product.get(product_id, {})
+                                        
+                                        # Only calculate if we have both sell_price and buy_cost
+                                        has_price = product.get('sell_price') or product.get('amazon_price_current')
+                                        has_cost = source_data.get('buy_cost') or source_data.get('wholesale_cost')
+                                        
+                                        if has_price and has_cost:
+                                            calculated = ProfitabilityCalculator.calculate(
+                                                product_data=product,
+                                                product_source_data=source_data
+                                            )
+                                            
+                                            # Update product with full profitability metrics
+                                            product_update = {
+                                                'profit_amount': calculated.get('profit_amount'),
+                                                'roi_percentage': calculated.get('roi_percentage'),
+                                                'margin_percentage': calculated.get('margin_percentage'),
+                                                'break_even_price': calculated.get('break_even_price'),
+                                                'is_profitable': calculated.get('is_profitable'),
+                                                'profit_tier': calculated.get('profit_tier'),
+                                                'risk_level': calculated.get('risk_level'),
+                                                'est_monthly_sales': calculated.get('est_monthly_sales')
+                                            }
+                                            
+                                            profitability_updates.append({
+                                                'id': product_id,
+                                                **product_update
+                                            })
+                                            
+                                            # Also update product_source with profitability
+                                            if source_data.get('id'):
+                                                source_update = {
+                                                    'profit': calculated.get('profit_amount'),
+                                                    'roi': calculated.get('roi_percentage'),
+                                                    'margin': calculated.get('margin_percentage')
+                                                }
+                                                
+                                                supabase.table("product_sources")\
+                                                    .update(source_update)\
+                                                    .eq("id", source_data['id'])\
+                                                    .execute()
+                                    
+                                    # Batch update products with profitability metrics
+                                    if profitability_updates:
+                                        for update in profitability_updates:
+                                            product_id = update.pop('id')
+                                            supabase.table("products")\
+                                                .update(update)\
+                                                .eq("id", product_id)\
+                                                .execute()
+                                        
+                                        logger.info(f"✅ Calculated profitability for {len(profitability_updates)} products")
+                                    else:
+                                        logger.warning(f"⚠️ No products had both price and cost data for profitability calculation")
+                        except Exception as calc_error:
+                            logger.warning(f"⚠️ Profitability calculation failed (non-critical): {calc_error}", exc_info=True)
                 except Exception as deals_error:
                     error_msg = f"Failed to upsert deals: {str(deals_error)}"
                     logger.error(f"❌ {error_msg}", exc_info=True)
