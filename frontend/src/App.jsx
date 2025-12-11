@@ -31,6 +31,7 @@ const Orders = lazy(() => import('./pages/Orders'));
 const OrderDetails = lazy(() => import('./pages/OrderDetails'));
 const Jobs = lazy(() => import('./pages/Jobs'));
 const Favorites = lazy(() => import('./pages/Favorites'));
+const Analyzer = lazy(() => import('./pages/Analyzer'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 const Loading = () => (
@@ -87,6 +88,7 @@ function App() {
                         <Route path="/orders" element={<Suspense fallback={<Loading />}><Orders /></Suspense>} />
                         <Route path="/orders/:id" element={<Suspense fallback={<Loading />}><OrderDetails /></Suspense>} />
                         <Route path="/analyze" element={<Suspense fallback={<Loading />}><Analyze /></Suspense>} />
+                        <Route path="/analyzer" element={<Suspense fallback={<Loading />}><Analyzer /></Suspense>} />
                         <Route path="/settings" element={<Suspense fallback={<Loading />}><Settings /></Suspense>} />
                         <Route path="/pricing" element={<Suspense fallback={<Loading />}><Pricing /></Suspense>} />
                         <Route path="/favorites" element={<Suspense fallback={<Loading />}><Favorites /></Suspense>} />

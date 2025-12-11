@@ -5,6 +5,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.core.config import settings
 from app.api.v1 import deals, analysis, suppliers, notifications, settings as api_settings, watchlist, orders, billing, telegram, amazon, keepa, debug, market, sp_api, products, brands, jobs, batch, buy_list, auth, users, upload, favorites
+from app.routers import analyzer
 from app.middleware.performance import PerformanceMiddleware
 import logging
 from datetime import datetime
@@ -114,6 +115,7 @@ app.include_router(market.router, prefix=f"{settings.API_V1_PREFIX}", tags=["mar
 app.include_router(sp_api.router, prefix=f"{settings.API_V1_PREFIX}", tags=["sp-api"])
 app.include_router(debug.router, prefix=f"{settings.API_V1_PREFIX}/debug", tags=["debug"])
 app.include_router(upload.router, prefix=f"{settings.API_V1_PREFIX}", tags=["upload"])
+app.include_router(analyzer.router, prefix=f"{settings.API_V1_PREFIX}", tags=["analyzer"])
 
 
 @app.get("/")
