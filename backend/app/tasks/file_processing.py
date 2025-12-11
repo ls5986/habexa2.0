@@ -905,13 +905,15 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                             # 🔥 CRITICAL: Fetch and store COMPLETE API data for all new products
                             logger.info(f"📡 Fetching complete API data for {len(created.data)} new products...")
                             from app.services.api_storage_service import fetch_and_store_all_api_data
+                            from app.tasks.base import run_async
                             
                             for p in created.data:
                                 asin = p.get("asin")
                                 if asin and asin not in ["PENDING_", "Unknown"] and not asin.startswith("PENDING_"):
                                     try:
                                         # Fetch and store ALL API data (SP-API + Keepa)
-                                        await fetch_and_store_all_api_data(asin, force_refresh=False)
+                                        # Use run_async since this is a sync Celery task
+                                        run_async(fetch_and_store_all_api_data(asin, force_refresh=False))
                                         logger.info(f"✅ Stored complete API data for {asin}")
                                     except Exception as api_error:
                                         logger.error(f"❌ Failed to fetch API data for {asin}: {api_error}")
