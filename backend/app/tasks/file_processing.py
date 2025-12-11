@@ -926,14 +926,8 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                                 logger.info(f"📦 Processing {len(asins)} ASINs in batches...")
                                 
                                 # Import required services
-                                from app.services.sp_api_client import sp_api_client
-                                from app.services.keepa_client import get_keepa_client
-                                from app.services.api_field_extractor import (
-                                    SPAPIExtractor,
-                                    KeepaExtractor
-                                )
+                                from app.services.api_batch_fetcher import fetch_api_data_for_asins
                                 from app.tasks.base import run_async
-                                from datetime import datetime
                                 
                                 # ========================================
                                 # BATCH 1: SP-API Catalog Data (20 ASINs per batch)
