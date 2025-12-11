@@ -110,35 +110,155 @@ class KeepaClient:
                                 return int(v)
                         return None
                     
+                    # Parse price history (CSV format: [time, price, ...])
+                    price_history = []
+                    csv_data = p.get("csv", [])
+                    if csv_data and len(csv_data) > 0:
+                        # csv[0] is Amazon price history
+                        # Format: [timestamp, price, ...] where price is in cents
+                        amazon_price_csv = csv_data[0] if len(csv_data) > 0 else []
+                        if amazon_price_csv and len(amazon_price_csv) > 1:
+                            for i in range(0, len(amazon_price_csv) - 1, 2):
+                                if i + 1 < len(amazon_price_csv):
+                                    timestamp = amazon_price_csv[i]
+                                    price = amazon_price_csv[i + 1]
+                                    if price is not None and price >= 0:
+                                        price_history.append({
+                                            "timestamp": timestamp,
+                                            "price": round(price / 100.0, 2),
+                                            "date": timestamp  # Keepa timestamp is minutes since epoch
+                                        })
+                    
+                    # Parse rank history (CSV format: [time, rank, ...])
+                    rank_history = []
+                    if csv_data and len(csv_data) > 3:
+                        # csv[3] is sales rank history
+                        sales_rank_csv = csv_data[3] if len(csv_data) > 3 else []
+                        if sales_rank_csv and len(sales_rank_csv) > 1:
+                            for i in range(0, len(sales_rank_csv) - 1, 2):
+                                if i + 1 < len(sales_rank_csv):
+                                    timestamp = sales_rank_csv[i]
+                                    rank = sales_rank_csv[i + 1]
+                                    if rank is not None and rank >= 0:
+                                        rank_history.append({
+                                            "timestamp": timestamp,
+                                            "rank": rank,
+                                            "date": timestamp
+                                        })
+                    
+                    # Parse offers
+                    offers = []
+                    offers_data = p.get("offers", [])
+                    if offers_data:
+                        for offer in offers_data:
+                            if offer:
+                                offers.append({
+                                    "seller_id": offer.get("sellerId"),
+                                    "seller_name": offer.get("sellerName"),
+                                    "is_amazon": offer.get("isAmazon", False),
+                                    "is_fba": offer.get("isFBA", False),
+                                    "is_buy_box": offer.get("isBuyBoxWinner", False),
+                                    "price": round(offer.get("price", 0) / 100.0, 2) if offer.get("price") else None,
+                                    "shipping": round(offer.get("shipping", 0) / 100.0, 2) if offer.get("shipping") else None,
+                                    "condition": offer.get("condition"),
+                                    "last_seen": offer.get("lastSeen"),
+                                })
+                    
+                    # Parse variations
+                    variations = []
+                    variation_asins = p.get("variationASINs", [])
+                    if variation_asins:
+                        variations = variation_asins
+                    
+                    # Check if Amazon is seller
+                    amazon_is_seller = False
+                    if offers:
+                        amazon_is_seller = any(offer.get("isAmazon", False) for offer in offers)
+                    # Also check in stats
+                    if not amazon_is_seller:
+                        amazon_is_seller = stats.get("isAmazon", False) or False
+                    
+                    # Hazmat info
+                    hazmat = p.get("isHazmat", False)
+                    hazmat_reason = p.get("hazmatReason") if hazmat else None
+                    
+                    # Additional product info
+                    product_group = p.get("productGroup")
+                    category = p.get("category")
+                    model = p.get("model")
+                    part_number = p.get("partNumber")
+                    ean_list = p.get("eanList", [])
+                    upc_list = p.get("upcList", [])
+                    images_csv = p.get("imagesCSV", [])
+                    image_url = images_csv[0] if images_csv else None
+                    
+                    # Parent ASIN (if this is a variation)
+                    parent_asin = p.get("parentAsin")
+                    
+                    # Dimensions and weight
+                    package_dimensions = p.get("packageDimensions")
+                    package_weight = p.get("packageWeight")
+                    
+                    # Review data
+                    reviews_total = stats.get("reviewsTotal") or 0
+                    rating = stats.get("rating") or None
+                    if rating:
+                        rating = round(rating / 10.0, 1)  # Keepa stores rating as 0-100, convert to 0-10
+                    
                     results[asin] = {
                         "asin": asin,
                         "title": p.get("title"),
                         "brand": p.get("brand"),
                         "manufacturer": p.get("manufacturer"),
+                        "model": model,
+                        "part_number": part_number,
+                        "product_group": product_group,
+                        "category": category,
+                        "image_url": image_url,
+                        "ean_list": ean_list,
+                        "upc_list": upc_list,
+                        "parent_asin": parent_asin,
+                        "is_variation": bool(parent_asin),
+                        "variations": variations,
+                        "hazmat": hazmat,
+                        "hazmat_reason": hazmat_reason,
+                        "package_dimensions": package_dimensions,
+                        "package_weight": package_weight,
                         "current": {
                             "amazon_price": get_price(0),
                             "new_price": get_price(1),
                             "used_price": get_price(2),
                             "buy_box_price": get_price(18),
                             "fba_price": get_price(10),
+                            "fbm_price": get_price(11),
                             "sales_rank": get_int(3),
                             "fba_sellers": stats.get("offerCountFBA") or 0,
                             "fbm_sellers": stats.get("offerCountFBM") or 0,
                             "total_sellers": (stats.get("offerCountFBA") or 0) + (stats.get("offerCountFBM") or 0),
+                            "amazon_is_seller": amazon_is_seller,
+                            "rating": rating,
+                            "reviews_total": reviews_total,
                         },
                         "stats": {
                             "drops_30": stats.get("salesRankDrops30") or 0,
                             "drops_90": stats.get("salesRankDrops90") or 0,
                             "drops_180": stats.get("salesRankDrops180") or 0,
+                            "avg_price_30": round(stats.get("avg30", 0) / 100.0, 2) if stats.get("avg30") else None,
+                            "avg_price_90": round(stats.get("avg90", 0) / 100.0, 2) if stats.get("avg90") else None,
+                            "avg_price_180": round(stats.get("avg180", 0) / 100.0, 2) if stats.get("avg180") else None,
+                            "min_price_30": round(stats.get("min30", 0) / 100.0, 2) if stats.get("min30") else None,
+                            "min_price_90": round(stats.get("min90", 0) / 100.0, 2) if stats.get("min90") else None,
+                            "max_price_30": round(stats.get("max30", 0) / 100.0, 2) if stats.get("max30") else None,
+                            "max_price_90": round(stats.get("max90", 0) / 100.0, 2) if stats.get("max90") else None,
                         },
                         "averages": {
                             "avg_price_90": get_price(0),
                             "avg_rank_90": get_int(3),
                             "drops_90": stats.get("salesRankDrops90") or 0,
                         },
-                        "price_history": [],
-                        "rank_history": [],
-                        "offers": [],
+                        "price_history": price_history,
+                        "rank_history": rank_history,
+                        "offers": offers,
                     }
                     
                     logger.info(f"✅ Parsed {asin}: rank={results[asin]['current']['sales_rank']}")
