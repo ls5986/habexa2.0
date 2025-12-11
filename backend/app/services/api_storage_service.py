@@ -83,10 +83,17 @@ async def fetch_and_store_sp_api_data(asin: str, user_id: Optional[str] = None, 
         # get_catalog_item returns the item directly
         item = sp_response
         
-        # Extract structured data + store raw response
-        product_data = extract_sp_api_structured_data(item)
-        product_data['asin'] = asin
-        product_data['user_id'] = user_id  # ✅ CRITICAL: Include user_id for proper updates
+        # Extract ALL fields using comprehensive extractor
+        extracted = SPAPIExtractor.extract_all(item)
+        
+        # Add raw response and metadata
+        product_data = {
+            'sp_api_raw_response': item,
+            'sp_api_last_fetched': datetime.utcnow().isoformat(),
+            'asin': asin,
+            'user_id': user_id,
+            **extracted  # All extracted fields
+        }  # ✅ CRITICAL: Include user_id for proper updates
         
         # ✅ Update existing product by (user_id, asin) - this ensures we update the right product
         result = supabase.table('products')\
