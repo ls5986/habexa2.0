@@ -445,9 +445,9 @@ async def get_deal(deal_id: str, current_user=Depends(get_current_user)):
     user_id = str(current_user.id)
     
     try:
-        # Try product_deals view first (new schema) - join with analyses in ONE query
+        # Try product_deals view first (new schema) - join with analyses and products in ONE query
         result = (supabase.table("product_deals")
-            .select("*, analyses(*)")
+            .select("*, analyses(*), products!product_deals_product_id_fkey(sp_api_raw_response, keepa_raw_response, sp_api_last_fetched, keepa_last_fetched)")
             .eq("deal_id", deal_id)
             .eq("user_id", user_id)
             .limit(1)
@@ -463,6 +463,30 @@ async def get_deal(deal_id: str, current_user=Depends(get_current_user)):
                     analysis = deal["analyses"][0]
                 elif isinstance(deal["analyses"], dict):
                     analysis = deal["analyses"]
+            
+            # Extract product data with raw API responses
+            product = None
+            raw_api_data = {
+                "sp_api": None,
+                "keepa": None
+            }
+            if deal.get("products"):
+                if isinstance(deal["products"], list) and len(deal["products"]) > 0:
+                    product = deal["products"][0]
+                elif isinstance(deal["products"], dict):
+                    product = deal["products"]
+                
+                if product:
+                    raw_api_data = {
+                        "sp_api": {
+                            "raw_response": product.get("sp_api_raw_response"),
+                            "last_fetched": product.get("sp_api_last_fetched"),
+                        },
+                        "keepa": {
+                            "raw_response": product.get("keepa_raw_response"),
+                            "last_fetched": product.get("keepa_last_fetched"),
+                        }
+                    }
             
             # Build complete response with ALL data from database
             return {
@@ -552,7 +576,10 @@ async def get_deal(deal_id: str, current_user=Depends(get_current_user)):
                 "updated_at": deal.get("deal_updated_at"),
                 
                 # Full analysis object for backwards compatibility
-                "analysis": analysis
+                "analysis": analysis,
+                
+                # Raw API responses (for debugging and comprehensive data access)
+                "raw_api_data": raw_api_data
             }
         
         # Fallback to telegram_deals (old schema) - still join analyses in one query

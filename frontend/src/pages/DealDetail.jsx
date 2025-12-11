@@ -190,6 +190,7 @@ export default function DealDetail() {
     { icon: Layers, label: 'Variations' },
     { icon: FileText, label: 'Listing' },
     { icon: Package, label: 'Upload Details' },
+    { icon: FileText, label: 'API Data' },
   ];
 
   return (
