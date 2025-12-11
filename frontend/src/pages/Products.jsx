@@ -588,6 +588,68 @@ export default function Products() {
     }
   }, []);
 
+  // Fetch product details for potential ASINs
+  const fetchAsinDetails = useCallback(async (product) => {
+    if (!product?.potential_asins) return;
+    
+    setLoadingAsinDetails(true);
+    const potentialAsins = Array.isArray(product.potential_asins) 
+      ? product.potential_asins 
+      : [];
+    
+    // Extract ASIN strings from potential_asins (handle both string and object formats)
+    const asinStrings = potentialAsins.map(opt => 
+      typeof opt === 'string' ? opt : (opt?.asin || opt)
+    ).filter(Boolean);
+    
+    if (asinStrings.length === 0) {
+      setLoadingAsinDetails(false);
+      return;
+    }
+    
+    try {
+      // Fetch product details for each ASIN using search endpoint
+      const detailPromises = asinStrings.map(async (asin) => {
+        try {
+          // Search for products with this ASIN
+          const response = await api.get(`/products?search=${asin}&limit=1`);
+          if (response.data && response.data.deals && response.data.deals.length > 0) {
+            const productData = response.data.deals[0];
+            return {
+              asin,
+              title: productData.title || productData.supplier_title,
+              image_url: productData.image_url,
+              brand: productData.brand,
+              category: productData.category,
+              bsr: productData.bsr || productData.current_sales_rank,
+              seller_count: productData.seller_count,
+              fba_seller_count: productData.fba_seller_count
+            };
+          }
+        } catch (err) {
+          // Product doesn't exist in our DB, that's okay
+          console.debug(`Product ${asin} not found in our DB`);
+        }
+        
+        // If not in our DB, return basic info (we'll show what we have from potential_asins)
+        return {
+          asin,
+          title: null,
+          image_url: null,
+          brand: null,
+          category: null
+        };
+      });
+      
+      const details = await Promise.all(detailPromises);
+      setAsinSelectionDialog(prev => ({ ...prev, asinDetails: details }));
+    } catch (err) {
+      console.error('Failed to fetch ASIN details:', err);
+    } finally {
+      setLoadingAsinDetails(false);
+    }
+  }, []);
+
   // Initial load - only once
   useEffect(() => {
     fetchData();
