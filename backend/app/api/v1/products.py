@@ -3514,7 +3514,7 @@ async def toggle_favorite(
         }
 
 
-@router.post("/products/{product_id}/refresh-api-data")
+@router.post("/{product_id}/refresh-api-data")
 async def refresh_product_api_data(
     product_id: str,
     force: bool = False,
@@ -3544,13 +3544,28 @@ async def refresh_product_api_data(
         raise HTTPException(400, "Product must have a valid ASIN")
     
     # Fetch fresh data
-    from app.services.api_storage_service import fetch_and_store_all_api_data, _get_data_age_hours
+    from app.services.api_storage_service import fetch_and_store_all_api_data
+    from datetime import datetime
+    
+    def get_data_age_hours(timestamp_str):
+        """Calculate age of data in hours."""
+        if not timestamp_str:
+            return float('inf')
+        try:
+            if isinstance(timestamp_str, str):
+                last_fetched = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+            else:
+                last_fetched = timestamp_str
+            age_hours = (datetime.utcnow() - last_fetched.replace(tzinfo=None)).total_seconds() / 3600
+            return age_hours
+        except:
+            return float('inf')
     
     try:
         updated_data = await fetch_and_store_all_api_data(asin, force_refresh=force)
         
-        sp_age = _get_data_age_hours(updated_data.get('sp_api_last_fetched'))
-        keepa_age = _get_data_age_hours(updated_data.get('keepa_last_fetched'))
+        sp_age = get_data_age_hours(updated_data.get('sp_api_last_fetched'))
+        keepa_age = get_data_age_hours(updated_data.get('keepa_last_fetched'))
         
         return {
             "success": True,
@@ -3564,7 +3579,7 @@ async def refresh_product_api_data(
         raise HTTPException(500, f"Failed to refresh API data: {str(e)}")
 
 
-@router.get("/products/{product_id}/raw-api-data")
+@router.get("/{product_id}/raw-api-data")
 async def get_raw_api_data(
     product_id: str,
     current_user=Depends(get_current_user)
