@@ -11,10 +11,12 @@ from app.services.supabase_client import supabase
 from app.services.sp_api_client import sp_api_client
 from app.services.keepa_client import get_keepa_client
 from app.services.api_data_extractor import (
-    extract_sp_api_structured_data,
-    extract_keepa_structured_data,
     should_refresh_sp_data,
     should_refresh_keepa_data
+)
+from app.services.api_field_extractor import (
+    SPAPIExtractor,
+    KeepaExtractor
 )
 
 logger = logging.getLogger(__name__)
@@ -183,13 +185,19 @@ async def fetch_and_store_keepa_data(asin: str, user_id: Optional[str] = None, f
         # Get the product data (first product should be our ASIN)
         product_data = products[0]
         
-        # Extract structured data + store raw response
+        # Extract ALL fields using comprehensive extractor
         # Construct response structure for extractor (expects {'products': [...]})
         response_for_extractor = {'products': [product_data]}
-        # extract_keepa_structured_data signature: (keepa_response: Dict, asin: str)
-        structured_data = extract_keepa_structured_data(response_for_extractor, asin)
-        structured_data['asin'] = asin
-        structured_data['user_id'] = user_id  # ✅ CRITICAL: Include user_id for proper updates
+        extracted = KeepaExtractor.extract_all(response_for_extractor, asin=asin)
+        
+        # Add raw response and metadata
+        structured_data = {
+            'keepa_raw_response': raw_response,  # Full API response
+            'keepa_last_fetched': datetime.utcnow().isoformat(),
+            'asin': asin,
+            'user_id': user_id,
+            **extracted  # All extracted fields
+        }  # ✅ CRITICAL: Include user_id for proper updates
         
         # ✅ Update existing product by (user_id, asin) - this ensures we update the right product
         result = supabase.table('products')\
