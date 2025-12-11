@@ -13,7 +13,7 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import {
   ArrowLeft, ArrowRight, Copy, ExternalLink, RefreshCw, Star,
   TrendingUp, Package, Calculator, BarChart2, Users, Layers,
-  FileText, DollarSign, ShoppingCart, Check, CheckCircle, XCircle, AlertTriangle
+  FileText, DollarSign, ShoppingCart, Check, CheckCircle, XCircle, AlertTriangle, Edit2, Save, X
 } from 'lucide-react';
 import api from '../services/api';
 import { habexa } from '../theme';
@@ -62,6 +62,19 @@ export default function DealDetail() {
   const [fetchingApiData, setFetchingApiData] = useState(false);
   const [apiDataError, setApiDataError] = useState(null);
   const [apiDataSuccess, setApiDataSuccess] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editFields, setEditFields] = useState({
+    asin: '',
+    upc: '',
+    buy_cost: '',
+    moq: '',
+    pack_size: '',
+    wholesale_cost: '',
+    title: '',
+    brand: '',
+    supplier_title: ''
+  });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetchDeal();
@@ -336,23 +349,47 @@ export default function DealDetail() {
               </Box>
 
               {/* ASIN & Links */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <Typography variant="h6" fontFamily="monospace" color="primary">
-                  {deal.asin}
-                </Typography>
-                <Tooltip title={copied ? 'Copied!' : 'Copy ASIN'}>
-                  <IconButton size="small" onClick={copyAsin}>
-                    {copied ? <Check size={14} /> : <Copy size={14} />}
-                  </IconButton>
-                </Tooltip>
-                <IconButton 
-                  size="small" 
-                  component="a" 
-                  href={`https://amazon.com/dp/${deal.asin}`}
-                  target="_blank"
-                >
-                  <ExternalLink size={14} />
-                </IconButton>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, flexWrap: 'wrap' }}>
+                {isEditing ? (
+                  <TextField
+                    size="small"
+                    label="ASIN"
+                    value={editFields.asin}
+                    onChange={(e) => setEditFields({...editFields, asin: e.target.value.toUpperCase()})}
+                    inputProps={{ maxLength: 10, style: { fontFamily: 'monospace' } }}
+                    sx={{ flex: 1, minWidth: 120 }}
+                  />
+                ) : (
+                  <>
+                    <Typography variant="h6" fontFamily="monospace" color="primary">
+                      {deal.asin || 'No ASIN'}
+                    </Typography>
+                    {deal.asin && (
+                      <>
+                        <Tooltip title={copied ? 'Copied!' : 'Copy ASIN'}>
+                          <IconButton size="small" onClick={copyAsin}>
+                            {copied ? <Check size={14} /> : <Copy size={14} />}
+                          </IconButton>
+                        </Tooltip>
+                        <IconButton 
+                          size="small" 
+                          component="a" 
+                          href={`https://amazon.com/dp/${deal.asin}`}
+                          target="_blank"
+                        >
+                          <ExternalLink size={14} />
+                        </IconButton>
+                      </>
+                    )}
+                  </>
+                )}
+                {!isEditing && (
+                  <Tooltip title="Edit Product">
+                    <IconButton size="small" onClick={() => setIsEditing(true)}>
+                      <Edit2 size={14} />
+                    </IconButton>
+                  </Tooltip>
+                )}
               </Box>
 
               {/* Title */}
@@ -406,20 +443,98 @@ export default function DealDetail() {
               {/* Financials */}
               <Typography variant="overline" color="text.secondary">Financials</Typography>
               
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, mt: 1 }}>
-                <Typography variant="body2" color="text.secondary">Buy Cost</Typography>
-                <Typography variant="body2" fontWeight="600">${deal?.buy_cost ? deal.buy_cost.toFixed(2) : '—'}</Typography>
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                <Typography variant="body2" color="text.secondary">MOQ</Typography>
-                <Typography variant="body2" fontWeight="600">{deal?.moq || 1}</Typography>
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                <Typography variant="body2" color="text.secondary">Total Investment</Typography>
-                <Typography variant="body2" fontWeight="600">
-                  ${((deal?.buy_cost || 0) * (deal?.moq || 1)).toFixed(2)}
-                </Typography>
-              </Box>
+              {isEditing ? (
+                <Box sx={{ mt: 1 }}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Buy Cost"
+                    type="number"
+                    value={editFields.buy_cost}
+                    onChange={(e) => setEditFields({...editFields, buy_cost: e.target.value})}
+                    sx={{ mb: 2 }}
+                    InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+                  />
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="MOQ (Minimum Order Quantity)"
+                    type="number"
+                    value={editFields.moq}
+                    onChange={(e) => setEditFields({...editFields, moq: e.target.value})}
+                    sx={{ mb: 2 }}
+                  />
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Pack Size"
+                    type="number"
+                    value={editFields.pack_size}
+                    onChange={(e) => setEditFields({...editFields, pack_size: e.target.value})}
+                    sx={{ mb: 2 }}
+                    helperText="Number of units per pack/case"
+                  />
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Wholesale Cost (per pack)"
+                    type="number"
+                    value={editFields.wholesale_cost}
+                    onChange={(e) => setEditFields({...editFields, wholesale_cost: e.target.value})}
+                    sx={{ mb: 2 }}
+                    InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+                    helperText="Total cost for the entire pack"
+                  />
+                  <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
+                    <Button
+                      variant="contained"
+                      startIcon={saving ? <CircularProgress size={16} /> : <Save size={16} />}
+                      onClick={handleSaveEdit}
+                      disabled={saving}
+                      fullWidth
+                    >
+                      {saving ? 'Saving...' : 'Save Changes'}
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      startIcon={<X size={16} />}
+                      onClick={handleCancelEdit}
+                      disabled={saving}
+                    >
+                      Cancel
+                    </Button>
+                  </Box>
+                </Box>
+              ) : (
+                <>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, mt: 1 }}>
+                    <Typography variant="body2" color="text.secondary">Buy Cost</Typography>
+                    <Typography variant="body2" fontWeight="600">${deal?.buy_cost ? deal.buy_cost.toFixed(2) : '—'}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="body2" color="text.secondary">MOQ</Typography>
+                    <Typography variant="body2" fontWeight="600">{deal?.moq || 1}</Typography>
+                  </Box>
+                  {deal?.pack_size && deal.pack_size > 1 && (
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                      <Typography variant="body2" color="text.secondary">Pack Size</Typography>
+                      <Typography variant="body2" fontWeight="600">{deal.pack_size} units</Typography>
+                    </Box>
+                  )}
+                  {deal?.wholesale_cost && (
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                      <Typography variant="body2" color="text.secondary">Wholesale Cost</Typography>
+                      <Typography variant="body2" fontWeight="600">${deal.wholesale_cost.toFixed(2)}</Typography>
+                    </Box>
+                  )}
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="body2" color="text.secondary">Total Investment</Typography>
+                    <Typography variant="body2" fontWeight="600">
+                      ${((deal?.buy_cost || 0) * (deal?.moq || 1)).toFixed(2)}
+                    </Typography>
+                  </Box>
+                </>
+              )}
               
               {/* No Pricing Alert */}
               {analysis && analysis.pricing_status === 'no_pricing' && (
