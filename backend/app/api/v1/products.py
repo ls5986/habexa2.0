@@ -3174,6 +3174,32 @@ async def get_product_variations(
 class SelectASINRequest(BaseModel):
     asin: str  # The chosen ASIN from potential_asins
 
+@router.get("/pending-asin-selection")
+async def get_products_pending_asin_selection(
+    current_user = Depends(get_current_user)
+):
+    """
+    Get all products with multiple ASINs that need user selection.
+    Returns products with asin_status = 'multiple_found'.
+    """
+    user_id = str(current_user.id)
+    
+    try:
+        result = supabase.table('products')\
+            .select('id, upc, supplier_title, brand, potential_asins, asin_status, title, image_url')\
+            .eq('user_id', user_id)\
+            .eq('asin_status', 'multiple_found')\
+            .order('created_at', desc=False)\
+            .execute()
+        
+        return {
+            'count': len(result.data or []),
+            'products': result.data or []
+        }
+    except Exception as e:
+        logger.error(f"Error getting products pending ASIN selection: {e}", exc_info=True)
+        raise HTTPException(500, str(e))
+
 @router.post("/{product_id}/select-asin")
 async def select_asin(
     product_id: str,

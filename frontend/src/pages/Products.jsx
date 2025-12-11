@@ -752,13 +752,17 @@ export default function Products() {
 
   const handleSelectAsin = async (productId, asin) => {
     try {
-      await api.post(`/products/${productId}/select-asin`, { asin });
+      // ✅ Call the backend endpoint with correct format
+      const response = await api.post(`/products/${productId}/select-asin`, { asin });
       showToast('ASIN selected and queued for analysis', 'success');
       setAsinSelectionDialog({ open: false, product: null });
-      fetchData(true);
+      
+      // Refresh data to show updated product
+      setTimeout(() => fetchData(true), 1000);
     } catch (err) {
       console.error('Failed to select ASIN:', err);
-      showToast('Failed to select ASIN: ' + (err.response?.data?.detail || err.message), 'error');
+      const errorMsg = err.response?.data?.detail || err.message || 'Failed to select ASIN';
+      showToast(errorMsg, 'error');
     }
   };
 
@@ -1223,7 +1227,7 @@ export default function Products() {
               <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2, mt: 2 }}>
                 {asinSelectionDialog.product.potential_asins?.map((asinOption) => (
                   <Card
-                    key={asinOption.asin}
+                    key={asinValue}
                     sx={{
                       cursor: 'pointer',
                       '&:hover': { boxShadow: 6 },
@@ -1232,14 +1236,14 @@ export default function Products() {
                     }}
                     onClick={() => handleSelectAsin(
                       asinSelectionDialog.product.product_id || asinSelectionDialog.product.id,
-                      asinOption.asin
+                      asinValue
                     )}
                   >
-                    {asinOption.image && (
+                    {asinImage && (
                       <Box
                         component="img"
-                        src={asinOption.image}
-                        alt={asinOption.title}
+                        src={asinImage}
+                        alt={asinTitle || asinValue}
                         sx={{
                           width: '100%',
                           height: 200,
@@ -1251,19 +1255,19 @@ export default function Products() {
                     )}
                     <DialogContent>
                       <Typography variant="h6" gutterBottom>
-                        {asinOption.title || 'Unknown Product'}
+                        {asinTitle || 'Unknown Product'}
                       </Typography>
                       <Typography variant="body2" color="text.secondary" fontFamily="monospace">
-                        ASIN: {asinOption.asin}
+                        ASIN: {asinValue}
                       </Typography>
-                      {asinOption.brand && (
+                      {asinBrand && (
                         <Typography variant="body2" color="text.secondary">
-                          Brand: {asinOption.brand}
+                          Brand: {asinBrand}
                         </Typography>
                       )}
-                      {asinOption.category && (
+                      {asinCategory && (
                         <Typography variant="caption" color="text.secondary">
-                          Category: {asinOption.category}
+                          Category: {asinCategory}
                         </Typography>
                       )}
                       <Button
@@ -1274,7 +1278,7 @@ export default function Products() {
                           e.stopPropagation();
                           handleSelectAsin(
                             asinSelectionDialog.product.product_id || asinSelectionDialog.product.id,
-                            asinOption.asin
+                            asinValue
                           );
                         }}
                       >
@@ -1282,7 +1286,8 @@ export default function Products() {
                       </Button>
                     </DialogContent>
                   </Card>
-                ))}
+                  );
+                })}
               </Box>
             </>
           )}
