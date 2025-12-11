@@ -1291,76 +1291,100 @@ export default function Products() {
                 Select the one that matches your supplier's product.
               </Alert>
               <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2, mt: 2 }}>
-                {asinSelectionDialog.product.potential_asins?.map((asinOption) => {
-                  // Handle both string and object formats for potential_asins
-                  const asinValue = typeof asinOption === 'string' ? asinOption : asinOption.asin;
-                  const asinTitle = typeof asinOption === 'object' ? asinOption.title : null;
-                  const asinImage = typeof asinOption === 'object' ? asinOption.image : null;
-                  const asinBrand = typeof asinOption === 'object' ? asinOption.brand : null;
-                  const asinCategory = typeof asinOption === 'object' ? asinOption.category : null;
+                {(() => {
+                  // Debug logging
+                  const potentialAsins = asinSelectionDialog.product.potential_asins || [];
+                  console.log('🔍 Rendering ASIN selection dialog');
+                  console.log('   potential_asins:', potentialAsins);
+                  console.log('   potential_asins type:', typeof potentialAsins);
+                  console.log('   potential_asins is array:', Array.isArray(potentialAsins));
+                  console.log('   potential_asins length:', potentialAsins.length);
                   
+                  if (!Array.isArray(potentialAsins) || potentialAsins.length === 0) {
                     return (
-                  <Card
-                    key={asinValue || index}
-                    sx={{
-                      cursor: 'pointer',
-                      '&:hover': { boxShadow: 6 },
-                      border: '2px solid transparent',
-                      transition: 'all 0.2s'
-                    }}
-                    onClick={() => handleSelectAsin(
-                      asinSelectionDialog.product.product_id || asinSelectionDialog.product.id,
-                      asinValue
-                    )}
-                  >
-                    {asinImage && (
-                      <Box
-                        component="img"
-                        src={asinImage}
-                        alt={asinTitle || asinValue}
+                      <Alert severity="warning">
+                        No ASIN options available. Please check the product data.
+                        <br />
+                        <small>potential_asins: {JSON.stringify(potentialAsins)}</small>
+                      </Alert>
+                    );
+                  }
+                  
+                  return potentialAsins.map((asinOption, index) => {
+                    // Handle both string and object formats for potential_asins
+                    const asinValue = typeof asinOption === 'string' ? asinOption : (asinOption?.asin || asinOption);
+                    const asinTitle = typeof asinOption === 'object' ? (asinOption.title || asinOption.itemName) : null;
+                    const asinImage = typeof asinOption === 'object' ? (asinOption.image || asinOption.image_url || asinOption.mainImage?.link) : null;
+                    const asinBrand = typeof asinOption === 'object' ? (asinOption.brand || asinOption.brandName) : null;
+                    const asinCategory = typeof asinOption === 'object' ? (asinOption.category || asinOption.productGroup) : null;
+                    
+                    if (!asinValue) {
+                      console.warn(`⚠️ ASIN option ${index} has no ASIN value:`, asinOption);
+                      return null;
+                    }
+                    
+                    return (
+                      <Card
+                        key={asinValue || index}
                         sx={{
-                          width: '100%',
-                          height: 200,
-                          objectFit: 'contain',
-                          p: 2,
-                          bgcolor: 'background.default'
+                          cursor: 'pointer',
+                          '&:hover': { boxShadow: 6 },
+                          border: '2px solid transparent',
+                          transition: 'all 0.2s'
                         }}
-                      />
-                    )}
-                    <DialogContent>
-                      <Typography variant="h6" gutterBottom>
-                        {asinTitle || 'Unknown Product'}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" fontFamily="monospace">
-                        ASIN: {asinValue}
-                      </Typography>
-                      {asinBrand && (
-                        <Typography variant="body2" color="text.secondary">
-                          Brand: {asinBrand}
-                        </Typography>
-                      )}
-                      {asinCategory && (
-                        <Typography variant="caption" color="text.secondary">
-                          Category: {asinCategory}
-                        </Typography>
-                      )}
-                      <Button
-                        variant="contained"
-                        fullWidth
-                        sx={{ mt: 2 }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSelectAsin(
-                            asinSelectionDialog.product.product_id || asinSelectionDialog.product.id,
-                            asinValue
-                          );
-                        }}
+                        onClick={() => handleSelectAsin(
+                          asinSelectionDialog.product.product_id || asinSelectionDialog.product.id,
+                          asinValue
+                        )}
                       >
-                        Select This One
-                      </Button>
-                    </DialogContent>
-                  </Card>
-                  );
+                        {asinImage && (
+                          <Box
+                            component="img"
+                            src={asinImage}
+                            alt={asinTitle || asinValue}
+                            sx={{
+                              width: '100%',
+                              height: 200,
+                              objectFit: 'contain',
+                              p: 2,
+                              bgcolor: 'background.default'
+                            }}
+                          />
+                        )}
+                        <CardContent>
+                          <Typography variant="h6" gutterBottom>
+                            {asinTitle || 'Unknown Product'}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" fontFamily="monospace">
+                            ASIN: {asinValue}
+                          </Typography>
+                          {asinBrand && (
+                            <Typography variant="body2" color="text.secondary">
+                              Brand: {asinBrand}
+                            </Typography>
+                          )}
+                          {asinCategory && (
+                            <Typography variant="caption" color="text.secondary">
+                              Category: {asinCategory}
+                            </Typography>
+                          )}
+                          <Button
+                            variant="contained"
+                            fullWidth
+                            sx={{ mt: 2 }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSelectAsin(
+                                asinSelectionDialog.product.product_id || asinSelectionDialog.product.id,
+                                asinValue
+                              );
+                            }}
+                          >
+                            Select This One
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    );
                   });
                 })()}
               </Box>
