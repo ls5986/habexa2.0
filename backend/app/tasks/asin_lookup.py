@@ -158,7 +158,8 @@ def process_pending_asin_lookups(self, batch_size: int = 100):
                 
                 # Update these products to have lookup_status='pending'
                 if additional:
-                    product_ids_to_update = [p['id'] for p in additional if p['id'] not in seen_ids]
+                    # Get IDs of products we just added (those that were PENDING_ but had null lookup_status)
+                    product_ids_to_update = [p['id'] for p in additional if p.get('lookup_status') is None]
                     supabase.table("products")\
                         .update({"lookup_status": "pending", "lookup_attempts": 0})\
                         .in_("id", product_ids_to_update)\
