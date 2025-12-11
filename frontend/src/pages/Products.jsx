@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Box, Typography, Card, Button, Chip, IconButton, Tabs, Tab,
+  Box, Typography, Card, CardContent, Button, Chip, IconButton, Tabs, Tab,
   TextField, InputAdornment, Menu, MenuItem, Checkbox, Select,
   FormControl, InputLabel, CircularProgress, Dialog, DialogTitle,
   DialogContent, DialogActions, LinearProgress, Tooltip, Alert,
