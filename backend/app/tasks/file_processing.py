@@ -928,9 +928,9 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                                 # Import required services
                                 from app.services.sp_api_client import sp_api_client
                                 from app.services.keepa_client import get_keepa_client
-                                from app.services.api_data_extractor import (
-                                    extract_sp_api_structured_data,
-                                    extract_keepa_structured_data
+                                from app.services.api_field_extractor import (
+                                    SPAPIExtractor,
+                                    KeepaExtractor
                                 )
                                 from app.tasks.base import run_async
                                 from datetime import datetime
@@ -977,19 +977,26 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                                 sp_stored = 0
                                 for asin, sp_data in sp_api_results.items():
                                     try:
-                                        # Extract structured fields (extractor already includes sp_api_raw_response)
-                                        structured = extract_sp_api_structured_data(sp_data)
-                                        structured['asin'] = asin
-                                        structured['user_id'] = user_id
+                                        # Extract ALL fields using comprehensive extractor
+                                        extracted = SPAPIExtractor.extract_all(sp_data)
+                                        
+                                        # Add raw response and metadata
+                                        update_data = {
+                                            'sp_api_raw_response': sp_data,
+                                            'sp_api_last_fetched': datetime.utcnow().isoformat(),
+                                            'asin': asin,
+                                            'user_id': user_id,
+                                            **extracted  # All extracted fields
+                                        }
                                         
                                         # Update product with raw + structured data
-                                        result = supabase.table('products').update(structured).eq('asin', asin).eq('user_id', user_id).execute()
+                                        result = supabase.table('products').update(update_data).eq('asin', asin).eq('user_id', user_id).execute()
                                         
                                         if result.data:
                                             sp_stored += 1
                                         
                                     except Exception as e:
-                                        logger.error(f"   ❌ Failed to store SP-API data for {asin}: {e}")
+                                        logger.error(f"   ❌ Failed to store SP-API data for {asin}: {e}", exc_info=True)
                                 
                                 logger.info(f"✅ SP-API data stored for {sp_stored}/{len(sp_api_results)} products")
                                 
@@ -1057,23 +1064,26 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                                         # Construct response structure for extractor (expects {'products': [...]})
                                         response_for_extractor = {'products': [product_data]}
                                         
-                                        # Extract structured fields (extractor expects {'products': [...]} format)
-                                        # But we need to store the FULL raw response, not just the product
-                                        structured = extract_keepa_structured_data(response_for_extractor, asin)
-                                        structured['asin'] = asin
-                                        structured['user_id'] = user_id
+                                        # Extract ALL fields using comprehensive extractor
+                                        extracted = KeepaExtractor.extract_all(response_for_extractor, asin=asin)
                                         
-                                        # Override with full raw response (extractor might only store product-level data)
-                                        structured['keepa_raw_response'] = raw_response  # Full API response with all products
+                                        # Add raw response and metadata
+                                        update_data = {
+                                            'keepa_raw_response': raw_response,  # Full API response with all products
+                                            'keepa_last_fetched': datetime.utcnow().isoformat(),
+                                            'asin': asin,
+                                            'user_id': user_id,
+                                            **extracted  # All extracted fields
+                                        }
                                         
                                         # Update product with raw + structured data
-                                        result = supabase.table('products').update(structured).eq('asin', asin).eq('user_id', user_id).execute()
+                                        result = supabase.table('products').update(update_data).eq('asin', asin).eq('user_id', user_id).execute()
                                         
                                         if result.data:
                                             keepa_stored += 1
                                         
                                     except Exception as e:
-                                        logger.error(f"   ❌ Failed to store Keepa data for {asin}: {e}")
+                                        logger.error(f"   ❌ Failed to store Keepa data for {asin}: {e}", exc_info=True)
                                 
                                 logger.info(f"✅ Keepa data stored for {keepa_stored}/{len(keepa_results)} products")
                                 
