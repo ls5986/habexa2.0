@@ -587,6 +587,44 @@ export default function Products() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run on mount
 
+  // ✅ Auto-check for products needing ASIN selection on page load
+  useEffect(() => {
+    const checkForPendingAsinSelection = async () => {
+      try {
+        const response = await api.get('/products/pending-asin-selection');
+        const data = response.data;
+        
+        if (data.count > 0 && data.products && data.products.length > 0) {
+          // Find the first product that needs selection
+          const firstProduct = data.products[0];
+          
+          // Map to deal format for the dialog
+          const dealFormat = {
+            id: firstProduct.id,
+            product_id: firstProduct.id,
+            upc: firstProduct.upc,
+            title: firstProduct.supplier_title || firstProduct.title,
+            brand: firstProduct.brand,
+            potential_asins: firstProduct.potential_asins || [],
+            asin_status: 'multiple_found'
+          };
+          
+          // Auto-open modal for first product
+          setAsinSelectionDialog({ open: true, product: dealFormat });
+        }
+      } catch (err) {
+        console.error('Failed to check for products needing ASIN selection:', err);
+        // Don't show error toast - this is a background check
+      }
+    };
+
+    // Only check if dialog is not already open
+    if (!asinSelectionDialog.open) {
+      checkForPendingAsinSelection();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run once on mount
+
   // Refetch when stage changes (debounced)
   const debouncedStage = useDebounce(activeStage, 300);
   useEffect(() => {
