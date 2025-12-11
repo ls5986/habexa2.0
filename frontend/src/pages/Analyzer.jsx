@@ -78,14 +78,10 @@ export default function Analyzer() {
       if (filterObj.amazon_sells !== '') filterObj.amazon_sells = filterObj.amazon_sells === 'true';
       if (filterObj.is_hazmat !== '') filterObj.is_hazmat = filterObj.is_hazmat === 'true';
       
-      const response = await api.post('/analyzer/products', filterObj, {
-        params: {
-          page: page + 1,
-          page_size: pageSize,
-          sort_by: sortBy,
-          sort_order: sortOrder
-        }
-      });
+      const response = await api.post(
+        `/analyzer/products?page=${page + 1}&page_size=${pageSize}&sort_by=${sortBy}&sort_order=${sortOrder}`,
+        filterObj
+      );
       
       setProducts(response.data.products || []);
       setTotal(response.data.total || 0);

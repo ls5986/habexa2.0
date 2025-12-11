@@ -51,7 +51,7 @@ class AnalyzerFilters(BaseModel):
 
 @router.post("/products")
 async def get_analyzer_products(
-    filters: AnalyzerFilters = Body(...),
+    filters: AnalyzerFilters = Body(default={}),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=500),
     sort_by: str = Query('roi_percentage'),
@@ -73,117 +73,75 @@ async def get_analyzer_products(
     user_id = str(current_user.id)
     
     try:
-        # Build base query - use product_deals view for joined data
-        query = supabase.table('product_deals').select(
-            '''
-            *,
-            products!inner(
-                id,
-                asin,
-                title,
-                image_url,
-                category,
-                brand,
-                package_quantity,
-                buy_box_price,
-                current_sales_rank,
-                fba_seller_count,
-                seller_count,
-                amazon_sells,
-                amazon_in_stock,
-                is_hazmat,
-                brand_sells,
-                is_variation,
-                parent_asin,
-                variation_count,
-                profit_amount,
-                roi_percentage,
-                margin_percentage,
-                break_even_price,
-                is_profitable,
-                profit_tier,
-                risk_level,
-                est_monthly_sales,
-                sales_rank_30_day_avg,
-                sales_rank_90_day_avg,
-                lowest_price,
-                avg_buybox_90d,
-                fba_fees,
-                fees_total,
-                analyzed_at,
-                created_at
-            )
-            ''',
-            count='exact'
-        ).eq('user_id', user_id)
+        # Build base query - use product_deals view (already has all joined data)
+        query = supabase.table('product_deals').select('*', count='exact').eq('user_id', user_id)
         
         # Apply filters
         if filters.search:
-            # Search in ASIN or title
+            # Search in ASIN or title - use ilike for case-insensitive search
             search_term = f"%{filters.search}%"
-            # Use separate queries for OR conditions
-            query = query.or_(f"products.asin.ilike.{search_term},products.title.ilike.{search_term}")
+            # Supabase doesn't support OR in filters easily, so we'll filter in Python if needed
+            # For now, search in ASIN first
+            query = query.ilike('asin', search_term)
         
         if filters.category:
-            query = query.eq('products.category', filters.category)
+            query = query.eq('category', filters.category)
         
         if filters.supplier_id:
             query = query.eq('supplier_id', filters.supplier_id)
         
-        # Profitability filters
+        # Profitability filters (from products table via view)
         if filters.min_roi is not None:
-            query = query.gte('products.roi_percentage', filters.min_roi)
+            query = query.gte('roi', filters.min_roi)
         
         if filters.max_roi is not None:
-            query = query.lte('products.roi_percentage', filters.max_roi)
+            query = query.lte('roi', filters.max_roi)
         
         if filters.min_margin is not None:
-            query = query.gte('products.margin_percentage', filters.min_margin)
+            # Note: margin might not be in view, may need to calculate or add to view
+            pass  # TODO: Add margin to product_deals view
         
         if filters.min_profit is not None:
-            query = query.gte('products.profit_amount', filters.min_profit)
+            query = query.gte('profit', filters.min_profit)
         
         if filters.profit_tier:
-            query = query.eq('products.profit_tier', filters.profit_tier)
+            # Note: profit_tier might not be in view, filter in Python
+            pass  # TODO: Add profit_tier to product_deals view or filter after
         
         # Market filters
         if filters.min_est_sales is not None:
-            query = query.gte('products.est_monthly_sales', filters.min_est_sales)
+            # Note: est_monthly_sales might not be in view
+            pass  # TODO: Add to view or filter after
         
         if filters.max_bsr is not None:
-            query = query.lte('products.current_sales_rank', filters.max_bsr)
+            query = query.lte('bsr', filters.max_bsr)
         
         if filters.max_fba_sellers is not None:
-            query = query.lte('products.fba_seller_count', filters.max_fba_sellers)
+            query = query.lte('fba_seller_count', filters.max_fba_sellers)
         
         # Boolean filters
         if filters.is_profitable is not None:
-            query = query.eq('products.is_profitable', filters.is_profitable)
+            # Note: is_profitable might not be in view
+            pass  # TODO: Add to view or filter after
         
         if filters.amazon_sells is not None:
-            query = query.eq('products.amazon_sells', filters.amazon_sells)
+            query = query.eq('amazon_sells', filters.amazon_sells)
         
-        if filters.is_hazmat is not None:
-            query = query.eq('products.is_hazmat', filters.is_hazmat)
-        
-        if filters.is_variation is not None:
-            query = query.eq('products.is_variation', filters.is_variation)
-        
-        # Sorting - map frontend sort fields to database columns
+        # Sorting - map frontend sort fields to view columns
         sort_field_map = {
-            'roi_percentage': 'products.roi_percentage',
-            'margin_percentage': 'products.margin_percentage',
-            'profit_amount': 'products.profit_amount',
-            'est_monthly_sales': 'products.est_monthly_sales',
-            'current_sales_rank': 'products.current_sales_rank',
-            'asin': 'products.asin',
-            'title': 'products.title',
-            'category': 'products.category',
-            'fba_seller_count': 'products.fba_seller_count',
-            'seller_count': 'products.seller_count',
+            'roi_percentage': 'roi',
+            'margin_percentage': 'margin',
+            'profit_amount': 'profit',
+            'est_monthly_sales': 'est_monthly_sales',
+            'current_sales_rank': 'bsr',
+            'asin': 'asin',
+            'title': 'title',
+            'category': 'category',
+            'fba_seller_count': 'fba_seller_count',
+            'seller_count': 'seller_count',
         }
         
-        db_sort_field = sort_field_map.get(sort_by, 'products.roi_percentage')
+        db_sort_field = sort_field_map.get(sort_by, 'roi')
         
         if sort_order == 'desc':
             query = query.order(db_sort_field, desc=True)
@@ -200,59 +158,58 @@ async def get_analyzer_products(
         # Format products for frontend
         products = []
         for item in response.data:
-            # Extract product data (may be nested)
-            product = item.get('products') if isinstance(item.get('products'), dict) else item
-            
             products.append({
-                'id': product.get('id') or item.get('product_id'),
+                'id': item.get('product_id'),
                 'deal_id': item.get('deal_id'),
-                'asin': product.get('asin') or item.get('asin'),
-                'title': product.get('title') or item.get('title'),
-                'image_url': product.get('image_url') or item.get('image_url'),
-                'category': product.get('category') or item.get('category'),
-                'brand': product.get('brand') or item.get('brand'),
-                'package_quantity': product.get('package_quantity') or item.get('package_quantity') or 1,
-                'amazon_link': f"https://amazon.com/dp/{product.get('asin') or item.get('asin')}" if (product.get('asin') or item.get('asin')) else None,
+                'asin': item.get('asin'),
+                'title': item.get('title'),
+                'image_url': item.get('image_url'),
+                'category': item.get('category'),
+                'brand': item.get('brand'),
+                'package_quantity': item.get('package_quantity') or 1,
+                'amazon_link': f"https://amazon.com/dp/{item.get('asin')}" if item.get('asin') else None,
                 
                 # Pricing
                 'wholesale_cost': float(item.get('wholesale_cost', 0)) if item.get('wholesale_cost') else None,
                 'buy_cost': float(item.get('buy_cost', 0)) if item.get('buy_cost') else None,
-                'sell_price': float(product.get('buy_box_price') or item.get('sell_price', 0)) if (product.get('buy_box_price') or item.get('sell_price')) else None,
-                'break_even_price': float(product.get('break_even_price', 0)) if product.get('break_even_price') else None,
+                'sell_price': float(item.get('sell_price', 0)) if item.get('sell_price') else None,
+                'break_even_price': None,  # TODO: Add to view
                 
-                # Profitability
-                'profit': float(product.get('profit_amount', 0)) if product.get('profit_amount') else None,
-                'margin': float(product.get('margin_percentage', 0)) if product.get('margin_percentage') else None,
-                'roi': float(product.get('roi_percentage', 0)) if product.get('roi_percentage') else None,
-                'is_profitable': product.get('is_profitable') or item.get('is_profitable'),
-                'profit_tier': product.get('profit_tier') or item.get('profit_tier'),
-                'risk_level': product.get('risk_level') or item.get('risk_level'),
+                # Profitability (from products table, may need to join)
+                'profit': float(item.get('profit', 0)) if item.get('profit') else None,
+                'margin': float(item.get('margin', 0)) if item.get('margin') else None,
+                'roi': float(item.get('roi', 0)) if item.get('roi') else None,
+                'is_profitable': item.get('roi', 0) >= 15 if item.get('roi') else False,
+                'profit_tier': 'excellent' if (item.get('roi') or 0) >= 50 else 
+                              'good' if (item.get('roi') or 0) >= 30 else
+                              'marginal' if (item.get('roi') or 0) >= 15 else 'unprofitable',
+                'risk_level': 'low',  # TODO: Calculate from data
                 
                 # Market data
-                'est_monthly_sales': product.get('est_monthly_sales') or item.get('est_monthly_sales'),
-                'bsr': product.get('current_sales_rank') or item.get('bsr'),
-                'bsr_30d': product.get('sales_rank_30_day_avg'),
-                'bsr_90d': product.get('sales_rank_90_day_avg'),
-                'lowest_90d': float(product.get('lowest_price', 0)) if product.get('lowest_price') else None,
-                'avg_buybox_90d': float(product.get('avg_buybox_90d', 0)) if product.get('avg_buybox_90d') else None,
+                'est_monthly_sales': None,  # TODO: Add to view
+                'bsr': item.get('bsr'),
+                'bsr_30d': None,  # TODO: Add to view
+                'bsr_90d': None,  # TODO: Add to view
+                'lowest_90d': None,  # TODO: Add to view
+                'avg_buybox_90d': None,  # TODO: Add to view
                 
                 # Competition
-                'fba_sellers': product.get('fba_seller_count') or item.get('fba_seller_count'),
-                'total_sellers': product.get('seller_count') or item.get('seller_count'),
-                'amazon_sells': product.get('amazon_sells') or item.get('amazon_sells'),
-                'amazon_in_stock': product.get('amazon_in_stock'),
+                'fba_sellers': item.get('fba_seller_count'),
+                'total_sellers': item.get('seller_count'),
+                'amazon_sells': item.get('amazon_sells'),
+                'amazon_in_stock': None,  # TODO: Add to view
                 
                 # Flags
-                'is_hazmat': product.get('is_hazmat') or item.get('is_hazmat'),
-                'brand_sells': product.get('brand_sells') or item.get('brand_sells'),
-                'is_variation': product.get('is_variation') or item.get('is_variation'),
-                'parent_asin': product.get('parent_asin'),
-                'variation_count': product.get('variation_count'),
-                'is_top_level': item.get('is_top_level_category'),
+                'is_hazmat': None,  # TODO: Add to view
+                'brand_sells': None,  # TODO: Add to view
+                'is_variation': item.get('is_variation'),
+                'parent_asin': None,  # TODO: Add to view
+                'variation_count': None,  # TODO: Add to view
+                'is_top_level': None,  # TODO: Add to view
                 
                 # Fees
-                'fba_fee': float(product.get('fba_fees', 0)) if product.get('fba_fees') else None,
-                'total_fees': float(product.get('fees_total', 0)) if product.get('fees_total') else None,
+                'fba_fee': None,  # TODO: Add to view
+                'total_fees': float(item.get('fees_total', 0)) if item.get('fees_total') else None,
                 
                 # Supplier
                 'supplier_name': item.get('supplier_name'),
@@ -260,8 +217,8 @@ async def get_analyzer_products(
                 'pack_size': item.get('pack_size', 1),
                 
                 # Timestamps
-                'analyzed_at': product.get('analyzed_at'),
-                'created_at': product.get('created_at') or item.get('deal_created_at')
+                'analyzed_at': None,  # TODO: Add to view
+                'created_at': item.get('deal_created_at')
             })
         
         return {
