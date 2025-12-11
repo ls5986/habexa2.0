@@ -977,15 +977,10 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                                 sp_stored = 0
                                 for asin, sp_data in sp_api_results.items():
                                     try:
-                                        # Extract structured fields (extractor adds raw response to structured dict)
+                                        # Extract structured fields (extractor already includes sp_api_raw_response)
                                         structured = extract_sp_api_structured_data(sp_data)
                                         structured['asin'] = asin
                                         structured['user_id'] = user_id
-                                        
-                                        # Note: extract_sp_api_structured_data already includes sp_api_raw_response
-                                        # But we need to ensure it's set correctly
-                                        if 'sp_api_raw_response' not in structured:
-                                            structured['sp_api_raw_response'] = sp_data
                                         
                                         # Update product with raw + structured data
                                         result = supabase.table('products').update(structured).eq('asin', asin).eq('user_id', user_id).execute()
@@ -1062,15 +1057,14 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                                         # Construct response structure for extractor (expects {'products': [...]})
                                         response_for_extractor = {'products': [product_data]}
                                         
-                                        # Extract structured fields (extractor adds raw response to structured dict)
+                                        # Extract structured fields (extractor expects {'products': [...]} format)
+                                        # But we need to store the FULL raw response, not just the product
                                         structured = extract_keepa_structured_data(response_for_extractor, asin)
                                         structured['asin'] = asin
                                         structured['user_id'] = user_id
                                         
-                                        # Note: extract_keepa_structured_data already includes keepa_raw_response
-                                        # But we need to ensure it's set correctly with the full raw response
-                                        if 'keepa_raw_response' not in structured:
-                                            structured['keepa_raw_response'] = raw_response
+                                        # Override with full raw response (extractor might only store product-level data)
+                                        structured['keepa_raw_response'] = raw_response  # Full API response with all products
                                         
                                         # Update product with raw + structured data
                                         result = supabase.table('products').update(structured).eq('asin', asin).eq('user_id', user_id).execute()
