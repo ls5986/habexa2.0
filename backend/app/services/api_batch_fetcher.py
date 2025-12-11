@@ -70,9 +70,36 @@ class APIBatchFetcher:
                 'duration_seconds': 0
             }
         
+        # Filter out invalid ASINs (PENDING_, Unknown, etc.)
+        valid_asins = []
+        for asin in asins:
+            if asin and isinstance(asin, str):
+                asin_clean = asin.strip().upper()
+                if (asin_clean and 
+                    not asin_clean.startswith('PENDING_') and 
+                    not asin_clean.startswith('Unknown') and
+                    len(asin_clean) == 10):
+                    valid_asins.append(asin_clean)
+                else:
+                    logger.warning(f"⚠️ Skipping invalid ASIN: {asin}")
+                    results['errors'].append(f"Invalid ASIN: {asin} (needs valid ASIN to process)")
+        
+        if not valid_asins:
+            logger.error("❌ No valid ASINs to process. All ASINs were invalid (PENDING_, Unknown, or wrong length).")
+            return {
+                'total': len(asins),
+                'sp_api_success': 0,
+                'sp_api_failed': 0,
+                'keepa_success': 0,
+                'keepa_failed': 0,
+                'updated': 0,
+                'errors': ['No valid ASINs to process. Products need valid ASINs before API data can be fetched.'],
+                'duration_seconds': 0
+            }
+        
         # Remove duplicates
-        asins = list(set(asins))
-        logger.info(f"📊 Unique ASINs: {len(asins)}")
+        asins = list(set(valid_asins))
+        logger.info(f"📊 Valid unique ASINs: {len(asins)} (filtered from {len(asins) + len([a for a in asins if a not in valid_asins])} total)")
         
         logger.warning(f"🔥 API BATCH FETCHER STARTED: {len(asins)} ASINs for user {user_id}")
         
@@ -134,9 +161,6 @@ class APIBatchFetcher:
                 
                 # Continue with other batches even if one fails
                 continue
-                
-                # Continue with other batches even if one fails
-                continue
         
         logger.info(f"✅ SP-API: {results['sp_api_success']}/{len(asins)} successful")
         
@@ -180,12 +204,12 @@ class APIBatchFetcher:
                                 results['keepa_success'] += 1
                                 logger.debug(f"    ✓ {product_asin}: {len(str(product))} chars")
                     
-                logger.info(f"  ✅ Batch {batch_num} complete: {len(products)} products")
-                
-                # Rate limit protection
-                await asyncio.sleep(0.2)
-                
-            except Exception as e:
+                    logger.info(f"  ✅ Batch {batch_num} complete: {len(products)} products")
+                    
+                    # Rate limit protection
+                    await asyncio.sleep(0.2)
+                    
+                except Exception as e:
                 logger.error(f"  ❌ Keepa batch {batch_num} failed: {e}", exc_info=True)
                 results['keepa_failed'] += len(batch)
                 results['errors'].append(f"Keepa batch {batch_num}: {str(e)}")
