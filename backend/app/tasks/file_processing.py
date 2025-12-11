@@ -829,7 +829,7 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                                 "user_id": user_id,
                                 "asin": parsed["asin"],
                                 "upc": parsed.get("upc"),
-                                "sku": original_row.get("sku") or original_row.get("SKU"),
+                                # Note: sku column doesn't exist in products table - removed
                                 "title": amazon_title,  # Amazon title (from SP-API)
                                 "supplier_title": parsed.get("supplier_title") or parsed.get("title"),  # Supplier's title
                                 "uploaded_title": original_row.get("title") or original_row.get("product_name") or original_row.get("name") or original_row.get("DESCRIPTION") or original_row.get("description"),
@@ -917,7 +917,7 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                         "user_id": user_id,
                         "asin": None if asin_status == "multiple_found" else placeholder_asin,  # NULL if multiple ASINs (user must choose), placeholder otherwise
                         "upc": upc,  # Store UPC for manual lookup
-                        "sku": original_row.get("sku") or original_row.get("SKU") or original_row.get("ITEM") or original_row.get("item"),
+                        # Note: sku column doesn't exist in products table - removed
                         "title": None,  # Will be filled from Amazon once ASIN is set
                         "supplier_title": parsed.get("supplier_title") or parsed.get("title"),  # Supplier's name for the product
                         "uploaded_title": original_row.get("title") or original_row.get("product_name") or original_row.get("name") or original_row.get("DESCRIPTION") or original_row.get("description"),
@@ -1009,6 +1009,7 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
             # Build deals for upsert
             # Use dict to deduplicate by (product_id, supplier_id) - keep last occurrence
             deals_dict = {}
+            missing_product_count = 0  # Track rows that couldn't be matched to products
             for parsed in parsed_rows:
                 # Get product_id - either by ASIN or by UPC
                 product_id = None
@@ -1020,6 +1021,7 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                     product_id = product_cache.get(upc_key)
                 
                 if not product_id:
+                    missing_product_count += 1
                     continue
                 
                 # Use (product_id, supplier_id) as key to deduplicate
