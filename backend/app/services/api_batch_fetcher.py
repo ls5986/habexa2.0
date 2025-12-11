@@ -55,6 +55,8 @@ class APIBatchFetcher:
                 'errors': []
             }
         """
+        start_time = datetime.utcnow()
+        
         if not asins:
             logger.warning("⚠️ No ASINs provided to fetch")
             return {
@@ -64,10 +66,15 @@ class APIBatchFetcher:
                 'keepa_success': 0,
                 'keepa_failed': 0,
                 'updated': 0,
-                'errors': []
+                'errors': [],
+                'duration_seconds': 0
             }
         
-        logger.info(f"🔥 FETCHING API DATA FOR {len(asins)} ASINs")
+        # Remove duplicates
+        asins = list(set(asins))
+        logger.info(f"📊 Unique ASINs: {len(asins)}")
+        
+        logger.warning(f"🔥 API BATCH FETCHER STARTED: {len(asins)} ASINs for user {user_id}")
         
         results = {
             'total': len(asins),
@@ -76,13 +83,14 @@ class APIBatchFetcher:
             'keepa_success': 0,
             'keepa_failed': 0,
             'updated': 0,
-            'errors': []
+            'errors': [],
+            'duration_seconds': 0
         }
         
         # ============================================
-        # 1. FETCH SP-API IN BATCHES OF 20
+        # STEP 1: FETCH SP-API CATALOG IN BATCHES OF 20
         # ============================================
-        logger.info(f"📦 Fetching SP-API catalog (batches of {cls.SP_API_BATCH_SIZE})")
+        logger.info(f"📦 STEP 1/3: Fetching SP-API catalog (batches of {cls.SP_API_BATCH_SIZE})")
         sp_data = {}
         
         for i in range(0, len(asins), cls.SP_API_BATCH_SIZE):
@@ -91,7 +99,7 @@ class APIBatchFetcher:
             total_batches = (len(asins) + cls.SP_API_BATCH_SIZE - 1) // cls.SP_API_BATCH_SIZE
             
             try:
-                logger.info(f"  Batch {batch_num}/{total_batches}: {len(batch)} ASINs")
+                logger.info(f"  📡 SP-API Batch {batch_num}/{total_batches}: Fetching {len(batch)} ASINs")
                 
                 # Call SP-API batch method
                 batch_response = await sp_api_client.get_catalog_items_batch(
@@ -107,13 +115,18 @@ class APIBatchFetcher:
                             sp_data[asin] = item
                             results['sp_api_success'] += 1
                 
-                # Rate limit protection
-                await asyncio.sleep(0.1)
+                logger.info(f"  ✅ Batch {batch_num} complete: {len(batch_response)} items")
+                
+                # Rate limit protection (avoid throttling)
+                await asyncio.sleep(0.2)
                 
             except Exception as e:
                 logger.error(f"  ❌ SP-API batch {batch_num} failed: {e}", exc_info=True)
                 results['sp_api_failed'] += len(batch)
                 results['errors'].append(f"SP-API batch {batch_num}: {str(e)}")
+                
+                # Continue with other batches even if one fails
+                continue
         
         logger.info(f"✅ SP-API: {results['sp_api_success']}/{len(asins)} successful")
         
@@ -133,7 +146,7 @@ class APIBatchFetcher:
                 total_batches = (len(asins) + cls.KEEPA_BATCH_SIZE - 1) // cls.KEEPA_BATCH_SIZE
                 
                 try:
-                    logger.info(f"  Keepa Batch {batch_num}/{total_batches}: {len(batch)} ASINs")
+                    logger.info(f"  📡 Keepa Batch {batch_num}/{total_batches}: Fetching {len(batch)} ASINs")
                     
                     # Call Keepa batch method
                     keepa_response = await keepa_client_instance.get_products_batch(
@@ -155,21 +168,27 @@ class APIBatchFetcher:
                                     'raw_response': raw_response
                                 }
                                 results['keepa_success'] += 1
+                                logger.debug(f"    ✓ {product_asin}: {len(str(product))} chars")
                     
-                    # Rate limit protection
-                    await asyncio.sleep(0.1)
-                    
-                except Exception as e:
-                    logger.error(f"  ❌ Keepa batch {batch_num} failed: {e}", exc_info=True)
-                    results['keepa_failed'] += len(batch)
-                    results['errors'].append(f"Keepa batch {batch_num}: {str(e)}")
+                logger.info(f"  ✅ Batch {batch_num} complete: {len(products)} products")
+                
+                # Rate limit protection
+                await asyncio.sleep(0.2)
+                
+            except Exception as e:
+                logger.error(f"  ❌ Keepa batch {batch_num} failed: {e}", exc_info=True)
+                results['keepa_failed'] += len(batch)
+                results['errors'].append(f"Keepa batch {batch_num}: {str(e)}")
+                
+                # Continue with other batches
+                continue
         
-        logger.info(f"✅ Keepa: {results['keepa_success']}/{len(asins)} successful")
+        logger.warning(f"✅ KEEPA COMPLETE: {results['keepa_success']}/{len(asins)} successful")
         
         # ============================================
         # 3. EXTRACT & STORE ALL DATA
         # ============================================
-        logger.info(f"💾 Extracting and storing data for {len(asins)} products")
+        logger.info(f"💾 STEP 3/3: Extracting and storing data for {len(asins)} products")
         
         for asin in asins:
             try:
