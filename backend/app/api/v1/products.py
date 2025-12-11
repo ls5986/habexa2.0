@@ -3592,20 +3592,32 @@ async def refresh_product_api_data_by_asin(
             return float('inf')
     
     try:
+        logger.info(f"🔄 Refreshing API data for ASIN {asin} (force={force})")
         updated_data = await fetch_and_store_all_api_data(asin, force_refresh=force)
+        
+        if not updated_data:
+            raise HTTPException(500, "No data returned from API storage service")
         
         sp_age = get_data_age_hours(updated_data.get('sp_api_last_fetched'))
         keepa_age = get_data_age_hours(updated_data.get('keepa_last_fetched'))
+        
+        has_sp_data = bool(updated_data.get('sp_api_raw_response'))
+        has_keepa_data = bool(updated_data.get('keepa_raw_response'))
+        
+        logger.info(f"✅ API data refreshed for {asin}: SP-API={has_sp_data}, Keepa={has_keepa_data}")
         
         return {
             "success": True,
             "message": "API data refreshed",
             "asin": asin,
+            "product_id": product_id,
             "sp_api_age_hours": sp_age if sp_age != float('inf') else None,
             "keepa_age_hours": keepa_age if keepa_age != float('inf') else None,
+            "has_sp_data": has_sp_data,
+            "has_keepa_data": has_keepa_data,
         }
     except Exception as e:
-        logger.error(f"Failed to refresh API data: {e}")
+        logger.error(f"❌ Failed to refresh API data for {asin}: {e}", exc_info=True)
         raise HTTPException(500, f"Failed to refresh API data: {str(e)}")
 
 
