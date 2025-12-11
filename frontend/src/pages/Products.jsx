@@ -96,7 +96,15 @@ const DealRow = React.memo(({ deal, selected, onSelect, onClick, onUpdateMoq, on
         '&:hover': { bgcolor: 'action.hover' },
         cursor: 'pointer'
       }}
-      onClick={onClick}
+      onClick={(e) => {
+        // If product needs ASIN selection, open the dialog
+        if (needsSelection && onSelectAsin) {
+          e.stopPropagation();
+          onSelectAsin(deal);
+        } else {
+          onClick(e);
+        }
+      }}
     >
       <Checkbox
         size="small"
@@ -431,8 +439,9 @@ export default function Products() {
   const [analyzing, setAnalyzing] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, deal: null });
   const [manualPriceDialog, setManualPriceDialog] = useState({ open: false, deal: null, analysis: null });
-  const [asinSelectionDialog, setAsinSelectionDialog] = useState({ open: false, product: null });
+  const [asinSelectionDialog, setAsinSelectionDialog] = useState({ open: false, product: null, asinDetails: [] });
   const [manualAsinDialog, setManualAsinDialog] = useState({ open: false, product: null, asinInput: '' });
+  const [loadingAsinDetails, setLoadingAsinDetails] = useState(false);
   const [counts, setCounts] = useState({ all: 0, found: 0, not_found: 0, multiple_found: 0, manual: 0 });
   const [asinStatusStats, setAsinStatusStats] = useState({ all: 0, asin_found: 0, needs_selection: 0, needs_asin: 0, manual_entry: 0 });
   const [deleteAllDialog, setDeleteAllDialog] = useState({ open: false, count: 0 });
@@ -1286,10 +1295,50 @@ export default function Products() {
         <DialogContent>
           {asinSelectionDialog.product && (
             <>
+              {/* Supplier Product Info */}
+              <Card sx={{ mb: 3, bgcolor: 'grey.50' }}>
+                <CardContent>
+                  <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                    Your Supplier's Product
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    {asinSelectionDialog.product.supplier_title && (
+                      <Typography variant="body2">
+                        <strong>Title:</strong> {asinSelectionDialog.product.supplier_title}
+                      </Typography>
+                    )}
+                    {asinSelectionDialog.product.upc && (
+                      <Typography variant="body2" fontFamily="monospace">
+                        <strong>UPC:</strong> {asinSelectionDialog.product.upc}
+                      </Typography>
+                    )}
+                    {asinSelectionDialog.product.brand && (
+                      <Typography variant="body2">
+                        <strong>Brand:</strong> {asinSelectionDialog.product.brand}
+                      </Typography>
+                    )}
+                    {asinSelectionDialog.product.supplier_name && (
+                      <Typography variant="body2">
+                        <strong>Supplier:</strong> {asinSelectionDialog.product.supplier_name}
+                      </Typography>
+                    )}
+                  </Box>
+                </CardContent>
+              </Card>
+              
               <Alert severity="info" sx={{ mb: 2 }}>
-                Multiple products found for UPC <strong>{asinSelectionDialog.product.upc}</strong>.
-                Select the one that matches your supplier's product.
+                Multiple Amazon products found for UPC <strong>{asinSelectionDialog.product.upc}</strong>.
+                Select the one that matches your supplier's product above.
               </Alert>
+              
+              {loadingAsinDetails && (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                  <CircularProgress />
+                  <Typography variant="body2" sx={{ ml: 2 }}>
+                    Loading product details...
+                  </Typography>
+                </Box>
+              )}
               <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2, mt: 2 }}>
                 {(() => {
                   // Debug logging
@@ -1313,10 +1362,21 @@ export default function Products() {
                   return potentialAsins.map((asinOption, index) => {
                     // Handle both string and object formats for potential_asins
                     const asinValue = typeof asinOption === 'string' ? asinOption : (asinOption?.asin || asinOption);
-                    const asinTitle = typeof asinOption === 'object' ? (asinOption.title || asinOption.itemName) : null;
-                    const asinImage = typeof asinOption === 'object' ? (asinOption.image || asinOption.image_url || asinOption.mainImage?.link) : null;
-                    const asinBrand = typeof asinOption === 'object' ? (asinOption.brand || asinOption.brandName) : null;
-                    const asinCategory = typeof asinOption === 'object' ? (asinOption.category || asinOption.productGroup) : null;
+                    
+                    // Try to get details from fetched asinDetails first, then fallback to asinOption object
+                    const fetchedDetails = asinSelectionDialog.asinDetails?.find(d => d.asin === asinValue);
+                    const asinTitle = fetchedDetails?.title || 
+                                     (typeof asinOption === 'object' ? (asinOption.title || asinOption.itemName) : null) ||
+                                     'Unknown Product';
+                    const asinImage = fetchedDetails?.image_url || 
+                                     (typeof asinOption === 'object' ? (asinOption.image || asinOption.image_url || asinOption.mainImage?.link) : null);
+                    const asinBrand = fetchedDetails?.brand || 
+                                     (typeof asinOption === 'object' ? (asinOption.brand || asinOption.brandName) : null);
+                    const asinCategory = fetchedDetails?.category || 
+                                        (typeof asinOption === 'object' ? (asinOption.category || asinOption.productGroup) : null);
+                    const asinBsr = fetchedDetails?.bsr;
+                    const asinSellerCount = fetchedDetails?.seller_count;
+                    const asinFbaCount = fetchedDetails?.fba_seller_count;
                     
                     if (!asinValue) {
                       console.warn(`⚠️ ASIN option ${index} has no ASIN value:`, asinOption);
@@ -1337,37 +1397,62 @@ export default function Products() {
                           asinValue
                         )}
                       >
-                        {asinImage && (
-                          <Box
-                            component="img"
-                            src={asinImage}
-                            alt={asinTitle || asinValue}
-                            sx={{
-                              width: '100%',
-                              height: 200,
-                              objectFit: 'contain',
-                              p: 2,
-                              bgcolor: 'background.default'
-                            }}
-                          />
-                        )}
+                        <Box
+                          sx={{
+                            width: '100%',
+                            height: 200,
+                            bgcolor: 'background.default',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            p: 2
+                          }}
+                        >
+                          {asinImage ? (
+                            <Box
+                              component="img"
+                              src={asinImage}
+                              alt={asinTitle || asinValue}
+                              sx={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'contain'
+                              }}
+                            />
+                          ) : (
+                            <Package size={48} color="#999" />
+                          )}
+                        </Box>
                         <CardContent>
-                          <Typography variant="h6" gutterBottom>
-                            {asinTitle || 'Unknown Product'}
+                          <Typography variant="h6" gutterBottom noWrap>
+                            {asinTitle}
                           </Typography>
-                          <Typography variant="body2" color="text.secondary" fontFamily="monospace">
+                          <Typography variant="body2" color="text.secondary" fontFamily="monospace" sx={{ mb: 1 }}>
                             ASIN: {asinValue}
                           </Typography>
-                          {asinBrand && (
-                            <Typography variant="body2" color="text.secondary">
-                              Brand: {asinBrand}
-                            </Typography>
-                          )}
-                          {asinCategory && (
-                            <Typography variant="caption" color="text.secondary">
-                              Category: {asinCategory}
-                            </Typography>
-                          )}
+                          
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mb: 2 }}>
+                            {asinBrand && (
+                              <Typography variant="body2" color="text.secondary">
+                                <strong>Brand:</strong> {asinBrand}
+                              </Typography>
+                            )}
+                            {asinCategory && (
+                              <Typography variant="body2" color="text.secondary">
+                                <strong>Category:</strong> {asinCategory}
+                              </Typography>
+                            )}
+                            {asinBsr && (
+                              <Typography variant="body2" color="text.secondary">
+                                <strong>BSR:</strong> {asinBsr.toLocaleString()}
+                              </Typography>
+                            )}
+                            {asinSellerCount !== undefined && (
+                              <Typography variant="body2" color="text.secondary">
+                                <strong>Sellers:</strong> {asinSellerCount} total, {asinFbaCount || 0} FBA
+                              </Typography>
+                            )}
+                          </Box>
                           <Button
                             variant="contained"
                             fullWidth
