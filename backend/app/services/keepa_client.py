@@ -52,7 +52,9 @@ class KeepaClient:
                 "domain": 1,
                 "asin": asin_str,
                 "stats": days,
-                "offers": 20,
+                "offers": 20,  # Number of offers to return
+                "history": 1,  # Include price/rank history
+                "update": 0,   # Don't force update
             }
             
             logger.info(f"🔍 Keepa batch request: {len(asins)} ASINs")
