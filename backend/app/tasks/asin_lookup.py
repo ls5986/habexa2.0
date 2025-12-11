@@ -105,18 +105,37 @@ def process_pending_asin_lookups(self, batch_size: int = 100):
         # Get products needing lookup
         # Priority: lookup_status='pending' or 'retry_pending', then PENDING_ ASINs
         # CRITICAL: Only get products with UPCs (can't lookup without UPC)
-        # FIX: Simplified query - get products with pending lookup status OR PENDING_ ASINs
+        # FIX: Supabase doesn't support .or_() - use separate queries and combine
         try:
-            # Try query with lookup_status first (most reliable)
-            products_result = supabase.table("products")\
+            # Get products with pending lookup_status (two separate queries)
+            products_pending = supabase.table("products")\
                 .select("id, upc, asin, asin_status, lookup_status, lookup_attempts, user_id")\
-                .or_('lookup_status.eq.pending,lookup_status.eq.retry_pending')\
+                .eq("lookup_status", "pending")\
                 .not_.is_("upc", "null")\
                 .neq("upc", "")\
                 .limit(batch_size)\
                 .execute()
             
-            products = products_result.data or []
+            products_retry = supabase.table("products")\
+                .select("id, upc, asin, asin_status, lookup_status, lookup_attempts, user_id")\
+                .eq("lookup_status", "retry_pending")\
+                .not_.is_("upc", "null")\
+                .neq("upc", "")\
+                .limit(batch_size)\
+                .execute()
+            
+            # Combine and deduplicate
+            products = []
+            seen_ids = set()
+            for p in (products_pending.data or []):
+                if p["id"] not in seen_ids:
+                    products.append(p)
+                    seen_ids.add(p["id"])
+            
+            for p in (products_retry.data or []):
+                if p["id"] not in seen_ids:
+                    products.append(p)
+                    seen_ids.add(p["id"])
             
             # If not enough products, also get ones with PENDING_ ASINs but no lookup_status set
             if len(products) < batch_size:
