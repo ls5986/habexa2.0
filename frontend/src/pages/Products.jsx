@@ -587,16 +587,35 @@ export default function Products() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run on mount
 
-  // ✅ Auto-check for products needing ASIN selection on page load
+  // ✅ Auto-check for products needing ASIN selection on page load AND after data fetch
   useEffect(() => {
     const checkForPendingAsinSelection = async () => {
       try {
+        console.log('🔍 Checking for products needing ASIN selection...');
         const response = await api.get('/products/pending-asin-selection');
         const data = response.data;
+        
+        console.log('📦 Products needing selection:', data);
         
         if (data.count > 0 && data.products && data.products.length > 0) {
           // Find the first product that needs selection
           const firstProduct = data.products[0];
+          
+          console.log('🎯 First product needing selection:', firstProduct);
+          console.log('   potential_asins:', firstProduct.potential_asins);
+          console.log('   potential_asins type:', typeof firstProduct.potential_asins);
+          console.log('   potential_asins length:', Array.isArray(firstProduct.potential_asins) ? firstProduct.potential_asins.length : 'not an array');
+          
+          // Ensure potential_asins is an array
+          let potentialAsins = firstProduct.potential_asins || [];
+          if (!Array.isArray(potentialAsins)) {
+            // Try to parse if it's a string
+            try {
+              potentialAsins = JSON.parse(potentialAsins);
+            } catch {
+              potentialAsins = [];
+            }
+          }
           
           // Map to deal format for the dialog
           const dealFormat = {
@@ -605,25 +624,34 @@ export default function Products() {
             upc: firstProduct.upc,
             title: firstProduct.supplier_title || firstProduct.title,
             brand: firstProduct.brand,
-            potential_asins: firstProduct.potential_asins || [],
+            potential_asins: potentialAsins,
             asin_status: 'multiple_found'
           };
           
+          console.log('✅ Opening ASIN selection dialog for:', dealFormat);
+          
           // Auto-open modal for first product
           setAsinSelectionDialog({ open: true, product: dealFormat });
+        } else {
+          console.log('✅ No products need ASIN selection');
         }
       } catch (err) {
-        console.error('Failed to check for products needing ASIN selection:', err);
+        console.error('❌ Failed to check for products needing ASIN selection:', err);
         // Don't show error toast - this is a background check
       }
     };
 
-    // Only check if dialog is not already open
+    // Check if dialog is not already open
     if (!asinSelectionDialog.open) {
-      checkForPendingAsinSelection();
+      // Add small delay to ensure data is loaded
+      const timer = setTimeout(() => {
+        checkForPendingAsinSelection();
+      }, 1000);
+      
+      return () => clearTimeout(timer);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run once on mount
+  }, [deals]); // Re-check when deals data changes
 
   // Refetch when stage changes (debounced)
   const debouncedStage = useDebounce(activeStage, 300);
@@ -1271,9 +1299,9 @@ export default function Products() {
                   const asinBrand = typeof asinOption === 'object' ? asinOption.brand : null;
                   const asinCategory = typeof asinOption === 'object' ? asinOption.category : null;
                   
-                  return (
+                    return (
                   <Card
-                    key={asinValue}
+                    key={asinValue || index}
                     sx={{
                       cursor: 'pointer',
                       '&:hover': { boxShadow: 6 },
@@ -1333,7 +1361,8 @@ export default function Products() {
                     </DialogContent>
                   </Card>
                   );
-                })}
+                  });
+                })()}
               </Box>
             </>
           )}
