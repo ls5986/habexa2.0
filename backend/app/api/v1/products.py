@@ -3404,12 +3404,12 @@ async def get_asin_details_for_selection(
             if package_length or package_width or package_height:
                 dims = []
                 if package_length:
-                    dims.append(f"L: {package_length/10:.1f}cm" if package_length else "")
+                    dims.append(f"L: {package_length/10:.1f}cm")
                 if package_width:
-                    dims.append(f"W: {package_width/10:.1f}cm" if package_width else "")
+                    dims.append(f"W: {package_width/10:.1f}cm")
                 if package_height:
-                    dims.append(f"H: {package_height/10:.1f}cm" if package_height else "")
-                dimensions = dims.filter(Boolean).join(" × ")
+                    dims.append(f"H: {package_height/10:.1f}cm")
+                dimensions = " × ".join(dims)
             
             # Format weight
             weight_str = None
