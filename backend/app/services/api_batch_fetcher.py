@@ -127,6 +127,9 @@ class APIBatchFetcher:
                 
                 # Continue with other batches even if one fails
                 continue
+                
+                # Continue with other batches even if one fails
+                continue
         
         logger.info(f"✅ SP-API: {results['sp_api_success']}/{len(asins)} successful")
         
@@ -186,51 +189,88 @@ class APIBatchFetcher:
         logger.warning(f"✅ KEEPA COMPLETE: {results['keepa_success']}/{len(asins)} successful")
         
         # ============================================
-        # 3. EXTRACT & STORE ALL DATA
+        # STEP 3: EXTRACT & STORE ALL DATA
         # ============================================
         logger.info(f"💾 STEP 3/3: Extracting and storing data for {len(asins)} products")
         
-        for asin in asins:
+        for idx, asin in enumerate(asins, 1):
+            if idx % 10 == 0:
+                logger.info(f"  Processing {idx}/{len(asins)}...")
+            
             try:
                 update_data = {}
                 
-                # Extract SP-API data
+                # ===== EXTRACT SP-API DATA =====
                 if asin in sp_data:
-                    sp_extracted = SPAPIExtractor.extract_all(sp_data[asin])
-                    update_data.update(sp_extracted)
-                    update_data['sp_api_raw_response'] = sp_data[asin]
-                    update_data['sp_api_last_fetched'] = datetime.utcnow().isoformat()
+                    try:
+                        sp_extracted = SPAPIExtractor.extract_all(sp_data[asin])
+                        update_data.update(sp_extracted)
+                        update_data['sp_api_raw_response'] = sp_data[asin]
+                        update_data['sp_api_last_fetched'] = datetime.utcnow().isoformat()
+                        logger.debug(f"    {asin}: Extracted {len(sp_extracted)} SP-API fields")
+                    except Exception as e:
+                        logger.error(f"    {asin}: SP-API extraction failed: {e}")
+                        results['errors'].append(f"{asin} SP-API extraction: {str(e)}")
                 
-                # Extract Keepa data
+                # ===== EXTRACT KEEPA DATA =====
                 if asin in keepa_data:
-                    keepa_item = keepa_data[asin]
-                    product_data = keepa_item.get('product', {})
-                    raw_response = keepa_item.get('raw_response', {})
-                    
-                    keepa_extracted = KeepaExtractor.extract_all({
-                        'products': [product_data]
-                    }, asin=asin)
-                    
-                    update_data.update(keepa_extracted)
-                    update_data['keepa_raw_response'] = raw_response
-                    update_data['keepa_last_fetched'] = datetime.utcnow().isoformat()
+                    try:
+                        keepa_item = keepa_data[asin]
+                        product_data = keepa_item.get('product', {})
+                        raw_response = keepa_item.get('raw_response', {})
+                        
+                        keepa_extracted = KeepaExtractor.extract_all({
+                            'products': [product_data]
+                        }, asin=asin)
+                        
+                        update_data.update(keepa_extracted)
+                        update_data['keepa_raw_response'] = raw_response
+                        update_data['keepa_last_fetched'] = datetime.utcnow().isoformat()
+                        logger.debug(f"    {asin}: Extracted {len(keepa_extracted)} Keepa fields")
+                    except Exception as e:
+                        logger.error(f"    {asin}: Keepa extraction failed: {e}")
+                        results['errors'].append(f"{asin} Keepa extraction: {str(e)}")
                 
-                # Update database
+                # ===== UPDATE DATABASE =====
                 if update_data:
-                    result = supabase.table('products').update(update_data).eq(
-                        'asin', asin
-                    ).eq('user_id', user_id).execute()
+                    try:
+                        # Update product by ASIN and user_id
+                        update_response = supabase.table('products').update(
+                            update_data
+                        ).eq('asin', asin).eq('user_id', user_id).execute()
+                        
+                        if update_response.data:
+                            results['updated'] += 1
+                            logger.debug(f"    ✅ {asin}: Updated {len(update_data)} fields")
+                        else:
+                            logger.warning(f"    ⚠️ {asin}: No product found to update")
+                            results['errors'].append(f"{asin}: Product not found in database")
                     
-                    if result.data:
-                        results['updated'] += 1
-                    else:
-                        logger.warning(f"⚠️ No product found to update for ASIN {asin}")
+                    except Exception as e:
+                        logger.error(f"    ❌ {asin}: Database update failed: {e}", exc_info=True)
+                        results['errors'].append(f"{asin} database update: {str(e)}")
+                else:
+                    logger.warning(f"    ⚠️ {asin}: No data to update (no API responses)")
                 
             except Exception as e:
-                logger.error(f"  ❌ Failed to store data for {asin}: {e}", exc_info=True)
+                logger.error(f"  ❌ {asin}: Complete failure: {e}", exc_info=True)
                 results['errors'].append(f"{asin}: {str(e)}")
         
-        logger.info(f"🎉 COMPLETE: Updated {results['updated']}/{len(asins)} products")
+        # ============================================
+        # SUMMARY
+        # ============================================
+        end_time = datetime.utcnow()
+        results['duration_seconds'] = (end_time - start_time).total_seconds()
+        
+        logger.warning(
+            f"🎉 API BATCH FETCHER COMPLETE:\n"
+            f"  Total ASINs: {results['total']}\n"
+            f"  SP-API: {results['sp_api_success']} success, {results['sp_api_failed']} failed\n"
+            f"  Keepa: {results['keepa_success']} success, {results['keepa_failed']} failed\n"
+            f"  Database: {results['updated']} products updated\n"
+            f"  Errors: {len(results['errors'])}\n"
+            f"  Duration: {results['duration_seconds']:.1f}s"
+        )
         
         return results
 
