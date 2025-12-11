@@ -1137,7 +1137,7 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
         # Complete
         job.complete(results, results["deals_processed"], len(error_list), error_list)
         
-        # Auto-analyze uploaded products WITH REAL ASINs (not PENDING_ placeholders)
+        # Auto-analyze uploaded products WITH REAL ASINs (not NULL or PENDING_ placeholders)
         # Get product IDs from the uploaded deals that have real ASINs
         if results["deals_processed"] > 0:
             try:
@@ -1157,7 +1157,7 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                         if product:
                             asin = product.get("asin")
                             # Only include products with real ASINs
-                            if asin and asin != "" and not asin.startswith("PENDING_") and not asin.startswith("Unknown"):
+                            if asin and asin != "" and asin is not None and not asin.startswith("PENDING_") and not asin.startswith("Unknown"):
                                 product_ids_to_analyze.append(p["product_id"])
                     
                     if product_ids_to_analyze:
