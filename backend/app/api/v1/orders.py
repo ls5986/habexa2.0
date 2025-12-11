@@ -504,6 +504,80 @@ async def update_order_status(
     }
 
 
+@router.post("/{order_id}/revert-to-buy-list")
+async def revert_order_to_buy_list(
+    order_id: str,
+    current_user=Depends(get_current_user)
+):
+    """
+    Revert order back to buy list.
+    - Moves all products in the order back to buy_list stage
+    - Marks order as cancelled
+    - Does NOT delete the order (keeps history)
+    """
+    user_id = str(current_user.id)
+    
+    # Get order with items
+    order_result = supabase.table('orders') \
+        .select('*, items:order_items(product_id)') \
+        .eq('id', order_id) \
+        .eq('user_id', user_id) \
+        .single() \
+        .execute()
+    
+    if not order_result.data:
+        raise HTTPException(404, "Order not found")
+    
+    order = order_result.data
+    items = order.get('items', [])
+    
+    if not items:
+        raise HTTPException(400, "Order has no items to revert")
+    
+    try:
+        # Get all product_sources (deals) for products in this order
+        product_ids = [item.get('product_id') for item in items if item.get('product_id')]
+        
+        if not product_ids:
+            raise HTTPException(400, "No products found in order")
+        
+        # Find product_sources for these products
+        deals_result = supabase.table('product_sources') \
+            .select('id, product_id') \
+            .in_('product_id', product_ids) \
+            .eq('is_active', True) \
+            .execute()
+        
+        deal_ids = [deal.get('id') for deal in (deals_result.data or [])]
+        
+        # Move all deals back to buy_list stage
+        if deal_ids:
+            supabase.table('product_sources') \
+                .update({'stage': 'buy_list'}) \
+                .in_('id', deal_ids) \
+                .execute()
+        
+        # Mark order as cancelled (don't delete - keep history)
+        supabase.table('orders').update({
+            'status': 'cancelled',
+            'updated_at': datetime.utcnow().isoformat()
+        }).eq('id', order_id).execute()
+        
+        logger.info(f"✅ Reverted order {order_id} to buy list: {len(deal_ids)} products moved back")
+        
+        return {
+            'success': True,
+            'message': f'Order reverted. {len(deal_ids)} products moved back to buy list.',
+            'products_reverted': len(deal_ids)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to revert order: {e}", exc_info=True)
+        raise HTTPException(500, f"Failed to revert order: {str(e)}")
+
+
 @router.delete("/{order_id}")
 async def delete_order(
     order_id: str,
@@ -511,6 +585,8 @@ async def delete_order(
 ):
     """
     Delete an order (cascades to order_items).
+    WARNING: This permanently deletes the order.
+    Consider using POST /{order_id}/revert-to-buy-list instead.
     """
     user_id = str(current_user.id)
     
@@ -543,14 +619,16 @@ async def send_order(
     current_user=Depends(get_current_user)
 ):
     """
-    Send order to supplier via email.
-    Updates status to 'sent'.
+    Send order to supplier.
+    - Generates order document (formatted for supplier)
+    - Updates status to 'sent'
+    - Returns formatted order data for export/email
     """
     user_id = str(current_user.id)
     
-    # Get order with items
+    # Get order with full details
     order_result = supabase.table('orders') \
-        .select('*, supplier:suppliers(*)') \
+        .select('*, supplier:suppliers(*), items:order_items(*, product:products(*))') \
         .eq('id', order_id) \
         .eq('user_id', user_id) \
         .single() \
@@ -560,19 +638,234 @@ async def send_order(
         raise HTTPException(404, "Order not found")
     
     order = order_result.data
+    items = order.get('items', []) or []
     
-    # TODO: Send email to supplier
-    # For now, just update status
+    if not items:
+        raise HTTPException(400, "Order has no items")
     
+    # Format order for supplier
+    supplier = order.get('supplier', {})
+    supplier_name = supplier.get('name', 'Supplier') if supplier else 'Supplier'
+    supplier_email = request.recipient_email or (supplier.get('contact_email') if supplier else None)
+    
+    # Build formatted order document
+    formatted_order = {
+        'order_id': order.get('id'),
+        'order_date': order.get('created_at'),
+        'supplier': {
+            'name': supplier_name,
+            'contact_email': supplier_email,
+            'contact_name': supplier.get('contact_name') if supplier else None,
+        },
+        'items': [],
+        'totals': {
+            'subtotal': 0.0,
+            'total_discount': 0.0,
+            'total': 0.0
+        },
+        'notes': order.get('notes')
+    }
+    
+    # Format items for supplier
+    subtotal = 0.0
+    total_discount = 0.0
+    
+    for item in items:
+        product = item.get('product', {})
+        quantity = item.get('quantity', 1)
+        unit_cost = float(item.get('unit_cost', 0) or 0)
+        discount = float(item.get('discount', 0) or 0)
+        item_subtotal = (quantity * unit_cost) - discount
+        
+        formatted_item = {
+            'asin': product.get('asin', 'N/A'),
+            'upc': product.get('upc', 'N/A'),
+            'title': product.get('title') or product.get('supplier_title') or 'Product',
+            'quantity': quantity,
+            'unit_cost': round(unit_cost, 2),
+            'discount': round(discount, 2),
+            'subtotal': round(item_subtotal, 2)
+        }
+        
+        formatted_order['items'].append(formatted_item)
+        subtotal += quantity * unit_cost
+        total_discount += discount
+    
+    formatted_order['totals']['subtotal'] = round(subtotal, 2)
+    formatted_order['totals']['total_discount'] = round(total_discount, 2)
+    formatted_order['totals']['total'] = round(subtotal - total_discount, 2)
+    
+    # Update order status
     supabase.table('orders').update({
         'status': 'sent',
         'sent_at': datetime.utcnow().isoformat(),
-        'sent_to': request.recipient_email or (order.get('supplier', {}).get('contact_email') if order.get('supplier') else None)
+        'sent_to': supplier_email
     }).eq('id', order_id).execute()
     
-    logger.info(f"📧 Order sent: {order_id}")
+    logger.info(f"📧 Order {order_id} sent to {supplier_name} ({supplier_email})")
     
     return {
         'success': True,
-        'message': f'Order sent to {order.get("supplier", {}).get("name", "supplier") if order.get("supplier") else "supplier"}'
+        'message': f'Order sent to {supplier_name}',
+        'order': formatted_order,
+        'export_formats': {
+            'csv': f'/api/v1/orders/{order_id}/export/csv',
+            'json': f'/api/v1/orders/{order_id}/export/json',
+            'pdf': f'/api/v1/orders/{order_id}/export/pdf'  # TODO: Implement PDF export
+        }
     }
+
+
+@router.get("/{order_id}/export/csv")
+async def export_order_csv(
+    order_id: str,
+    current_user=Depends(get_current_user)
+):
+    """
+    Export order as CSV for sending to supplier.
+    """
+    from fastapi.responses import Response
+    import csv
+    import io
+    
+    user_id = str(current_user.id)
+    
+    # Get order with full details
+    order_result = supabase.table('orders') \
+        .select('*, supplier:suppliers(*), items:order_items(*, product:products(*))') \
+        .eq('id', order_id) \
+        .eq('user_id', user_id) \
+        .single() \
+        .execute()
+    
+    if not order_result.data:
+        raise HTTPException(404, "Order not found")
+    
+    order = order_result.data
+    items = order.get('items', []) or []
+    supplier = order.get('supplier', {})
+    
+    # Create CSV
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Header
+    writer.writerow(['Purchase Order'])
+    writer.writerow(['Order ID:', order.get('id')])
+    writer.writerow(['Date:', order.get('created_at', '').split('T')[0]])
+    writer.writerow(['Supplier:', supplier.get('name', '') if supplier else ''])
+    if order.get('notes'):
+        writer.writerow(['Notes:', order.get('notes')])
+    writer.writerow([])
+    
+    # Items header
+    writer.writerow(['ASIN', 'UPC', 'Product Title', 'Quantity', 'Unit Cost', 'Discount', 'Subtotal'])
+    
+    # Items
+    total = 0.0
+    for item in items:
+        product = item.get('product', {})
+        quantity = item.get('quantity', 1)
+        unit_cost = float(item.get('unit_cost', 0) or 0)
+        discount = float(item.get('discount', 0) or 0)
+        subtotal = (quantity * unit_cost) - discount
+        total += subtotal
+        
+        writer.writerow([
+            product.get('asin', ''),
+            product.get('upc', ''),
+            product.get('title') or product.get('supplier_title') or '',
+            quantity,
+            f"${unit_cost:.2f}",
+            f"${discount:.2f}",
+            f"${subtotal:.2f}"
+        ])
+    
+    writer.writerow([])
+    writer.writerow(['Total:', f"${total:.2f}"])
+    
+    csv_content = output.getvalue()
+    output.close()
+    
+    return Response(
+        content=csv_content,
+        media_type='text/csv',
+        headers={
+            'Content-Disposition': f'attachment; filename="order_{order_id[:8]}.csv"'
+        }
+    )
+
+
+@router.get("/{order_id}/export/json")
+async def export_order_json(
+    order_id: str,
+    current_user=Depends(get_current_user)
+):
+    """
+    Export order as JSON for sending to supplier.
+    """
+    from fastapi.responses import JSONResponse
+    
+    user_id = str(current_user.id)
+    
+    # Get order with full details
+    order_result = supabase.table('orders') \
+        .select('*, supplier:suppliers(*), items:order_items(*, product:products(*))') \
+        .eq('id', order_id) \
+        .eq('user_id', user_id) \
+        .single() \
+        .execute()
+    
+    if not order_result.data:
+        raise HTTPException(404, "Order not found")
+    
+    order = order_result.data
+    items = order.get('items', []) or []
+    
+    # Format for export
+    export_data = {
+        'order_id': order.get('id'),
+        'order_date': order.get('created_at'),
+        'supplier': order.get('supplier', {}),
+        'items': [],
+        'totals': {
+            'subtotal': 0.0,
+            'total_discount': 0.0,
+            'total': 0.0
+        },
+        'notes': order.get('notes')
+    }
+    
+    subtotal = 0.0
+    total_discount = 0.0
+    
+    for item in items:
+        product = item.get('product', {})
+        quantity = item.get('quantity', 1)
+        unit_cost = float(item.get('unit_cost', 0) or 0)
+        discount = float(item.get('discount', 0) or 0)
+        item_subtotal = (quantity * unit_cost) - discount
+        
+        export_data['items'].append({
+            'asin': product.get('asin'),
+            'upc': product.get('upc'),
+            'title': product.get('title') or product.get('supplier_title'),
+            'quantity': quantity,
+            'unit_cost': round(unit_cost, 2),
+            'discount': round(discount, 2),
+            'subtotal': round(item_subtotal, 2)
+        })
+        
+        subtotal += quantity * unit_cost
+        total_discount += discount
+    
+    export_data['totals']['subtotal'] = round(subtotal, 2)
+    export_data['totals']['total_discount'] = round(total_discount, 2)
+    export_data['totals']['total'] = round(subtotal - total_discount, 2)
+    
+    return JSONResponse(
+        content=export_data,
+        headers={
+            'Content-Disposition': f'attachment; filename="order_{order_id[:8]}.json"'
+        }
+    )

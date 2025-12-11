@@ -4,7 +4,7 @@ import {
   Box, Typography, Card, CardContent, Button, Chip, CircularProgress, IconButton,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper
 } from '@mui/material';
-import { Package, ExternalLink } from 'lucide-react';
+import { Package, ExternalLink, Send, RotateCcw, Download } from 'lucide-react';
 import api from '../services/api';
 import { useToast } from '../context/ToastContext';
 import { formatCurrency } from '../utils/formatters';
@@ -125,17 +125,19 @@ const Orders = () => {
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" fontFamily="monospace">
-                      {order.asin}
+                      {order.items && order.items.length > 0 
+                        ? `${order.items.length} item${order.items.length > 1 ? 's' : ''}`
+                        : order.asin || 'N/A'}
                     </Typography>
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2">
-                      {order.quantity}
+                      {order.items_count || order.quantity || 'N/A'}
                     </Typography>
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" fontWeight={600}>
-                      {formatCurrency(order.total_cost || (order.unit_cost * order.quantity))}
+                      {formatCurrency(order.total_amount || order.total_cost || 0)}
                     </Typography>
                   </TableCell>
                   <TableCell>
@@ -146,15 +148,84 @@ const Orders = () => {
                     />
                   </TableCell>
                   <TableCell>
-                    <IconButton
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/orders/${order.id}`);
-                      }}
-                    >
-                      <ExternalLink size={16} />
-                    </IconButton>
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/orders/${order.id}`);
+                        }}
+                        title="View Details"
+                      >
+                        <ExternalLink size={16} />
+                      </IconButton>
+                      {order.status === 'draft' && (
+                        <>
+                          <IconButton
+                            size="small"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              try {
+                                await api.post(`/orders/${order.id}/send`);
+                                showToast('Order sent to supplier', 'success');
+                                fetchOrders();
+                              } catch (err) {
+                                showToast('Failed to send order', 'error');
+                              }
+                            }}
+                            title="Send to Supplier"
+                            sx={{ color: habexa.purple.main }}
+                          >
+                            <Send size={16} />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (window.confirm('Revert this order back to buy list?')) {
+                                try {
+                                  await api.post(`/orders/${order.id}/revert-to-buy-list`);
+                                  showToast('Order reverted to buy list', 'success');
+                                  fetchOrders();
+                                } catch (err) {
+                                  showToast('Failed to revert order', 'error');
+                                }
+                              }
+                            }}
+                            title="Revert to Buy List"
+                            sx={{ color: habexa.warning?.main || '#ed6c02' }}
+                          >
+                            <RotateCcw size={16} />
+                          </IconButton>
+                        </>
+                      )}
+                      {(order.status === 'sent' || order.status === 'draft') && (
+                        <IconButton
+                          size="small"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            try {
+                              const response = await api.get(`/orders/${order.id}/export/csv`, {
+                                responseType: 'blob'
+                              });
+                              const url = window.URL.createObjectURL(new Blob([response.data]));
+                              const link = document.createElement('a');
+                              link.href = url;
+                              link.setAttribute('download', `order_${order.id.slice(0, 8)}.csv`);
+                              document.body.appendChild(link);
+                              link.click();
+                              link.remove();
+                              showToast('Order exported', 'success');
+                            } catch (err) {
+                              showToast('Failed to export order', 'error');
+                            }
+                          }}
+                          title="Export CSV"
+                        >
+                          <Download size={16} />
+                        </IconButton>
+                      )}
+                    </Box>
                   </TableCell>
                 </TableRow>
               ))}
