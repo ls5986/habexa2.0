@@ -701,8 +701,10 @@ export default function Products() {
           
           console.log('✅ Opening ASIN selection dialog for:', dealFormat);
           
-          // Auto-open modal for first product
-          setAsinSelectionDialog({ open: true, product: dealFormat });
+          // Auto-open modal for first product and fetch details
+          setAsinSelectionDialog({ open: true, product: dealFormat, asinDetails: [] });
+          // Fetch ASIN details
+          fetchAsinDetails(dealFormat);
         } else {
           console.log('✅ No products need ASIN selection');
         }
