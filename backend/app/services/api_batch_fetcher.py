@@ -101,21 +101,22 @@ class APIBatchFetcher:
             try:
                 logger.info(f"  📡 SP-API Batch {batch_num}/{total_batches}: Fetching {len(batch)} ASINs")
                 
-                # Call SP-API batch method
-                batch_response = await sp_api_client.get_catalog_items_batch(
+                # Call SP-API - returns dict of {asin: {processed, raw}}
+                response = await sp_api_client.get_catalog_items(
                     asins=batch,
                     marketplace_id='ATVPDKIKX0DER',
-                    rate_limit=5  # 5 req/sec limit
+                    included_data=['summaries', 'images', 'attributes', 'salesRanks']
                 )
                 
-                # Store each item (get_catalog_items_batch returns Dict[asin, item])
-                if batch_response:
-                    for asin, item in batch_response.items():
-                        if asin and item:
-                            sp_data[asin] = item
-                            results['sp_api_success'] += 1
+                # Store both processed and raw
+                for asin, data in response.items():
+                    if data:
+                        sp_data[asin] = data
+                        results['sp_api_success'] += 1
+                        raw_size = len(str(data.get('raw', {})))
+                        logger.debug(f"    ✓ {asin}: {raw_size} chars raw response")
                 
-                logger.info(f"  ✅ Batch {batch_num} complete: {len(batch_response)} items")
+                logger.info(f"  ✅ Batch {batch_num} complete: {len(response)} items")
                 
                 # Rate limit protection (avoid throttling)
                 await asyncio.sleep(0.2)
@@ -203,9 +204,20 @@ class APIBatchFetcher:
                 # ===== EXTRACT SP-API DATA =====
                 if asin in sp_data:
                     try:
-                        sp_extracted = SPAPIExtractor.extract_all(sp_data[asin])
-                        update_data.update(sp_extracted)
-                        update_data['sp_api_raw_response'] = sp_data[asin]
+                        # Use the RAW response for extraction
+                        sp_item = sp_data[asin]
+                        if isinstance(sp_item, dict) and 'raw' in sp_item:
+                            # New format: {processed, raw}
+                            raw_response = sp_item['raw']
+                            sp_extracted = SPAPIExtractor.extract_all(raw_response)
+                            update_data.update(sp_extracted)
+                            update_data['sp_api_raw_response'] = raw_response
+                        else:
+                            # Legacy format or direct response
+                            sp_extracted = SPAPIExtractor.extract_all(sp_item)
+                            update_data.update(sp_extracted)
+                            update_data['sp_api_raw_response'] = sp_item
+                        
                         update_data['sp_api_last_fetched'] = datetime.utcnow().isoformat()
                         logger.debug(f"    {asin}: Extracted {len(sp_extracted)} SP-API fields")
                     except Exception as e:

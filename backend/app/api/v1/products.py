@@ -3332,6 +3332,88 @@ async def get_product_api_data(
         raise HTTPException(500, str(e))
 
 
+@router.get("/asin-details/{asin}")
+async def get_asin_details_for_selection(
+    asin: str,
+    current_user = Depends(get_current_user)
+):
+    """
+    Get product details for ASIN selection modal.
+    Fetches from Keepa if not in database.
+    """
+    user_id = str(current_user.id)
+    
+    try:
+        # First check if we have it in DB
+        existing = supabase.table('products').select(
+            'title, image_url, current_sales_rank, fba_seller_count, seller_count, brand, category'
+        ).eq('asin', asin).eq('user_id', user_id).execute()
+        
+        if existing.data and len(existing.data) > 0:
+            return {
+                'asin': asin,
+                'source': 'database',
+                **existing.data[0]
+            }
+        
+        # Not in DB - fetch from Keepa
+        logger.info(f"📡 Fetching Keepa data for ASIN selection: {asin}")
+        
+        from app.services.keepa_client import get_keepa_client
+        keepa_client = get_keepa_client()
+        
+        if not keepa_client or not keepa_client.is_configured():
+            raise HTTPException(503, "Keepa not configured")
+        
+        keepa_response = await keepa_client.query(asins=[asin])
+        
+        if keepa_response and keepa_response.get('products'):
+            product = keepa_response['products'][0]
+            
+            # Extract basic info for the modal
+            image_url = None
+            if product.get('imagesCSV'):
+                image_ids = product['imagesCSV'].split(',')
+                if image_ids and image_ids[0]:
+                    image_url = f"https://images-na.ssl-images-amazon.com/images/I/{image_ids[0]}"
+            
+            # Get current sales rank
+            current_sales_rank = None
+            if product.get('salesRanks'):
+                for category_id, rank_history in product['salesRanks'].items():
+                    if rank_history and len(rank_history) >= 2:
+                        current_sales_rank = rank_history[-1]
+                        break
+            
+            # Get rating (Keepa returns rating * 10)
+            rating = product.get('rating')
+            rating_average = None
+            if rating is not None:
+                rating_average = rating / 10.0 if rating > 10 else rating
+            
+            return {
+                'asin': asin,
+                'source': 'keepa',
+                'title': product.get('title'),
+                'image_url': image_url,
+                'current_sales_rank': current_sales_rank,
+                'fba_seller_count': product.get('fbaOfferCount'),
+                'seller_count': product.get('offerCount'),
+                'rating_average': rating_average,
+                'review_count': product.get('reviewCount'),
+                'brand': product.get('brand'),
+                'category': product.get('productGroup')
+            }
+        
+        raise HTTPException(404, "Product not found in Keepa")
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get ASIN details: {e}", exc_info=True)
+        raise HTTPException(500, str(e))
+
+
 @router.get("/pending-asin-selection")
 async def get_products_pending_asin_selection(
     current_user = Depends(get_current_user)

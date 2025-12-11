@@ -448,8 +448,15 @@ class KeepaExtractor:
                         )
             
             # ===== RATINGS & REVIEWS =====
-            extracted['rating_average'] = product.get('rating')
-            extracted['review_count'] = product.get('reviewCount')
+            # FIX: rating is already a number, not a dict
+            rating = product.get('rating')
+            if rating is not None:
+                # Keepa returns rating * 10 (e.g., 45 = 4.5 stars)
+                extracted['rating_average'] = rating / 10.0 if rating > 10 else rating
+            
+            review_count = product.get('reviewCount')
+            if review_count is not None:
+                extracted['review_count'] = review_count
             
             if product.get('reviews'):
                 extracted['review_velocity'] = KeepaExtractor._calc_review_velocity(
@@ -457,8 +464,21 @@ class KeepaExtractor:
                 )
             
             # ===== FEES =====
-            if product.get('fbaFees'):
-                extracted['fba_fees'] = product['fbaFees'] / 100
+            # FIX: fbaFees can be dict or number
+            fba_fees = product.get('fbaFees')
+            if fba_fees is not None:
+                if isinstance(fba_fees, dict):
+                    # If it's a dict, try to get 'pickAndPackFee' or similar
+                    pick_pack = fba_fees.get('pickAndPackFee', 0)
+                    if isinstance(pick_pack, (int, float)):
+                        extracted['fba_fees'] = pick_pack / 100
+                    else:
+                        # Try to get total or first numeric value
+                        total = fba_fees.get('total', 0)
+                        if isinstance(total, (int, float)):
+                            extracted['fba_fees'] = total / 100
+                elif isinstance(fba_fees, (int, float)):
+                    extracted['fba_fees'] = fba_fees / 100
             
             # ===== SELLER COUNTS =====
             extracted['seller_count'] = product.get('offerCount', 0)

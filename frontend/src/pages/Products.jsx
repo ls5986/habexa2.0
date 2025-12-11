@@ -608,37 +608,28 @@ export default function Products() {
     }
     
     try {
-      // Fetch product details for each ASIN using search endpoint
+      // Fetch product details for each ASIN using the new endpoint (fetches from DB or Keepa)
       const detailPromises = asinStrings.map(async (asin) => {
         try {
-          // Search for products with this ASIN
-          const response = await api.get(`/products?search=${asin}&limit=1`);
-          if (response.data && response.data.deals && response.data.deals.length > 0) {
-            const productData = response.data.deals[0];
-            return {
-              asin,
-              title: productData.title || productData.supplier_title,
-              image_url: productData.image_url,
-              brand: productData.brand,
-              category: productData.category,
-              bsr: productData.bsr || productData.current_sales_rank,
-              seller_count: productData.seller_count,
-              fba_seller_count: productData.fba_seller_count
-            };
-          }
+          // Use the new endpoint that fetches from DB or Keepa
+          const response = await api.get(`/products/asin-details/${asin}`);
+          return response.data;
         } catch (err) {
-          // Product doesn't exist in our DB, that's okay
-          console.debug(`Product ${asin} not found in our DB`);
+          // Product doesn't exist in our DB or Keepa, that's okay
+          console.debug(`Product ${asin} not found:`, err);
+          // Return minimal info on error
+          return {
+            asin,
+            title: null,
+            image_url: null,
+            brand: null,
+            category: null,
+            current_sales_rank: null,
+            fba_seller_count: null,
+            seller_count: null,
+            source: 'error'
+          };
         }
-        
-        // If not in our DB, return basic info (we'll show what we have from potential_asins)
-        return {
-          asin,
-          title: null,
-          image_url: null,
-          brand: null,
-          category: null
-        };
       });
       
       const details = await Promise.all(detailPromises);

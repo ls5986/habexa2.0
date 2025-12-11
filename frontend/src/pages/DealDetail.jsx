@@ -9,6 +9,7 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import {
   ArrowLeft, ArrowRight, Copy, ExternalLink, RefreshCw, Star,
   TrendingUp, Package, Calculator, BarChart2, Users, Layers,
@@ -1049,7 +1050,7 @@ export default function DealDetail() {
                             {apiData.sp_api?.has_data ? (
                               <CheckCircleIcon color="success" sx={{ ml: 1, verticalAlign: 'middle', fontSize: 20 }} />
                             ) : (
-                              <ErrorIcon color="error" sx={{ ml: 1, verticalAlign: 'middle', fontSize: 20 }} />
+                              <ErrorOutlineIcon color="error" sx={{ ml: 1, verticalAlign: 'middle', fontSize: 20 }} />
                             )}
                               </Typography>
                               
@@ -1107,7 +1108,7 @@ export default function DealDetail() {
                             {apiData.keepa?.has_data ? (
                               <CheckCircleIcon color="success" sx={{ ml: 1, verticalAlign: 'middle', fontSize: 20 }} />
                             ) : (
-                              <ErrorIcon color="error" sx={{ ml: 1, verticalAlign: 'middle', fontSize: 20 }} />
+                              <ErrorOutlineIcon color="error" sx={{ ml: 1, verticalAlign: 'middle', fontSize: 20 }} />
                             )}
                               </Typography>
                               

@@ -544,10 +544,20 @@ class SPAPIClient:
         
         return data
     
-    async def get_catalog_item(self, asin: str, marketplace_id: str = "ATVPDKIKX0DER") -> Optional[dict]:
-        """Get catalog item details - PUBLIC DATA with caching."""
+    async def get_catalog_item(
+        self, 
+        asin: str, 
+        marketplace_id: str = "ATVPDKIKX0DER",
+        included_data: List[str] = None
+    ) -> Optional[dict]:
+        """
+        Get catalog item details - PUBLIC DATA with caching.
+        Returns BOTH processed dict AND raw response for storage.
+        """
         if not self.app_configured:
             return None
+        
+        included_data = included_data or ['summaries', 'images', 'attributes', 'salesRanks']
         
         # IMPROVEMENT 4: Check cache first
         try:
@@ -556,30 +566,36 @@ class SPAPIClient:
             cached_data = cache.get(cache_key)
             if cached_data:
                 logger.info(f"✅ Cache hit for catalog:{asin}")
-                return cached_data
+                # If cached data is old format, return it as processed
+                if 'processed' in cached_data:
+                    return cached_data
+                # Legacy format - wrap it
+                return {'processed': cached_data, 'raw': cached_data}
         except Exception as e:
             logger.debug(f"Cache check failed: {e}")
         
         logger.info(f"📡 Cache miss, fetching from SP-API: {asin}")
         
-        data = await self._request(
+        # Make the API call - this returns the RAW response
+        raw_data = await self._request(
             "GET",
             f"/catalog/2022-04-01/items/{asin}",
             marketplace_id,
             limiter_name="catalog",
             params={
                 "marketplaceIds": marketplace_id,
-                "includedData": "summaries,images,salesRanks"
+                "includedData": ",".join(included_data)
             }
         )
         
-        if not data:
+        if not raw_data:
             return None
         
-        summaries = data.get("summaries", [])
+        # Extract processed data from raw response
+        summaries = raw_data.get("summaries", [])
         summary = summaries[0] if summaries else {}
         
-        images = data.get("images", [])
+        images = raw_data.get("images", [])
         main_image = None
         if images:
             for img_set in images:
@@ -588,7 +604,7 @@ class SPAPIClient:
                         main_image = img.get("link")
                         break
         
-        sales_ranks = data.get("salesRanks", [])
+        sales_ranks = raw_data.get("salesRanks", [])
         bsr = None
         if sales_ranks:
             for rank in sales_ranks:
@@ -597,15 +613,21 @@ class SPAPIClient:
                     bsr = display_ranks[0].get("rank")
                     break
         
-        result = {
+        processed = {
             "asin": asin,
             "title": summary.get("itemName"),
-            "brand": summary.get("brand"),
+            "brand": summary.get("brandName") or summary.get("brand"),
             "image_url": main_image,
             "sales_rank": bsr,
             "sales_rank_category": summary.get("websiteDisplayGroup"),
             "parentAsin": summary.get("parentAsin"),  # For variation detection
             "isPrimeEligible": summary.get("isPrimeEligible", False)
+        }
+        
+        # Return BOTH processed and raw
+        result = {
+            "processed": processed,
+            "raw": raw_data  # Store the raw response for extraction
         }
         
         # Cache for 24 hours
@@ -1086,20 +1108,22 @@ class SPAPIClient:
         
         return results
     
-    async def get_catalog_items_batch(
+    async def get_catalog_items(
         self,
         asins: List[str],
         marketplace_id: str = "ATVPDKIKX0DER",
+        included_data: List[str] = None,
         rate_limit: int = 5  # SP-API limit: 5 req/sec
     ) -> Dict[str, dict]:
         """
         Get catalog items for multiple ASINs with rate limiting.
-        IMPROVEMENT 6: Rate limiting for batch catalog calls.
+        Returns dict mapping ASIN -> {processed, raw}
         Note: SP-API catalog doesn't support batching, so we parallelize with semaphore.
         """
         if not self.app_configured or not asins:
             return {}
         
+        included_data = included_data or ['summaries', 'images', 'attributes', 'salesRanks']
         asin_list = asins[:20]  # Limit to 20 for reasonable parallelization
         results = {}
         
@@ -1111,7 +1135,7 @@ class SPAPIClient:
                 # 200ms delay between requests (5 req/sec)
                 await asyncio.sleep(0.2)
                 try:
-                    catalog = await self.get_catalog_item(asin, marketplace_id)
+                    catalog = await self.get_catalog_item(asin, marketplace_id, included_data)
                     return asin, catalog
                 except Exception as e:
                     logger.error(f"Failed to fetch catalog for {asin}: {e}")
@@ -1131,6 +1155,18 @@ class SPAPIClient:
         
         logger.info(f"✅ Batch catalog: {len(results)}/{len(asin_list)} ASINs")
         return results
+    
+    async def get_catalog_items_batch(
+        self,
+        asins: List[str],
+        marketplace_id: str = "ATVPDKIKX0DER",
+        rate_limit: int = 5  # SP-API limit: 5 req/sec
+    ) -> Dict[str, dict]:
+        """
+        DEPRECATED: Use get_catalog_items instead.
+        Kept for backward compatibility.
+        """
+        return await self.get_catalog_items(asins, marketplace_id, None, rate_limit)
     
 
 
