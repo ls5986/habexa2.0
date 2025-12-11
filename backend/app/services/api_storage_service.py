@@ -111,27 +111,28 @@ async def fetch_and_store_keepa_data(asin: str, force_refresh: bool = False) -> 
             logger.warning(f"⚠️ Keepa not configured, skipping")
             return {}
         
-        # Get product data - we need the full API response for raw storage
-        # Keepa client's get_products_batch returns processed data, but we need raw
-        # For now, we'll store what we get and enhance keepa_client later to return raw
-        keepa_response_dict = await keepa_client.get_products_batch([asin], days=90)
+        # Get product data with raw response
+        keepa_response = await keepa_client.get_products_batch([asin], days=90, return_raw=True)
         
-        if not keepa_response_dict or asin not in keepa_response_dict:
+        if not keepa_response or 'raw_response' not in keepa_response:
             logger.warning(f"⚠️ No Keepa data returned for {asin}")
             return {}
         
-        # Get the processed product data
-        product_data = keepa_response_dict[asin]
+        # Get the raw API response for storage
+        raw_response = keepa_response['raw_response']
+        products = keepa_response.get('products', [])
         
-        # Construct full response structure for raw storage
-        # Note: This is the processed format - ideally keepa_client would return raw
-        full_response = {
-            'products': [product_data] if product_data else [],
-            'tokensLeft': None  # Would need to get from actual API response
-        }
+        if not products or len(products) == 0:
+            logger.warning(f"⚠️ No products in Keepa response for {asin}")
+            return {}
+        
+        # Get the product data (first product should be our ASIN)
+        product_data = products[0]
         
         # Extract structured data + store raw response
-        structured_data = extract_keepa_structured_data(full_response, asin)
+        # Construct response structure for extractor (expects {'products': [...]})
+        response_for_extractor = {'products': [product_data]}
+        structured_data = extract_keepa_structured_data(response_for_extractor, asin)
         structured_data['asin'] = asin
         
         # Merge with existing product data

@@ -33,7 +33,7 @@ class KeepaClient:
         results = await self.get_products_batch([asin], days)
         return results.get(asin)
     
-    async def get_products_batch(self, asins: List[str], days: int = 90, domain: int = 1, history: bool = False) -> Dict[str, Dict]:
+    async def get_products_batch(self, asins: List[str], days: int = 90, domain: int = 1, history: bool = False, return_raw: bool = False) -> Dict[str, Any]:
         """
         Batch fetch multiple ASINs in one API call.
         Keepa allows up to 100 ASINs per request.
@@ -78,6 +78,14 @@ class KeepaClient:
                     products = []
                 
                 logger.info(f"📦 Keepa returned {len(products)} products, tokens left: {data.get('tokensLeft')}")
+                
+                # If return_raw is True, return the full raw response
+                if return_raw:
+                    return {
+                        'raw_response': data,
+                        'products': products,
+                        'tokens_left': data.get('tokensLeft')
+                    }
                 
                 if not products:
                     logger.warning(f"⚠️ No products in response. Response keys: {list(data.keys())}")
