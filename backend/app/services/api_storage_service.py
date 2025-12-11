@@ -1,0 +1,203 @@
+"""
+API Storage Service
+
+Manages fetching and storing complete API data (SP-API + Keepa).
+Implements caching to avoid duplicate API calls.
+"""
+import logging
+from datetime import datetime
+from typing import Dict, Any, Optional
+from app.services.supabase_client import supabase
+from app.services.sp_api_client import sp_api_client
+from app.services.keepa_client import get_keepa_client
+from app.services.api_data_extractor import (
+    extract_sp_api_structured_data,
+    extract_keepa_structured_data,
+    should_refresh_sp_data,
+    should_refresh_keepa_data
+)
+
+logger = logging.getLogger(__name__)
+
+
+async def fetch_and_store_sp_api_data(asin: str, force_refresh: bool = False) -> Dict[str, Any]:
+    """
+    Fetch product details from SP-API and store everything.
+    Checks cache first to avoid duplicate API calls.
+    
+    Returns: Dict with all extracted data + raw response
+    """
+    # Check if we already have fresh data
+    if not force_refresh:
+        try:
+            existing = supabase.table('products')\
+                .select('*')\
+                .eq('asin', asin)\
+                .limit(1)\
+                .execute()
+            
+            if existing.data and len(existing.data) > 0:
+                product = existing.data[0]
+                if not should_refresh_sp_data(product):
+                    age_hours = _get_data_age_hours(product.get('sp_api_last_fetched'))
+                    logger.info(f"✅ Using cached SP-API data for {asin} (age: {age_hours:.1f}h)")
+                    return product
+        except Exception as e:
+            logger.warning(f"Error checking SP-API cache: {e}")
+    
+    # Make the API call
+    logger.info(f"📡 Fetching fresh SP-API data for {asin}")
+    try:
+        # Use get_catalog_item to get full product data
+        sp_response = await sp_api_client.get_catalog_item(asin, marketplace_id="ATVPDKIKX0DER")
+        
+        if not sp_response:
+            logger.warning(f"⚠️ No SP-API data returned for {asin}")
+            return {}
+        
+        # get_catalog_item returns the item directly
+        item = sp_response
+        
+        # Extract structured data + store raw response
+        product_data = extract_sp_api_structured_data(item)
+        product_data['asin'] = asin
+        
+        # Update or insert
+        result = supabase.table('products')\
+            .upsert(product_data, on_conflict='asin')\
+            .execute()
+        
+        logger.info(f"✅ Stored complete SP-API data for {asin}")
+        return result.data[0] if result.data else product_data
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to fetch SP-API data for {asin}: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return {}
+
+
+async def fetch_and_store_keepa_data(asin: str, force_refresh: bool = False) -> Dict[str, Any]:
+    """
+    Fetch data from Keepa API and store everything.
+    Checks cache first to avoid duplicate API calls.
+    
+    Returns: Dict with all extracted data + raw response
+    """
+    # Check if we already have fresh data
+    if not force_refresh:
+        try:
+            existing = supabase.table('products')\
+                .select('*')\
+                .eq('asin', asin)\
+                .limit(1)\
+                .execute()
+            
+            if existing.data and len(existing.data) > 0:
+                product = existing.data[0]
+                if not should_refresh_keepa_data(product):
+                    age_hours = _get_data_age_hours(product.get('keepa_last_fetched'))
+                    logger.info(f"✅ Using cached Keepa data for {asin} (age: {age_hours:.1f}h)")
+                    return product
+        except Exception as e:
+            logger.warning(f"Error checking Keepa cache: {e}")
+    
+    # Make the API call
+    logger.info(f"📡 Fetching fresh Keepa data for {asin}")
+    try:
+        keepa_client = get_keepa_client()
+        
+        if not keepa_client.is_configured():
+            logger.warning(f"⚠️ Keepa not configured, skipping")
+            return {}
+        
+        # Get product data (returns dict with 'products' array)
+        keepa_response = await keepa_client.get_products_batch([asin], days=90)
+        
+        if not keepa_response or asin not in keepa_response:
+            logger.warning(f"⚠️ No Keepa data returned for {asin}")
+            return {}
+        
+        # Keepa client returns {asin: {...}} format, but we need full response for raw storage
+        # Re-fetch to get full response structure
+        # Actually, we need to modify keepa_client to return the full response
+        # For now, construct the response structure
+        product_data = keepa_response[asin]
+        
+        # Construct full response for raw storage
+        full_response = {
+            'products': [product_data] if product_data else [],
+            'tokensLeft': None  # Would need to get from actual API response
+        }
+        
+        # Extract structured data + store raw response
+        structured_data = extract_keepa_structured_data(full_response, asin)
+        structured_data['asin'] = asin
+        
+        # Merge with existing product data
+        try:
+            existing = supabase.table('products')\
+                .select('*')\
+                .eq('asin', asin)\
+                .limit(1)\
+                .execute()
+            
+            if existing.data and len(existing.data) > 0:
+                # Update existing
+                result = supabase.table('products')\
+                    .update(structured_data)\
+                    .eq('asin', asin)\
+                    .execute()
+            else:
+                # Insert new
+                result = supabase.table('products')\
+                    .insert(structured_data)\
+                    .execute()
+        except Exception as e:
+            logger.error(f"Error storing Keepa data: {e}")
+            return structured_data
+        
+        logger.info(f"✅ Stored complete Keepa data for {asin}")
+        return result.data[0] if result.data else structured_data
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to fetch Keepa data for {asin}: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return {}
+
+
+async def fetch_and_store_all_api_data(asin: str, force_refresh: bool = False) -> Dict[str, Any]:
+    """
+    Fetch and store data from BOTH SP-API and Keepa.
+    This is the main function to call when you need complete product data.
+    
+    Returns: Merged dict with all data from both APIs
+    """
+    logger.info(f"🔍 Fetching complete API data for {asin} (force_refresh={force_refresh})")
+    
+    # Fetch both in parallel
+    sp_data = await fetch_and_store_sp_api_data(asin, force_refresh=force_refresh)
+    keepa_data = await fetch_and_store_keepa_data(asin, force_refresh=force_refresh)
+    
+    # Merge data (keepa takes precedence for overlapping fields)
+    merged = {**sp_data, **keepa_data}
+    merged['asin'] = asin
+    
+    return merged
+
+
+def _get_data_age_hours(last_fetched: Optional[str]) -> float:
+    """Calculate age of data in hours."""
+    if not last_fetched:
+        return float('inf')
+    
+    try:
+        if isinstance(last_fetched, str):
+            last_fetched = last_fetched.replace('Z', '+00:00')
+        last_fetched_dt = datetime.fromisoformat(last_fetched)
+        age_hours = (datetime.utcnow() - last_fetched_dt.replace(tzinfo=None)).total_seconds() / 3600
+        return age_hours
+    except Exception:
+        return float('inf')
+
