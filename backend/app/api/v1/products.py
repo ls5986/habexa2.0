@@ -3236,13 +3236,23 @@ async def select_asin(
         if not isinstance(potential_asins, list):
             potential_asins = []
         
-        selected_asin_data = next(
-            (a for a in potential_asins if isinstance(a, dict) and a.get('asin') == request.asin),
-            None
-        )
+        # Handle both string and object formats for potential_asins
+        # Check if ASIN exists in the list (as string or in object.asin)
+        asin_found = False
+        selected_asin_data = None
         
-        if not selected_asin_data:
-            raise HTTPException(400, "Selected ASIN not in potential ASINs")
+        for a in potential_asins:
+            if isinstance(a, str) and a == request.asin:
+                asin_found = True
+                selected_asin_data = {'asin': a}  # Create minimal object
+                break
+            elif isinstance(a, dict) and a.get('asin') == request.asin:
+                asin_found = True
+                selected_asin_data = a
+                break
+        
+        if not asin_found:
+            raise HTTPException(400, f"Selected ASIN {request.asin} not in potential ASINs: {potential_asins}")
         
         # Update product with selected ASIN
         update_data = {

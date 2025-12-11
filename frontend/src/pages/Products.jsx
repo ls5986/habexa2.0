@@ -1263,7 +1263,15 @@ export default function Products() {
                 Select the one that matches your supplier's product.
               </Alert>
               <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2, mt: 2 }}>
-                {asinSelectionDialog.product.potential_asins?.map((asinOption) => (
+                {asinSelectionDialog.product.potential_asins?.map((asinOption) => {
+                  // Handle both string and object formats for potential_asins
+                  const asinValue = typeof asinOption === 'string' ? asinOption : asinOption.asin;
+                  const asinTitle = typeof asinOption === 'object' ? asinOption.title : null;
+                  const asinImage = typeof asinOption === 'object' ? asinOption.image : null;
+                  const asinBrand = typeof asinOption === 'object' ? asinOption.brand : null;
+                  const asinCategory = typeof asinOption === 'object' ? asinOption.category : null;
+                  
+                  return (
                   <Card
                     key={asinValue}
                     sx={{
