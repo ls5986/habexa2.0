@@ -197,6 +197,28 @@ class UPCConverter:
             logger.error(f"Error converting UPC {upc_clean} to ASINs: {e}", exc_info=True)
             return ([], "error")
     
+    async def _try_upc_lookup(self, upc: str, marketplace_id: str = "ATVPDKIKX0DER") -> Optional[dict]:
+        """
+        Try to lookup a single UPC using SP-API and return the result dict.
+        
+        Args:
+            upc: The UPC code to lookup
+            marketplace_id: Amazon marketplace ID
+            
+        Returns:
+            SP-API result dict if found, None otherwise
+        """
+        try:
+            result = await sp_api_client.search_catalog_items(
+                identifiers=[upc],
+                identifiers_type="UPC",
+                marketplace_id=marketplace_id
+            )
+            return result
+        except Exception as e:
+            logger.warning(f"SP-API lookup failed for UPC {upc}: {e}")
+            return None
+    
     async def upcs_to_asins_batch(
         self,
         upcs: List[str],
