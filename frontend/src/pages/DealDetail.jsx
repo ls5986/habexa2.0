@@ -7,6 +7,8 @@ import {
   AccordionDetails, InputAdornment, Alert, AlertTitle
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
 import {
   ArrowLeft, ArrowRight, Copy, ExternalLink, RefreshCw, Star,
   TrendingUp, Package, Calculator, BarChart2, Users, Layers,
