@@ -72,6 +72,7 @@ class APIBatchFetcher:
         
         # Filter out invalid ASINs (PENDING_, Unknown, etc.)
         valid_asins = []
+        invalid_count = 0
         for asin in asins:
             if asin and isinstance(asin, str):
                 asin_clean = asin.strip().upper()
@@ -81,11 +82,12 @@ class APIBatchFetcher:
                     len(asin_clean) == 10):
                     valid_asins.append(asin_clean)
                 else:
+                    invalid_count += 1
                     logger.warning(f"⚠️ Skipping invalid ASIN: {asin}")
-                    results['errors'].append(f"Invalid ASIN: {asin} (needs valid ASIN to process)")
         
         if not valid_asins:
-            logger.error("❌ No valid ASINs to process. All ASINs were invalid (PENDING_, Unknown, or wrong length).")
+            error_msg = 'No valid ASINs to process. Products need valid ASINs before API data can be fetched.'
+            logger.error(f"❌ {error_msg} ({invalid_count} invalid ASINs filtered)")
             return {
                 'total': len(asins),
                 'sp_api_success': 0,
@@ -93,13 +95,13 @@ class APIBatchFetcher:
                 'keepa_success': 0,
                 'keepa_failed': 0,
                 'updated': 0,
-                'errors': ['No valid ASINs to process. Products need valid ASINs before API data can be fetched.'],
+                'errors': [error_msg],
                 'duration_seconds': 0
             }
         
         # Remove duplicates
         asins = list(set(valid_asins))
-        logger.info(f"📊 Valid unique ASINs: {len(asins)} (filtered from {len(asins) + len([a for a in asins if a not in valid_asins])} total)")
+        logger.info(f"📊 Valid unique ASINs: {len(asins)} (filtered {invalid_count} invalid)")
         
         logger.warning(f"🔥 API BATCH FETCHER STARTED: {len(asins)} ASINs for user {user_id}")
         
@@ -210,12 +212,12 @@ class APIBatchFetcher:
                     await asyncio.sleep(0.2)
                     
                 except Exception as e:
-                logger.error(f"  ❌ Keepa batch {batch_num} failed: {e}", exc_info=True)
-                results['keepa_failed'] += len(batch)
-                results['errors'].append(f"Keepa batch {batch_num}: {str(e)}")
-                
-                # Continue with other batches
-                continue
+                    logger.error(f"  ❌ Keepa batch {batch_num} failed: {e}", exc_info=True)
+                    results['keepa_failed'] += len(batch)
+                    results['errors'].append(f"Keepa batch {batch_num}: {str(e)}")
+                    
+                    # Continue with other batches
+                    continue
         
         logger.warning(f"✅ KEEPA COMPLETE: {results['keepa_success']}/{len(asins)} successful")
         
@@ -258,6 +260,8 @@ class APIBatchFetcher:
                 if asin in keepa_data:
                     try:
                         keepa_item = keepa_data[asin]
+                        product_data = keepa_item.get('product', {})
+                        raw_response = keepa_item.get('raw_response', {})
                         
                         # Handle different Keepa response structures
                         if isinstance(keepa_item, dict):
