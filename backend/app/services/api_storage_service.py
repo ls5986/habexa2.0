@@ -111,20 +111,20 @@ async def fetch_and_store_keepa_data(asin: str, force_refresh: bool = False) -> 
             logger.warning(f"⚠️ Keepa not configured, skipping")
             return {}
         
-        # Get product data (returns dict with 'products' array)
-        keepa_response = await keepa_client.get_products_batch([asin], days=90)
+        # Get product data - we need the full API response for raw storage
+        # Keepa client's get_products_batch returns processed data, but we need raw
+        # For now, we'll store what we get and enhance keepa_client later to return raw
+        keepa_response_dict = await keepa_client.get_products_batch([asin], days=90)
         
-        if not keepa_response or asin not in keepa_response:
+        if not keepa_response_dict or asin not in keepa_response_dict:
             logger.warning(f"⚠️ No Keepa data returned for {asin}")
             return {}
         
-        # Keepa client returns {asin: {...}} format, but we need full response for raw storage
-        # Re-fetch to get full response structure
-        # Actually, we need to modify keepa_client to return the full response
-        # For now, construct the response structure
-        product_data = keepa_response[asin]
+        # Get the processed product data
+        product_data = keepa_response_dict[asin]
         
-        # Construct full response for raw storage
+        # Construct full response structure for raw storage
+        # Note: This is the processed format - ideally keepa_client would return raw
         full_response = {
             'products': [product_data] if product_data else [],
             'tokensLeft': None  # Would need to get from actual API response

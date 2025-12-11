@@ -3514,6 +3514,91 @@ async def toggle_favorite(
         }
 
 
+@router.post("/products/{product_id}/refresh-api-data")
+async def refresh_product_api_data(
+    product_id: str,
+    force: bool = False,
+    current_user=Depends(get_current_user)
+):
+    """
+    Refresh API data for a specific product.
+    Use force=true to bypass cache and make fresh API calls.
+    """
+    user_id = str(current_user.id)
+    
+    # Get product
+    product_result = supabase.table('products')\
+        .select('*')\
+        .eq('id', product_id)\
+        .eq('user_id', user_id)\
+        .limit(1)\
+        .execute()
+    
+    if not product_result.data:
+        raise HTTPException(404, "Product not found")
+    
+    product = product_result.data[0]
+    asin = product.get('asin')
+    
+    if not asin or asin.startswith('PENDING_'):
+        raise HTTPException(400, "Product must have a valid ASIN")
+    
+    # Fetch fresh data
+    from app.services.api_storage_service import fetch_and_store_all_api_data, _get_data_age_hours
+    
+    try:
+        updated_data = await fetch_and_store_all_api_data(asin, force_refresh=force)
+        
+        sp_age = _get_data_age_hours(updated_data.get('sp_api_last_fetched'))
+        keepa_age = _get_data_age_hours(updated_data.get('keepa_last_fetched'))
+        
+        return {
+            "success": True,
+            "message": "API data refreshed",
+            "asin": asin,
+            "sp_api_age_hours": sp_age if sp_age != float('inf') else None,
+            "keepa_age_hours": keepa_age if keepa_age != float('inf') else None,
+        }
+    except Exception as e:
+        logger.error(f"Failed to refresh API data: {e}")
+        raise HTTPException(500, f"Failed to refresh API data: {str(e)}")
+
+
+@router.get("/products/{product_id}/raw-api-data")
+async def get_raw_api_data(
+    product_id: str,
+    current_user=Depends(get_current_user)
+):
+    """
+    Get the raw JSON responses from SP-API and Keepa for debugging/analysis.
+    """
+    user_id = str(current_user.id)
+    
+    product = supabase.table('products')\
+        .select('asin, sp_api_raw_response, keepa_raw_response, sp_api_last_fetched, keepa_last_fetched')\
+        .eq('id', product_id)\
+        .eq('user_id', user_id)\
+        .limit(1)\
+        .execute()
+    
+    if not product.data:
+        raise HTTPException(404, "Product not found")
+    
+    product_data = product.data[0]
+    
+    return {
+        "asin": product_data.get('asin'),
+        "sp_api": {
+            "data": product_data.get('sp_api_raw_response'),
+            "last_fetched": product_data.get('sp_api_last_fetched'),
+        },
+        "keepa": {
+            "data": product_data.get('keepa_raw_response'),
+            "last_fetched": product_data.get('keepa_last_fetched'),
+        }
+    }
+
+
 @router.post("/deal/{deal_id}/move-to-buy-list")
 async def move_to_buy_list(
     deal_id: str,
