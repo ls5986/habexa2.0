@@ -1191,7 +1191,11 @@ export default function Products() {
                 onUpdateMoq={handleUpdateMoq}
                 onDelete={handleDeleteClick}
                 onSetAsin={handleSetAsin}
-                onSelectAsin={(deal) => setAsinSelectionDialog({ open: true, product: deal })}
+                onSelectAsin={async (deal) => {
+                  setAsinSelectionDialog({ open: true, product: deal, asinDetails: [] });
+                  // Fetch product details for each potential ASIN
+                  await fetchAsinDetails(deal);
+                }}
                 onEnterAsin={(deal) => setManualAsinDialog({ open: true, product: deal, asinInput: '' })}
                 onOpenManualPrice={(deal, analysis) => setManualPriceDialog({ open: true, deal, analysis })}
                 onMoveToBuyList={handleMoveToBuyList}
