@@ -141,20 +141,54 @@ export default function DealDetail() {
 
   const [reanalyzing, setReanalyzing] = useState(false);
   
-  const handleReanalyze = async () => {
-    setReanalyzing(true);
+  const fetchApiData = async () => {
+    if (!deal?.product_id) {
+      setApiDataError('No product ID available');
+      return;
+    }
+    
+    setFetchingApiData(true);
+    setApiDataError(null);
+    
     try {
-      const response = await api.post(`/deals/${dealId}/reanalyze`);
-      // Show success message
-      alert(response.data.message || 'Product re-analysis queued. Refreshing in 3 seconds...');
+      const response = await api.get(`/products/${deal.product_id}/api-data`);
+      setApiData(response.data);
+    } catch (err) {
+      console.error('Failed to fetch API data:', err);
+      setApiDataError(err.response?.data?.detail || 'Failed to load API data');
+    } finally {
+      setFetchingApiData(false);
+    }
+  };
+  
+  const handleReanalyze = async () => {
+    if (!deal?.asin) {
+      setApiDataError('No ASIN available');
+      return;
+    }
+    
+    setReanalyzing(true);
+    setApiDataError(null);
+    setApiDataSuccess(null);
+    
+    try {
+      const response = await api.post(`/products/fetch-by-asin/${deal.asin}`);
       
-      // Wait 3 seconds then refresh to get updated data
-      setTimeout(() => {
-        fetchDeal();
-      }, 3000);
+      if (response.data.success) {
+        setApiDataSuccess(
+          `✅ Success! Fetched ${response.data.sp_api_fetched ? 'SP-API' : ''} ${response.data.keepa_fetched ? 'Keepa' : ''} data`
+        );
+        
+        // Reload API data to show new data
+        setTimeout(() => {
+          fetchApiData();
+        }, 2000);
+      } else {
+        setApiDataError('Fetch completed but no data was updated');
+      }
     } catch (err) {
       console.error('Reanalyze failed:', err);
-      alert('Re-analysis failed. Please try again.');
+      setApiDataError(err.response?.data?.detail || 'Failed to fetch API data. Please try again.');
     } finally {
       setReanalyzing(false);
     }
@@ -1011,12 +1045,12 @@ export default function DealDetail() {
                           <CardContent>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                               <Typography variant="h6">
-                                SP-API Response
-                                {apiData.sp_api?.has_data ? (
-                                  <CheckCircleIcon color="success" sx={{ ml: 1, verticalAlign: 'middle', fontSize: 20 }} />
-                                ) : (
-                                  <XCircle color="error" sx={{ ml: 1, verticalAlign: 'middle', fontSize: 20 }} />
-                                )}
+                            SP-API Response
+                            {apiData.sp_api?.has_data ? (
+                              <CheckCircleIcon color="success" sx={{ ml: 1, verticalAlign: 'middle', fontSize: 20 }} />
+                            ) : (
+                              <ErrorIcon color="error" sx={{ ml: 1, verticalAlign: 'middle', fontSize: 20 }} />
+                            )}
                               </Typography>
                               
                               {apiData.sp_api?.last_fetched && (
@@ -1069,12 +1103,12 @@ export default function DealDetail() {
                           <CardContent>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                               <Typography variant="h6">
-                                Keepa Response
-                                {apiData.keepa?.has_data ? (
-                                  <CheckCircleIcon color="success" sx={{ ml: 1, verticalAlign: 'middle', fontSize: 20 }} />
-                                ) : (
-                                  <XCircle color="error" sx={{ ml: 1, verticalAlign: 'middle', fontSize: 20 }} />
-                                )}
+                            Keepa Response
+                            {apiData.keepa?.has_data ? (
+                              <CheckCircleIcon color="success" sx={{ ml: 1, verticalAlign: 'middle', fontSize: 20 }} />
+                            ) : (
+                              <ErrorIcon color="error" sx={{ ml: 1, verticalAlign: 'middle', fontSize: 20 }} />
+                            )}
                               </Typography>
                               
                               {apiData.keepa?.last_fetched && (
@@ -1126,6 +1160,16 @@ export default function DealDetail() {
                   <Alert severity="info">
                     <AlertTitle>No Raw API Data Available</AlertTitle>
                     This product may not have been fetched from external APIs yet. Click "Fetch All API Data" above to fetch data from SP-API and Keepa.
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      sx={{ mt: 2 }}
+                      onClick={handleReanalyze}
+                      disabled={reanalyzing || !deal?.asin}
+                      startIcon={reanalyzing ? <CircularProgress size={16} /> : <RefreshCw size={16} />}
+                    >
+                      {reanalyzing ? 'Fetching...' : 'Fetch API Data Now'}
+                    </Button>
                   </Alert>
                 )}
               </Box>
