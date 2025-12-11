@@ -927,6 +927,110 @@ export default function DealDetail() {
             {activeTab === 6 && (
               <UploadDetailsPanel deal={deal} />
             )}
+
+            {/* API Data Tab - Raw JSON responses */}
+            {activeTab === 7 && (
+              <Box>
+                <Typography variant="h6" fontWeight={600} mb={2}>
+                  Raw API Data
+                </Typography>
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  <AlertTitle>Complete API Responses</AlertTitle>
+                  This shows the raw JSON responses from SP-API and Keepa for debugging and analysis.
+                </Alert>
+                
+                {deal?.raw_api_data ? (
+                  <Grid container spacing={2}>
+                    {/* SP-API Raw Response */}
+                    <Grid item xs={12} md={6}>
+                      <Card>
+                        <CardContent>
+                          <Typography variant="h6" gutterBottom>
+                            SP-API Raw Response
+                          </Typography>
+                          {deal.raw_api_data.sp_api?.last_fetched && (
+                            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                              Last fetched: {new Date(deal.raw_api_data.sp_api.last_fetched).toLocaleString()}
+                            </Typography>
+                          )}
+                          {deal.raw_api_data.sp_api?.raw_response ? (
+                            <Box sx={{ 
+                              bgcolor: 'grey.100', 
+                              p: 2, 
+                              borderRadius: 1, 
+                              maxHeight: 600, 
+                              overflow: 'auto',
+                              fontFamily: 'monospace',
+                              fontSize: '0.75rem'
+                            }}>
+                              <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                                {JSON.stringify(deal.raw_api_data.sp_api.raw_response, null, 2)}
+                              </pre>
+                            </Box>
+                          ) : (
+                            <Alert severity="warning">No SP-API data available</Alert>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </Grid>
+
+                    {/* Keepa Raw Response */}
+                    <Grid item xs={12} md={6}>
+                      <Card>
+                        <CardContent>
+                          <Typography variant="h6" gutterBottom>
+                            Keepa Raw Response
+                          </Typography>
+                          {deal.raw_api_data.keepa?.last_fetched && (
+                            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                              Last fetched: {new Date(deal.raw_api_data.keepa.last_fetched).toLocaleString()}
+                            </Typography>
+                          )}
+                          {deal.raw_api_data.keepa?.raw_response ? (
+                            <Box sx={{ 
+                              bgcolor: 'grey.100', 
+                              p: 2, 
+                              borderRadius: 1, 
+                              maxHeight: 600, 
+                              overflow: 'auto',
+                              fontFamily: 'monospace',
+                              fontSize: '0.75rem'
+                            }}>
+                              <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                                {JSON.stringify(deal.raw_api_data.keepa.raw_response, null, 2)}
+                              </pre>
+                            </Box>
+                          ) : (
+                            <Alert severity="warning">No Keepa data available</Alert>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  </Grid>
+                ) : (
+                  <Alert severity="info">
+                    No raw API data available. This product may not have been fetched from external APIs yet.
+                    <Button 
+                      variant="outlined" 
+                      size="small" 
+                      sx={{ mt: 1 }}
+                      onClick={async () => {
+                        try {
+                          await api.post(`/products/${deal.product_id}/refresh-api-data?force=true`);
+                          alert('API data refresh queued. Refresh the page in a few seconds.');
+                          setTimeout(() => fetchDeal(), 3000);
+                        } catch (err) {
+                          console.error('Failed to refresh API data:', err);
+                          alert('Failed to refresh API data');
+                        }
+                      }}
+                    >
+                      Fetch API Data Now
+                    </Button>
+                  </Alert>
+                )}
+              </Box>
+            )}
           </Box>
         </Grid>
       </Grid>
