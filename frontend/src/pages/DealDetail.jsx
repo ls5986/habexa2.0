@@ -939,15 +939,55 @@ export default function DealDetail() {
                   This shows the raw JSON responses from SP-API and Keepa for debugging and analysis.
                 </Alert>
                 
+                {/* Re-analyze Button - Prominent at top of API Data tab */}
+                <Box sx={{ mb: 2, display: 'flex', gap: 1, alignItems: 'center' }}>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    startIcon={reanalyzing ? <CircularProgress size={16} /> : <RefreshCw size={16} />}
+                    onClick={handleReanalyze}
+                    disabled={reanalyzing}
+                    sx={{ flex: 1 }}
+                  >
+                    {reanalyzing ? 'Re-analyzing...' : 'Re-analyze Product'}
+                  </Button>
+                  <Tooltip title="This will fetch fresh data from SP-API and Keepa">
+                    <IconButton size="small" sx={{ color: 'text.secondary' }}>
+                      <AlertTriangle size={16} />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+
                 {deal?.raw_api_data ? (
                   <Grid container spacing={2}>
                     {/* SP-API Raw Response */}
                     <Grid item xs={12} md={6}>
                       <Card>
                         <CardContent>
-                          <Typography variant="h6" gutterBottom>
-                            SP-API Raw Response
-                          </Typography>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                            <Typography variant="h6" gutterBottom>
+                              SP-API Raw Response
+                            </Typography>
+                            {!deal.raw_api_data.sp_api?.raw_response && (
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={<RefreshCw size={14} />}
+                                onClick={async () => {
+                                  try {
+                                    await api.post(`/products/${deal.product_id}/refresh-api-data?force=true`);
+                                    alert('SP-API data refresh queued. Refresh the page in a few seconds.');
+                                    setTimeout(() => fetchDeal(), 3000);
+                                  } catch (err) {
+                                    console.error('Failed to refresh SP-API data:', err);
+                                    alert('Failed to refresh SP-API data');
+                                  }
+                                }}
+                              >
+                                Fetch Now
+                              </Button>
+                            )}
+                          </Box>
                           {deal.raw_api_data.sp_api?.last_fetched && (
                             <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
                               Last fetched: {new Date(deal.raw_api_data.sp_api.last_fetched).toLocaleString()}
@@ -968,7 +1008,9 @@ export default function DealDetail() {
                               </pre>
                             </Box>
                           ) : (
-                            <Alert severity="warning">No SP-API data available</Alert>
+                            <Alert severity="warning">
+                              No SP-API data available. Click "Re-analyze Product" above or "Fetch Now" to fetch data.
+                            </Alert>
                           )}
                         </CardContent>
                       </Card>
@@ -978,9 +1020,30 @@ export default function DealDetail() {
                     <Grid item xs={12} md={6}>
                       <Card>
                         <CardContent>
-                          <Typography variant="h6" gutterBottom>
-                            Keepa Raw Response
-                          </Typography>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                            <Typography variant="h6" gutterBottom>
+                              Keepa Raw Response
+                            </Typography>
+                            {!deal.raw_api_data.keepa?.raw_response && (
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={<RefreshCw size={14} />}
+                                onClick={async () => {
+                                  try {
+                                    await api.post(`/products/${deal.product_id}/refresh-api-data?force=true`);
+                                    alert('Keepa data refresh queued. Refresh the page in a few seconds.');
+                                    setTimeout(() => fetchDeal(), 3000);
+                                  } catch (err) {
+                                    console.error('Failed to refresh Keepa data:', err);
+                                    alert('Failed to refresh Keepa data');
+                                  }
+                                }}
+                              >
+                                Fetch Now
+                              </Button>
+                            )}
+                          </Box>
                           {deal.raw_api_data.keepa?.last_fetched && (
                             <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
                               Last fetched: {new Date(deal.raw_api_data.keepa.last_fetched).toLocaleString()}
@@ -1001,7 +1064,9 @@ export default function DealDetail() {
                               </pre>
                             </Box>
                           ) : (
-                            <Alert severity="warning">No Keepa data available</Alert>
+                            <Alert severity="warning">
+                              No Keepa data available. Click "Re-analyze Product" above or "Fetch Now" to fetch data.
+                            </Alert>
                           )}
                         </CardContent>
                       </Card>
@@ -1009,24 +1074,8 @@ export default function DealDetail() {
                   </Grid>
                 ) : (
                   <Alert severity="info">
-                    No raw API data available. This product may not have been fetched from external APIs yet.
-                    <Button 
-                      variant="outlined" 
-                      size="small" 
-                      sx={{ mt: 1 }}
-                      onClick={async () => {
-                        try {
-                          await api.post(`/products/${deal.product_id}/refresh-api-data?force=true`);
-                          alert('API data refresh queued. Refresh the page in a few seconds.');
-                          setTimeout(() => fetchDeal(), 3000);
-                        } catch (err) {
-                          console.error('Failed to refresh API data:', err);
-                          alert('Failed to refresh API data');
-                        }
-                      }}
-                    >
-                      Fetch API Data Now
-                    </Button>
+                    <AlertTitle>No Raw API Data Available</AlertTitle>
+                    This product may not have been fetched from external APIs yet. Click "Re-analyze Product" above to fetch data from SP-API and Keepa.
                   </Alert>
                 )}
               </Box>
