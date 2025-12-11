@@ -95,9 +95,9 @@ class APIBatchFetcher:
                 
                 # Call SP-API batch method
                 batch_response = await sp_api_client.get_catalog_items_batch(
-                    marketplace_id='ATVPDKIKX0DER',
                     asins=batch,
-                    included_data=['summaries', 'images', 'attributes', 'salesRanks']
+                    marketplace_id='ATVPDKIKX0DER',
+                    rate_limit=5  # 5 req/sec limit
                 )
                 
                 # Store each item (get_catalog_items_batch returns Dict[asin, item])
