@@ -902,29 +902,190 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                             
                             logger.info(f"   Product cache now contains {len(product_cache)} entries")
                             
-                            # 🔥 CRITICAL: Fetch and store COMPLETE API data for all new products
-                            logger.info(f"📡 Fetching complete API data for {len(created.data)} new products...")
-                            from app.services.api_storage_service import fetch_and_store_all_api_data
-                            from app.tasks.base import run_async
+                            # ================================================================================
+                            # 🔥 CRITICAL: FETCH API DATA IN BATCHES (SP-API + Keepa)
+                            # ================================================================================
+                            logger.info(f"📡 Fetching API data for {len(created.data)} new products with ASINs...")
                             
+                            # Collect all ASINs and user_id from created products
+                            products_with_asin = []
                             for p in created.data:
                                 asin = p.get("asin")
-                                product_user_id = p.get("user_id")  # ✅ Get user_id from created product
+                                product_user_id = p.get("user_id")
                                 if asin and asin not in ["PENDING_", "Unknown"] and not asin.startswith("PENDING_") and product_user_id:
+                                    products_with_asin.append({
+                                        'asin': asin,
+                                        'user_id': product_user_id,
+                                        'product_id': p.get('id')
+                                    })
+                            
+                            if products_with_asin:
+                                asins = [p['asin'] for p in products_with_asin]
+                                user_id = products_with_asin[0]['user_id']  # All should have same user_id
+                                
+                                logger.info(f"📦 Processing {len(asins)} ASINs in batches...")
+                                
+                                # Import required services
+                                from app.services.sp_api_client import sp_api_client
+                                from app.services.keepa_client import get_keepa_client
+                                from app.services.api_data_extractor import (
+                                    extract_sp_api_structured_data,
+                                    extract_keepa_structured_data
+                                )
+                                from app.tasks.base import run_async
+                                from datetime import datetime
+                                
+                                # ========================================
+                                # BATCH 1: SP-API Catalog Data (20 ASINs per batch)
+                                # ========================================
+                                logger.info(f"📦 Fetching SP-API catalog data in batches of 20...")
+                                sp_api_results = {}
+                                
+                                sp_batch_size = 20
+                                for i in range(0, len(asins), sp_batch_size):
+                                    batch = asins[i:i + sp_batch_size]
+                                    batch_num = i // sp_batch_size + 1
+                                    logger.info(f"   SP-API Batch {batch_num}: {len(batch)} ASINs")
+                                    
                                     try:
-                                        # Fetch and store ALL API data (SP-API + Keepa)
-                                        # Use run_async since this is a sync Celery task
-                                        # ✅ CRITICAL: Pass user_id so data is stored correctly
-                                        result = run_async(fetch_and_store_all_api_data(asin, user_id=product_user_id, force_refresh=False))
-                                        if result:
-                                            has_sp = bool(result.get('sp_api_raw_response'))
-                                            has_keepa = bool(result.get('keepa_raw_response'))
-                                            logger.info(f"✅ Stored API data for {asin}: SP-API={has_sp}, Keepa={has_keepa}")
-                                        else:
-                                            logger.warning(f"⚠️ No data returned for {asin}")
-                                    except Exception as api_error:
-                                        logger.error(f"❌ Failed to fetch API data for {asin}: {api_error}", exc_info=True)
-                                        # Continue - at least we have the ASIN
+                                        # SP-API batch method parallelizes individual calls (up to 20 at a time)
+                                        async def fetch_sp_batch(batch_asins):
+                                            results = {}
+                                            try:
+                                                # Use batch method which parallelizes with semaphore
+                                                batch_response = await sp_api_client.get_catalog_items_batch(
+                                                    batch_asins,
+                                                    marketplace_id='ATVPDKIKX0DER',
+                                                    rate_limit=5  # 5 req/sec limit
+                                                )
+                                                # get_catalog_items_batch returns Dict[asin, catalog_item]
+                                                if batch_response:
+                                                    results.update(batch_response)
+                                            except Exception as e:
+                                                logger.error(f"   ❌ SP-API batch failed: {e}", exc_info=True)
+                                            return results
+                                        
+                                        batch_results = run_async(fetch_sp_batch(batch))
+                                        sp_api_results.update(batch_results)
+                                        logger.info(f"   ✅ SP-API Batch {batch_num} complete: {len(batch_results)} items")
+                                        
+                                    except Exception as e:
+                                        logger.error(f"   ❌ SP-API Batch {batch_num} failed: {e}", exc_info=True)
+                                
+                                # Store SP-API data in database
+                                logger.info(f"💾 Storing SP-API data for {len(sp_api_results)} products...")
+                                sp_stored = 0
+                                for asin, sp_data in sp_api_results.items():
+                                    try:
+                                        # Extract structured fields (extractor adds raw response to structured dict)
+                                        structured = extract_sp_api_structured_data(sp_data)
+                                        structured['asin'] = asin
+                                        structured['user_id'] = user_id
+                                        
+                                        # Note: extract_sp_api_structured_data already includes sp_api_raw_response
+                                        # But we need to ensure it's set correctly
+                                        if 'sp_api_raw_response' not in structured:
+                                            structured['sp_api_raw_response'] = sp_data
+                                        
+                                        # Update product with raw + structured data
+                                        result = supabase.table('products').update(structured).eq('asin', asin).eq('user_id', user_id).execute()
+                                        
+                                        if result.data:
+                                            sp_stored += 1
+                                        
+                                    except Exception as e:
+                                        logger.error(f"   ❌ Failed to store SP-API data for {asin}: {e}")
+                                
+                                logger.info(f"✅ SP-API data stored for {sp_stored}/{len(sp_api_results)} products")
+                                
+                                # ========================================
+                                # BATCH 2: Keepa Data (100 ASINs per batch)
+                                # ========================================
+                                logger.info(f"📦 Fetching Keepa data in batches of 100...")
+                                keepa_results = {}
+                                
+                                keepa_batch_size = 100
+                                for i in range(0, len(asins), keepa_batch_size):
+                                    batch = asins[i:i + keepa_batch_size]
+                                    batch_num = i // keepa_batch_size + 1
+                                    logger.info(f"   Keepa Batch {batch_num}: {len(batch)} ASINs")
+                                    
+                                    try:
+                                        async def fetch_keepa_batch(batch_asins):
+                                            results = {}
+                                            try:
+                                                keepa_client = get_keepa_client()
+                                                if not keepa_client.is_configured():
+                                                    logger.warning("   ⚠️ Keepa not configured, skipping")
+                                                    return results
+                                                
+                                                # Keepa supports up to 100 ASINs per call
+                                                keepa_response = await keepa_client.get_products_batch(
+                                                    batch_asins,
+                                                    days=90,
+                                                    return_raw=True
+                                                )
+                                                
+                                                if keepa_response and 'raw_response' in keepa_response:
+                                                    raw_data = keepa_response['raw_response']
+                                                    products = keepa_response.get('products', [])
+                                                    
+                                                    # Store each product's data
+                                                    for product in products:
+                                                        product_asin = product.get('asin')
+                                                        if product_asin:
+                                                            # Store individual product response
+                                                            results[product_asin] = {
+                                                                'raw_response': raw_data,  # Full API response
+                                                                'product': product  # Individual product data
+                                                            }
+                                            except Exception as e:
+                                                logger.error(f"   ❌ Keepa batch failed: {e}")
+                                            return results
+                                        
+                                        batch_results = run_async(fetch_keepa_batch(batch))
+                                        keepa_results.update(batch_results)
+                                        logger.info(f"   ✅ Keepa Batch {batch_num} complete: {len(batch_results)} products")
+                                        
+                                    except Exception as e:
+                                        logger.error(f"   ❌ Keepa Batch {batch_num} failed: {e}", exc_info=True)
+                                
+                                # Store Keepa data in database
+                                logger.info(f"💾 Storing Keepa data for {len(keepa_results)} products...")
+                                keepa_stored = 0
+                                for asin, keepa_data in keepa_results.items():
+                                    try:
+                                        # Get product data and raw response
+                                        product_data = keepa_data.get('product', {})
+                                        raw_response = keepa_data.get('raw_response', {})
+                                        
+                                        # Construct response structure for extractor (expects {'products': [...]})
+                                        response_for_extractor = {'products': [product_data]}
+                                        
+                                        # Extract structured fields (extractor adds raw response to structured dict)
+                                        structured = extract_keepa_structured_data(response_for_extractor, asin)
+                                        structured['asin'] = asin
+                                        structured['user_id'] = user_id
+                                        
+                                        # Note: extract_keepa_structured_data already includes keepa_raw_response
+                                        # But we need to ensure it's set correctly with the full raw response
+                                        if 'keepa_raw_response' not in structured:
+                                            structured['keepa_raw_response'] = raw_response
+                                        
+                                        # Update product with raw + structured data
+                                        result = supabase.table('products').update(structured).eq('asin', asin).eq('user_id', user_id).execute()
+                                        
+                                        if result.data:
+                                            keepa_stored += 1
+                                        
+                                    except Exception as e:
+                                        logger.error(f"   ❌ Failed to store Keepa data for {asin}: {e}")
+                                
+                                logger.info(f"✅ Keepa data stored for {keepa_stored}/{len(keepa_results)} products")
+                                
+                                logger.info(f"🎉 API data fetch complete: {sp_stored} SP-API + {keepa_stored} Keepa stored")
+                            else:
+                                logger.info("⚠️ No products with ASINs to fetch API data for")
                             
                             results.setdefault("analyzed", 0)
                             # Note: Will be analyzed later by the auto-analysis job
