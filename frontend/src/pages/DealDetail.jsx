@@ -54,11 +54,23 @@ export default function DealDetail() {
   const [allDealIds, setAllDealIds] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [copied, setCopied] = useState(false);
+  const [reanalyzing, setReanalyzing] = useState(false);
+  const [apiData, setApiData] = useState(null);
+  const [fetchingApiData, setFetchingApiData] = useState(false);
+  const [apiDataError, setApiDataError] = useState(null);
+  const [apiDataSuccess, setApiDataSuccess] = useState(null);
 
   useEffect(() => {
     fetchDeal();
     fetchAllDealIds();
   }, [dealId]);
+
+  // Fetch API data when API Data tab is active
+  useEffect(() => {
+    if (activeTab === 7 && deal?.product_id) {
+      fetchApiData();
+    }
+  }, [activeTab, deal?.product_id]);
 
   const fetchDeal = async () => {
     setLoading(true);
@@ -931,151 +943,189 @@ export default function DealDetail() {
             {/* API Data Tab - Raw JSON responses */}
             {activeTab === 7 && (
               <Box>
-                <Typography variant="h6" fontWeight={600} mb={2}>
-                  Raw API Data
-                </Typography>
-                <Alert severity="info" sx={{ mb: 2 }}>
-                  <AlertTitle>Complete API Responses</AlertTitle>
-                  This shows the raw JSON responses from SP-API and Keepa for debugging and analysis.
-                </Alert>
-                
-                {/* Re-analyze Button - Prominent at top of API Data tab */}
-                <Box sx={{ mb: 2, display: 'flex', gap: 1, alignItems: 'center' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                  <Typography variant="h5" fontWeight={600}>
+                    Raw API Data
+                  </Typography>
+                  
                   <Button
                     variant="contained"
                     color="primary"
-                    startIcon={reanalyzing ? <CircularProgress size={16} /> : <RefreshCw size={16} />}
+                    size="large"
+                    startIcon={reanalyzing ? <CircularProgress size={20} /> : <RefreshCw size={20} />}
                     onClick={handleReanalyze}
-                    disabled={reanalyzing}
-                    sx={{ flex: 1 }}
+                    disabled={reanalyzing || !deal?.asin}
                   >
-                    {reanalyzing ? 'Re-analyzing...' : 'Re-analyze Product'}
+                    {reanalyzing ? 'Fetching...' : 'Fetch All API Data'}
                   </Button>
-                  <Tooltip title="This will fetch fresh data from SP-API and Keepa">
-                    <IconButton size="small" sx={{ color: 'text.secondary' }}>
-                      <AlertTriangle size={16} />
-                    </IconButton>
-                  </Tooltip>
                 </Box>
 
-                {deal?.raw_api_data ? (
-                  <Grid container spacing={2}>
-                    {/* SP-API Raw Response */}
-                    <Grid item xs={12} md={6}>
-                      <Card>
-                        <CardContent>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                            <Typography variant="h6" gutterBottom>
-                              SP-API Raw Response
-                            </Typography>
-                            {!deal.raw_api_data.sp_api?.raw_response && (
-                              <Button
-                                size="small"
-                                variant="outlined"
-                                startIcon={<RefreshCw size={14} />}
-                                onClick={async () => {
-                                  try {
-                                    await api.post(`/products/${deal.product_id}/refresh-api-data?force=true`);
-                                    alert('SP-API data refresh queued. Refresh the page in a few seconds.');
-                                    setTimeout(() => fetchDeal(), 3000);
-                                  } catch (err) {
-                                    console.error('Failed to refresh SP-API data:', err);
-                                    alert('Failed to refresh SP-API data');
-                                  }
-                                }}
-                              >
-                                Fetch Now
-                              </Button>
-                            )}
-                          </Box>
-                          {deal.raw_api_data.sp_api?.last_fetched && (
-                            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                              Last fetched: {new Date(deal.raw_api_data.sp_api.last_fetched).toLocaleString()}
-                            </Typography>
-                          )}
-                          {deal.raw_api_data.sp_api?.raw_response ? (
-                            <Box sx={{ 
-                              bgcolor: 'grey.100', 
-                              p: 2, 
-                              borderRadius: 1, 
-                              maxHeight: 600, 
-                              overflow: 'auto',
-                              fontFamily: 'monospace',
-                              fontSize: '0.75rem'
-                            }}>
-                              <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                                {JSON.stringify(deal.raw_api_data.sp_api.raw_response, null, 2)}
-                              </pre>
-                            </Box>
-                          ) : (
-                            <Alert severity="warning">
-                              No SP-API data available. Click "Re-analyze Product" above or "Fetch Now" to fetch data.
-                            </Alert>
-                          )}
-                        </CardContent>
-                      </Card>
-                    </Grid>
+                {apiDataError && (
+                  <Alert severity="error" sx={{ mb: 2 }} onClose={() => setApiDataError(null)}>
+                    {apiDataError}
+                  </Alert>
+                )}
 
-                    {/* Keepa Raw Response */}
-                    <Grid item xs={12} md={6}>
-                      <Card>
-                        <CardContent>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                            <Typography variant="h6" gutterBottom>
-                              Keepa Raw Response
-                            </Typography>
-                            {!deal.raw_api_data.keepa?.raw_response && (
-                              <Button
-                                size="small"
-                                variant="outlined"
-                                startIcon={<RefreshCw size={14} />}
-                                onClick={async () => {
-                                  try {
-                                    await api.post(`/products/${deal.product_id}/refresh-api-data?force=true`);
-                                    alert('Keepa data refresh queued. Refresh the page in a few seconds.');
-                                    setTimeout(() => fetchDeal(), 3000);
-                                  } catch (err) {
-                                    console.error('Failed to refresh Keepa data:', err);
-                                    alert('Failed to refresh Keepa data');
-                                  }
-                                }}
-                              >
-                                Fetch Now
-                              </Button>
-                            )}
-                          </Box>
-                          {deal.raw_api_data.keepa?.last_fetched && (
-                            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                              Last fetched: {new Date(deal.raw_api_data.keepa.last_fetched).toLocaleString()}
-                            </Typography>
-                          )}
-                          {deal.raw_api_data.keepa?.raw_response ? (
-                            <Box sx={{ 
-                              bgcolor: 'grey.100', 
-                              p: 2, 
-                              borderRadius: 1, 
-                              maxHeight: 600, 
-                              overflow: 'auto',
-                              fontFamily: 'monospace',
-                              fontSize: '0.75rem'
-                            }}>
-                              <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                                {JSON.stringify(deal.raw_api_data.keepa.raw_response, null, 2)}
-                              </pre>
+                {apiDataSuccess && (
+                  <Alert severity="success" sx={{ mb: 2 }} onClose={() => setApiDataSuccess(null)}>
+                    {apiDataSuccess}
+                  </Alert>
+                )}
+
+                {fetchingApiData ? (
+                  <Box display="flex" justifyContent="center" p={4}>
+                    <CircularProgress />
+                  </Box>
+                ) : apiData ? (
+                  <>
+                    {/* Product Info Summary */}
+                    <Card sx={{ mb: 3, bgcolor: 'grey.50' }}>
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom>
+                          Product: {apiData.title || deal?.title || 'Loading...'}
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                          <Chip 
+                            label={`BSR: ${apiData.extracted_fields?.bsr?.toLocaleString() || 'N/A'}`}
+                            color={apiData.extracted_fields?.bsr ? 'success' : 'default'}
+                            size="small"
+                          />
+                          <Chip 
+                            label={`FBA Sellers: ${apiData.extracted_fields?.fba_sellers || 'N/A'}`}
+                            color={apiData.extracted_fields?.fba_sellers ? 'success' : 'default'}
+                            size="small"
+                          />
+                          <Chip 
+                            label={`Total Sellers: ${apiData.extracted_fields?.total_sellers || 'N/A'}`}
+                            color={apiData.extracted_fields?.total_sellers ? 'success' : 'default'}
+                            size="small"
+                          />
+                        </Box>
+                      </CardContent>
+                    </Card>
+
+                    <Grid container spacing={2}>
+                      {/* SP-API Raw Response */}
+                      <Grid item xs={12} md={6}>
+                        <Card>
+                          <CardContent>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                              <Typography variant="h6">
+                                SP-API Response
+                                {apiData.sp_api?.has_data ? (
+                                  <CheckCircleIcon color="success" sx={{ ml: 1, verticalAlign: 'middle', fontSize: 20 }} />
+                                ) : (
+                                  <XCircle color="error" sx={{ ml: 1, verticalAlign: 'middle', fontSize: 20 }} />
+                                )}
+                              </Typography>
+                              
+                              {apiData.sp_api?.last_fetched && (
+                                <Typography variant="caption" color="text.secondary">
+                                  Last fetched: {new Date(apiData.sp_api.last_fetched).toLocaleString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                    hour: 'numeric',
+                                    minute: '2-digit'
+                                  })}
+                                </Typography>
+                              )}
                             </Box>
-                          ) : (
-                            <Alert severity="warning">
-                              No Keepa data available. Click "Re-analyze Product" above or "Fetch Now" to fetch data.
-                            </Alert>
-                          )}
-                        </CardContent>
-                      </Card>
+
+                            {apiData.sp_api?.has_data ? (
+                              <>
+                                <Typography variant="caption" color="text.secondary" display="block" mb={1}>
+                                  Size: {(apiData.sp_api.size_bytes / 1024).toFixed(1)} KB
+                                </Typography>
+                                <Box
+                                  sx={{
+                                    maxHeight: 400,
+                                    overflow: 'auto',
+                                    bgcolor: '#1e1e1e',
+                                    color: '#d4d4d4',
+                                    p: 2,
+                                    borderRadius: 1,
+                                    fontFamily: 'Consolas, Monaco, monospace',
+                                    fontSize: '0.75rem'
+                                  }}
+                                >
+                                  <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}>
+                                    {JSON.stringify(apiData.sp_api.data, null, 2)}
+                                  </pre>
+                                </Box>
+                              </>
+                            ) : (
+                              <Alert severity="warning">
+                                No SP-API data available. Click "Fetch All API Data" to retrieve data.
+                              </Alert>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </Grid>
+
+                      {/* Keepa Raw Response */}
+                      <Grid item xs={12} md={6}>
+                        <Card>
+                          <CardContent>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                              <Typography variant="h6">
+                                Keepa Response
+                                {apiData.keepa?.has_data ? (
+                                  <CheckCircleIcon color="success" sx={{ ml: 1, verticalAlign: 'middle', fontSize: 20 }} />
+                                ) : (
+                                  <XCircle color="error" sx={{ ml: 1, verticalAlign: 'middle', fontSize: 20 }} />
+                                )}
+                              </Typography>
+                              
+                              {apiData.keepa?.last_fetched && (
+                                <Typography variant="caption" color="text.secondary">
+                                  Last fetched: {new Date(apiData.keepa.last_fetched).toLocaleString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                    hour: 'numeric',
+                                    minute: '2-digit'
+                                  })}
+                                </Typography>
+                              )}
+                            </Box>
+
+                            {apiData.keepa?.has_data ? (
+                              <>
+                                <Typography variant="caption" color="text.secondary" display="block" mb={1}>
+                                  Size: {(apiData.keepa.size_bytes / 1024).toFixed(1)} KB
+                                </Typography>
+                                <Box
+                                  sx={{
+                                    maxHeight: 400,
+                                    overflow: 'auto',
+                                    bgcolor: '#1e1e1e',
+                                    color: '#d4d4d4',
+                                    p: 2,
+                                    borderRadius: 1,
+                                    fontFamily: 'Consolas, Monaco, monospace',
+                                    fontSize: '0.75rem'
+                                  }}
+                                >
+                                  <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}>
+                                    {JSON.stringify(apiData.keepa.data, null, 2)}
+                                  </pre>
+                                </Box>
+                              </>
+                            ) : (
+                              <Alert severity="warning">
+                                No Keepa data available. Click "Fetch All API Data" to retrieve data.
+                              </Alert>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </Grid>
                     </Grid>
-                  </Grid>
+                  </>
                 ) : (
                   <Alert severity="info">
                     <AlertTitle>No Raw API Data Available</AlertTitle>
-                    This product may not have been fetched from external APIs yet. Click "Re-analyze Product" above to fetch data from SP-API and Keepa.
+                    This product may not have been fetched from external APIs yet. Click "Fetch All API Data" above to fetch data from SP-API and Keepa.
                   </Alert>
                 )}
               </Box>
