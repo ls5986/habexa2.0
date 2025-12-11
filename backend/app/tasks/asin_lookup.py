@@ -149,11 +149,16 @@ def process_pending_asin_lookups(self, batch_size: int = 100):
                     .execute()
                 
                 additional = pending_asin_result.data or []
-                products.extend(additional)
+                
+                # Deduplicate by ID
+                for p in additional:
+                    if p["id"] not in seen_ids:
+                        products.append(p)
+                        seen_ids.add(p["id"])
                 
                 # Update these products to have lookup_status='pending'
                 if additional:
-                    product_ids_to_update = [p['id'] for p in additional]
+                    product_ids_to_update = [p['id'] for p in additional if p['id'] not in seen_ids]
                     supabase.table("products")\
                         .update({"lookup_status": "pending", "lookup_attempts": 0})\
                         .in_("id", product_ids_to_update)\
