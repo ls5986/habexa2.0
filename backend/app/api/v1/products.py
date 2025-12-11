@@ -3192,9 +3192,27 @@ async def get_products_pending_asin_selection(
             .order('created_at', desc=False)\
             .execute()
         
+        # Ensure potential_asins is properly formatted
+        products = result.data or []
+        for product in products:
+            # If potential_asins is a string, try to parse it
+            if product.get('potential_asins') and isinstance(product['potential_asins'], str):
+                try:
+                    import json
+                    product['potential_asins'] = json.loads(product['potential_asins'])
+                except:
+                    product['potential_asins'] = []
+            # Ensure it's an array
+            if not isinstance(product.get('potential_asins'), list):
+                product['potential_asins'] = []
+        
+        logger.info(f"Found {len(products)} products needing ASIN selection")
+        for p in products:
+            logger.info(f"  - Product {p.get('id')}: {len(p.get('potential_asins', []))} ASIN options")
+        
         return {
-            'count': len(result.data or []),
-            'products': result.data or []
+            'count': len(products),
+            'products': products
         }
     except Exception as e:
         logger.error(f"Error getting products pending ASIN selection: {e}", exc_info=True)
