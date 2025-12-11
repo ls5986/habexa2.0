@@ -138,8 +138,6 @@ export default function DealDetail() {
       setTimeout(() => setCopied(false), 2000);
     }
   };
-
-  const [reanalyzing, setReanalyzing] = useState(false);
   
   const fetchApiData = async () => {
     if (!deal?.product_id) {
