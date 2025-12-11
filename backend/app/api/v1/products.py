@@ -3517,11 +3517,11 @@ async def toggle_favorite(
 @router.post("/{product_id}/refresh-api-data")
 async def refresh_product_api_data(
     product_id: str,
-    force: bool = False,
+    force: bool = Query(False),
     current_user=Depends(get_current_user)
 ):
     """
-    Refresh API data for a specific product.
+    Refresh API data for a specific product by product_id.
     Use force=true to bypass cache and make fresh API calls.
     """
     user_id = str(current_user.id)
@@ -3539,6 +3539,36 @@ async def refresh_product_api_data(
     
     product = product_result.data[0]
     asin = product.get('asin')
+    
+    if not asin or asin.startswith('PENDING_'):
+        raise HTTPException(400, "Product must have a valid ASIN")
+
+
+@router.post("/by-asin/{asin}/refresh-api-data")
+async def refresh_product_api_data_by_asin(
+    asin: str,
+    force: bool = Query(False),
+    current_user=Depends(get_current_user)
+):
+    """
+    Refresh API data for a specific product by ASIN (convenience endpoint).
+    Use force=true to bypass cache and make fresh API calls.
+    """
+    user_id = str(current_user.id)
+    
+    # Get product by ASIN
+    product_result = supabase.table('products')\
+        .select('*')\
+        .eq('asin', asin.upper())\
+        .eq('user_id', user_id)\
+        .limit(1)\
+        .execute()
+    
+    if not product_result.data:
+        raise HTTPException(404, f"Product with ASIN {asin} not found")
+    
+    product = product_result.data[0]
+    product_id = product.get('id')
     
     if not asin or asin.startswith('PENDING_'):
         raise HTTPException(400, "Product must have a valid ASIN")

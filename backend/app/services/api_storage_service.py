@@ -132,6 +132,7 @@ async def fetch_and_store_keepa_data(asin: str, force_refresh: bool = False) -> 
         # Extract structured data + store raw response
         # Construct response structure for extractor (expects {'products': [...]})
         response_for_extractor = {'products': [product_data]}
+        # extract_keepa_structured_data signature: (keepa_response: Dict, asin: str)
         structured_data = extract_keepa_structured_data(response_for_extractor, asin)
         structured_data['asin'] = asin
         

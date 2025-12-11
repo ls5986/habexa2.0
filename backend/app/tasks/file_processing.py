@@ -913,10 +913,14 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                                     try:
                                         # Fetch and store ALL API data (SP-API + Keepa)
                                         # Use run_async since this is a sync Celery task
-                                        run_async(fetch_and_store_all_api_data(asin, force_refresh=False))
-                                        logger.info(f"✅ Stored complete API data for {asin}")
+                                        # Pass the coroutine, don't call it!
+                                        result = run_async(fetch_and_store_all_api_data(asin, force_refresh=False))
+                                        if result:
+                                            logger.info(f"✅ Stored complete API data for {asin}")
+                                        else:
+                                            logger.warning(f"⚠️ No data returned for {asin}")
                                     except Exception as api_error:
-                                        logger.error(f"❌ Failed to fetch API data for {asin}: {api_error}")
+                                        logger.error(f"❌ Failed to fetch API data for {asin}: {api_error}", exc_info=True)
                                         # Continue - at least we have the ASIN
                             
                             results.setdefault("analyzed", 0)
