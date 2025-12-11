@@ -1501,6 +1501,32 @@ export default function Products() {
                                 <strong>Category:</strong> {asinCategory}
                               </Typography>
                             )}
+                            {fetchedDetails?.dimensions && (
+                              <Typography variant="body2" color="text.secondary">
+                                <strong>Dimensions:</strong> {fetchedDetails.dimensions}
+                              </Typography>
+                            )}
+                            {fetchedDetails?.weight && (
+                              <Typography variant="body2" color="text.secondary">
+                                <strong>Weight:</strong> {fetchedDetails.weight}
+                              </Typography>
+                            )}
+                            {fetchedDetails?.package_quantity && fetchedDetails.package_quantity > 1 && (
+                              <Typography variant="body2" color="text.secondary">
+                                <strong>Package Qty:</strong> {fetchedDetails.package_quantity} units
+                              </Typography>
+                            )}
+                            {(fetchedDetails?.package_length || fetchedDetails?.package_width || fetchedDetails?.package_height) && (
+                              <Typography variant="body2" color="text.secondary" fontSize="0.75rem">
+                                <strong>Size:</strong> {
+                                  [
+                                    fetchedDetails.package_length && `${fetchedDetails.package_length.toFixed(1)}cm`,
+                                    fetchedDetails.package_width && `${fetchedDetails.package_width.toFixed(1)}cm`,
+                                    fetchedDetails.package_height && `${fetchedDetails.package_height.toFixed(1)}cm`
+                                  ].filter(Boolean).join(' × ')
+                                }
+                              </Typography>
+                            )}
                             {asinBsr && (
                               <Typography variant="body2" color="text.secondary">
                                 <strong>BSR:</strong> {asinBsr.toLocaleString()}

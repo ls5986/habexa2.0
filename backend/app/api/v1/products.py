@@ -3391,6 +3391,33 @@ async def get_asin_details_for_selection(
             if rating is not None:
                 rating_average = rating / 10.0 if rating > 10 else rating
             
+            # Extract dimensions and weight
+            package_length = product.get('packageLength')
+            package_width = product.get('packageWidth')
+            package_height = product.get('packageHeight')
+            package_weight = product.get('packageWeight')
+            item_weight = product.get('itemWeight')
+            package_quantity = product.get('packageQuantity', 1)
+            
+            # Format dimensions
+            dimensions = None
+            if package_length or package_width or package_height:
+                dims = []
+                if package_length:
+                    dims.append(f"L: {package_length/10:.1f}cm" if package_length else "")
+                if package_width:
+                    dims.append(f"W: {package_width/10:.1f}cm" if package_width else "")
+                if package_height:
+                    dims.append(f"H: {package_height/10:.1f}cm" if package_height else "")
+                dimensions = dims.filter(Boolean).join(" × ")
+            
+            # Format weight
+            weight_str = None
+            if package_weight:
+                weight_str = f"{package_weight/1000:.2f}kg" if package_weight > 1000 else f"{package_weight}g"
+            elif item_weight:
+                weight_str = f"{item_weight/1000:.2f}kg" if item_weight > 1000 else f"{item_weight}g"
+            
             return {
                 'asin': asin,
                 'source': 'keepa',
@@ -3402,7 +3429,15 @@ async def get_asin_details_for_selection(
                 'rating_average': rating_average,
                 'review_count': product.get('reviewCount'),
                 'brand': product.get('brand'),
-                'category': product.get('productGroup')
+                'category': product.get('productGroup'),
+                'package_length': package_length / 10 if package_length else None,  # mm to cm
+                'package_width': package_width / 10 if package_width else None,
+                'package_height': package_height / 10 if package_height else None,
+                'package_weight': package_weight / 1000 if package_weight else None,  # g to kg
+                'item_weight': item_weight / 1000 if item_weight else None,
+                'package_quantity': package_quantity,
+                'dimensions': dimensions,
+                'weight': weight_str
             }
         
         raise HTTPException(404, "Product not found in Keepa")
@@ -3511,6 +3546,53 @@ async def select_asin(
         
         if not asin_found:
             raise HTTPException(400, f"Selected ASIN {request.asin} not in potential ASINs: {potential_asins}")
+        
+        # Check if a product with this ASIN already exists for this user
+        existing_product = supabase.table("products")\
+            .select("id")\
+            .eq("asin", request.asin)\
+            .eq("user_id", user_id)\
+            .limit(1)\
+            .execute()
+        
+        if existing_product.data and len(existing_product.data) > 0:
+            existing_id = existing_product.data[0]['id']
+            if existing_id != product_id:
+                # ASIN already exists for another product - update the existing one instead
+                logger.warning(f"ASIN {request.asin} already exists in product {existing_id}, updating that product instead")
+                
+                # Update the existing product with data from current product
+                supabase.table("products")\
+                    .update({
+                        "upc": product.get("upc"),
+                        "supplier_title": product.get("supplier_title"),
+                        "brand": product.get("brand"),
+                        "asin_status": "found",
+                        "potential_asins": None
+                    })\
+                    .eq("id", existing_id)\
+                    .execute()
+                
+                # Delete the current product (duplicate)
+                supabase.table("products")\
+                    .delete()\
+                    .eq("id", product_id)\
+                    .execute()
+                
+                # Trigger analysis for the existing product
+                from app.services.api_batch_fetcher import fetch_api_data_for_asins
+                await fetch_api_data_for_asins(
+                    asins=[request.asin],
+                    user_id=user_id,
+                    force_refetch=True
+                )
+                
+                return {
+                    "success": True,
+                    "message": f"ASIN {request.asin} already existed. Updated existing product and deleted duplicate.",
+                    "product_id": existing_id,
+                    "asin": request.asin
+                }
         
         # Update product with selected ASIN
         update_data = {
