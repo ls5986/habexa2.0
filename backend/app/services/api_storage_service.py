@@ -20,19 +20,42 @@ from app.services.api_data_extractor import (
 logger = logging.getLogger(__name__)
 
 
-async def fetch_and_store_sp_api_data(asin: str, force_refresh: bool = False) -> Dict[str, Any]:
+async def fetch_and_store_sp_api_data(asin: str, user_id: Optional[str] = None, force_refresh: bool = False) -> Dict[str, Any]:
     """
     Fetch product details from SP-API and store everything.
     Checks cache first to avoid duplicate API calls.
     
+    Args:
+        asin: Product ASIN
+        user_id: User ID (optional, will try to find from existing product if not provided)
+        force_refresh: Force fresh API call even if cached data exists
+    
     Returns: Dict with all extracted data + raw response
     """
+    # Get user_id if not provided (find from existing product)
+    if not user_id:
+        try:
+            existing = supabase.table('products')\
+                .select('user_id')\
+                .eq('asin', asin)\
+                .limit(1)\
+                .execute()
+            if existing.data and len(existing.data) > 0:
+                user_id = existing.data[0].get('user_id')
+        except:
+            pass
+    
+    if not user_id:
+        logger.warning(f"⚠️ No user_id provided and couldn't find existing product for {asin}")
+        return {}
+    
     # Check if we already have fresh data
     if not force_refresh:
         try:
             existing = supabase.table('products')\
                 .select('*')\
                 .eq('asin', asin)\
+                .eq('user_id', user_id)\
                 .limit(1)\
                 .execute()
             
@@ -61,14 +84,22 @@ async def fetch_and_store_sp_api_data(asin: str, force_refresh: bool = False) ->
         # Extract structured data + store raw response
         product_data = extract_sp_api_structured_data(item)
         product_data['asin'] = asin
+        product_data['user_id'] = user_id  # ✅ CRITICAL: Include user_id for proper updates
         
-        # Update or insert
+        # ✅ Update existing product by (user_id, asin) - this ensures we update the right product
         result = supabase.table('products')\
-            .upsert(product_data, on_conflict='asin')\
+            .update(product_data)\
+            .eq('asin', asin)\
+            .eq('user_id', user_id)\
             .execute()
         
-        logger.info(f"✅ Stored complete SP-API data for {asin}")
-        return result.data[0] if result.data else product_data
+        if result.data and len(result.data) > 0:
+            logger.info(f"✅ Stored complete SP-API data for {asin} (raw response + structured fields)")
+            return result.data[0]
+        else:
+            # Product might not exist yet - log warning but return the data we have
+            logger.warning(f"⚠️ Product {asin} not found for user {user_id} - data extracted but not stored")
+            return product_data
         
     except Exception as e:
         logger.error(f"❌ Failed to fetch SP-API data for {asin}: {e}")
@@ -77,19 +108,42 @@ async def fetch_and_store_sp_api_data(asin: str, force_refresh: bool = False) ->
         return {}
 
 
-async def fetch_and_store_keepa_data(asin: str, force_refresh: bool = False) -> Dict[str, Any]:
+async def fetch_and_store_keepa_data(asin: str, user_id: Optional[str] = None, force_refresh: bool = False) -> Dict[str, Any]:
     """
     Fetch data from Keepa API and store everything.
     Checks cache first to avoid duplicate API calls.
     
+    Args:
+        asin: Product ASIN
+        user_id: User ID (optional, will try to find from existing product if not provided)
+        force_refresh: Force fresh API call even if cached data exists
+    
     Returns: Dict with all extracted data + raw response
     """
+    # Get user_id if not provided (find from existing product)
+    if not user_id:
+        try:
+            existing = supabase.table('products')\
+                .select('user_id')\
+                .eq('asin', asin)\
+                .limit(1)\
+                .execute()
+            if existing.data and len(existing.data) > 0:
+                user_id = existing.data[0].get('user_id')
+        except:
+            pass
+    
+    if not user_id:
+        logger.warning(f"⚠️ No user_id provided and couldn't find existing product for {asin}")
+        return {}
+    
     # Check if we already have fresh data
     if not force_refresh:
         try:
             existing = supabase.table('products')\
                 .select('*')\
                 .eq('asin', asin)\
+                .eq('user_id', user_id)\
                 .limit(1)\
                 .execute()
             
@@ -135,32 +189,22 @@ async def fetch_and_store_keepa_data(asin: str, force_refresh: bool = False) -> 
         # extract_keepa_structured_data signature: (keepa_response: Dict, asin: str)
         structured_data = extract_keepa_structured_data(response_for_extractor, asin)
         structured_data['asin'] = asin
+        structured_data['user_id'] = user_id  # ✅ CRITICAL: Include user_id for proper updates
         
-        # Merge with existing product data
-        try:
-            existing = supabase.table('products')\
-                .select('*')\
-                .eq('asin', asin)\
-                .limit(1)\
-                .execute()
-            
-            if existing.data and len(existing.data) > 0:
-                # Update existing
-                result = supabase.table('products')\
-                    .update(structured_data)\
-                    .eq('asin', asin)\
-                    .execute()
-            else:
-                # Insert new
-                result = supabase.table('products')\
-                    .insert(structured_data)\
-                    .execute()
-        except Exception as e:
-            logger.error(f"Error storing Keepa data: {e}")
+        # ✅ Update existing product by (user_id, asin) - this ensures we update the right product
+        result = supabase.table('products')\
+            .update(structured_data)\
+            .eq('asin', asin)\
+            .eq('user_id', user_id)\
+            .execute()
+        
+        if result.data and len(result.data) > 0:
+            logger.info(f"✅ Stored complete Keepa data for {asin} (raw response + structured fields)")
+            return result.data[0]
+        else:
+            # Product might not exist yet - log warning but return the data we have
+            logger.warning(f"⚠️ Product {asin} not found for user {user_id} - data extracted but not stored")
             return structured_data
-        
-        logger.info(f"✅ Stored complete Keepa data for {asin}")
-        return result.data[0] if result.data else structured_data
         
     except Exception as e:
         logger.error(f"❌ Failed to fetch Keepa data for {asin}: {e}")
@@ -169,22 +213,57 @@ async def fetch_and_store_keepa_data(asin: str, force_refresh: bool = False) -> 
         return {}
 
 
-async def fetch_and_store_all_api_data(asin: str, force_refresh: bool = False) -> Dict[str, Any]:
+async def fetch_and_store_all_api_data(asin: str, user_id: Optional[str] = None, force_refresh: bool = False) -> Dict[str, Any]:
     """
     Fetch and store data from BOTH SP-API and Keepa.
     This is the main function to call when you need complete product data.
     
+    Args:
+        asin: Product ASIN
+        user_id: User ID (optional, will try to find from existing product if not provided)
+        force_refresh: Force fresh API call even if cached data exists
+    
     Returns: Merged dict with all data from both APIs
     """
-    logger.info(f"🔍 Fetching complete API data for {asin} (force_refresh={force_refresh})")
+    # Get user_id if not provided
+    if not user_id:
+        try:
+            existing = supabase.table('products')\
+                .select('user_id')\
+                .eq('asin', asin)\
+                .limit(1)\
+                .execute()
+            if existing.data and len(existing.data) > 0:
+                user_id = existing.data[0].get('user_id')
+        except:
+            pass
+    
+    if not user_id:
+        logger.warning(f"⚠️ No user_id provided and couldn't find existing product for {asin}")
+        return {}
+    
+    logger.info(f"🔍 Fetching complete API data for {asin} (user_id={user_id}, force_refresh={force_refresh})")
     
     # Fetch both in parallel
-    sp_data = await fetch_and_store_sp_api_data(asin, force_refresh=force_refresh)
-    keepa_data = await fetch_and_store_keepa_data(asin, force_refresh=force_refresh)
+    import asyncio
+    sp_data, keepa_data = await asyncio.gather(
+        fetch_and_store_sp_api_data(asin, user_id=user_id, force_refresh=force_refresh),
+        fetch_and_store_keepa_data(asin, user_id=user_id, force_refresh=force_refresh),
+        return_exceptions=True
+    )
+    
+    # Handle exceptions
+    if isinstance(sp_data, Exception):
+        logger.error(f"❌ SP-API fetch failed: {sp_data}")
+        sp_data = {}
+    if isinstance(keepa_data, Exception):
+        logger.error(f"❌ Keepa fetch failed: {keepa_data}")
+        keepa_data = {}
     
     # Merge data (keepa takes precedence for overlapping fields)
     merged = {**sp_data, **keepa_data}
     merged['asin'] = asin
+    merged['user_id'] = user_id
     
     return merged
 

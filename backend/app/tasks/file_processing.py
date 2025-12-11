@@ -909,14 +909,17 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                             
                             for p in created.data:
                                 asin = p.get("asin")
-                                if asin and asin not in ["PENDING_", "Unknown"] and not asin.startswith("PENDING_"):
+                                product_user_id = p.get("user_id")  # ✅ Get user_id from created product
+                                if asin and asin not in ["PENDING_", "Unknown"] and not asin.startswith("PENDING_") and product_user_id:
                                     try:
                                         # Fetch and store ALL API data (SP-API + Keepa)
                                         # Use run_async since this is a sync Celery task
-                                        # Pass the coroutine, don't call it!
-                                        result = run_async(fetch_and_store_all_api_data(asin, force_refresh=False))
+                                        # ✅ CRITICAL: Pass user_id so data is stored correctly
+                                        result = run_async(fetch_and_store_all_api_data(asin, user_id=product_user_id, force_refresh=False))
                                         if result:
-                                            logger.info(f"✅ Stored complete API data for {asin}")
+                                            has_sp = bool(result.get('sp_api_raw_response'))
+                                            has_keepa = bool(result.get('keepa_raw_response'))
+                                            logger.info(f"✅ Stored API data for {asin}: SP-API={has_sp}, Keepa={has_keepa}")
                                         else:
                                             logger.warning(f"⚠️ No data returned for {asin}")
                                     except Exception as api_error:

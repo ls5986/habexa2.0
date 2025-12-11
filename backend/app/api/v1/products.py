@@ -3592,8 +3592,9 @@ async def refresh_product_api_data_by_asin(
             return float('inf')
     
     try:
-        logger.info(f"🔄 Refreshing API data for ASIN {asin} (force={force})")
-        updated_data = await fetch_and_store_all_api_data(asin, force_refresh=force)
+        logger.info(f"🔄 Refreshing API data for ASIN {asin} (user_id={user_id}, force={force})")
+        # ✅ CRITICAL: Pass user_id so data is stored correctly
+        updated_data = await fetch_and_store_all_api_data(asin, user_id=user_id, force_refresh=force)
         
         if not updated_data:
             raise HTTPException(500, "No data returned from API storage service")
