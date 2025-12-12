@@ -30,6 +30,7 @@ const BuyList = lazy(() => import('./pages/BuyList'));
 const BuyLists = lazy(() => import('./pages/BuyLists'));
 const BuyListDetail = lazy(() => import('./pages/BuyListDetail'));
 const Orders = lazy(() => import('./pages/Orders'));
+const SupplierOrderDetail = lazy(() => import('./pages/SupplierOrderDetail'));
 const OrderDetails = lazy(() => import('./pages/OrderDetails'));
 const Jobs = lazy(() => import('./pages/Jobs'));
 const Favorites = lazy(() => import('./pages/Favorites'));

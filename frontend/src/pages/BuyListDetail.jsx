@@ -36,6 +36,7 @@ import {
   CheckCircle,
   Download,
   Send,
+  ShoppingCart,
 } from 'lucide-react';
 import api from '../services/api';
 import { useToast } from '../context/ToastContext';
@@ -59,6 +60,7 @@ export default function BuyListDetail() {
   const [selectedItem, setSelectedItem] = useState(null);
   const [editQuantityDialogOpen, setEditQuantityDialogOpen] = useState(false);
   const [newQuantity, setNewQuantity] = useState(1);
+  const [creatingOrders, setCreatingOrders] = useState(false);
 
   useEffect(() => {
     fetchBuyList();
@@ -124,6 +126,34 @@ export default function BuyListDetail() {
       showToast('Failed to finalize buy list', 'error');
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const handleCreateOrders = async () => {
+    if (!buyList.items || buyList.items.length === 0) {
+      showToast('Buy list is empty', 'warning');
+      return;
+    }
+
+    setCreatingOrders(true);
+    try {
+      const response = await api.post(`/supplier-orders/create-from-buy-list?buy_list_id=${id}`);
+      showToast(`Created ${response.data.orders_created} supplier order(s)`, 'success');
+      
+      // Navigate to orders page or show success with links
+      if (response.data.orders && response.data.orders.length > 0) {
+        const orderIds = response.data.orders.map(o => o.id).join(',');
+        setTimeout(() => {
+          window.location.href = `/supplier-orders?created=${orderIds}`;
+        }, 1500);
+      } else {
+        fetchBuyList();
+      }
+    } catch (error) {
+      console.error('Error creating orders:', error);
+      showToast(error.response?.data?.detail || 'Failed to create orders', 'error');
+    } finally {
+      setCreatingOrders(false);
     }
   };
 
@@ -200,13 +230,35 @@ export default function BuyListDetail() {
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
           {buyList.status === 'draft' && (
+            <>
+              <Button
+                variant="contained"
+                startIcon={<CheckCircle size={16} />}
+                onClick={handleFinalize}
+                disabled={updating || !buyList.items || buyList.items.length === 0}
+              >
+                Finalize
+              </Button>
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<ShoppingCart size={16} />}
+                onClick={handleCreateOrders}
+                disabled={creatingOrders || !buyList.items || buyList.items.length === 0}
+              >
+                {creatingOrders ? 'Creating Orders...' : 'Create Supplier Orders'}
+              </Button>
+            </>
+          )}
+          {buyList.status === 'approved' && (
             <Button
               variant="contained"
-              startIcon={<CheckCircle size={16} />}
-              onClick={handleFinalize}
-              disabled={updating || !buyList.items || buyList.items.length === 0}
+              color="primary"
+              startIcon={<ShoppingCart size={16} />}
+              onClick={handleCreateOrders}
+              disabled={creatingOrders || !buyList.items || buyList.items.length === 0}
             >
-              Finalize
+              {creatingOrders ? 'Creating Orders...' : 'Create Supplier Orders'}
             </Button>
           )}
           <Button
