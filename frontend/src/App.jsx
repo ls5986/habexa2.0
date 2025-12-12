@@ -39,6 +39,7 @@ const OrderDetails = lazy(() => import('./pages/OrderDetails'));
 const Jobs = lazy(() => import('./pages/Jobs'));
 const Favorites = lazy(() => import('./pages/Favorites'));
 const Analyzer = lazy(() => import('./pages/Analyzer'));
+const Recommendations = lazy(() => import('./pages/Recommendations'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 const Loading = () => (
@@ -105,6 +106,7 @@ function App() {
                         <Route path="/settings" element={<Suspense fallback={<Loading />}><Settings /></Suspense>} />
                         <Route path="/pricing" element={<Suspense fallback={<Loading />}><Pricing /></Suspense>} />
                         <Route path="/favorites" element={<Suspense fallback={<Loading />}><Favorites /></Suspense>} />
+                        <Route path="/recommendations" element={<Suspense fallback={<Loading />}><Recommendations /></Suspense>} />
                         {import.meta.env.DEV && (
                           <Route path="/debug" element={<Suspense fallback={<Loading />}><Debug /></Suspense>} />
                         )}
