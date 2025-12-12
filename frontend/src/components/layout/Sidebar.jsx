@@ -1,5 +1,5 @@
 import { Box, Typography, Button } from '@mui/material';
-import { Home, Inbox, Users, Package, Search, Settings, ChevronLeft, ChevronRight, CreditCard, ShoppingCart, Receipt, FileText, Star, BarChart3 } from 'lucide-react';
+import { Home, Inbox, Users, Package, Search, Settings, ChevronLeft, ChevronRight, CreditCard, ShoppingCart, Receipt, FileText, Star, BarChart3, DollarSign } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { habexa } from '../../theme';
 import { useNotifications } from '../../context/NotificationContext';
