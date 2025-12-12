@@ -49,6 +49,14 @@ export default function AnalyzerTableRow({
       return product.product_sources[0].pack_size;
     }
     
+    if (columnId === 'moq' && product.product_sources?.[0]?.moq) {
+      return product.product_sources[0].moq;
+    }
+    
+    if (columnId === 'supplier_sku' && product.product_sources?.[0]?.supplier_sku) {
+      return product.product_sources[0].supplier_sku;
+    }
+    
     return value;
   };
 
@@ -264,8 +272,17 @@ export default function AnalyzerTableRow({
         transition: 'background-color 0.2s ease'
       }}
     >
-      {/* Checkbox */}
-      <TableCell padding="checkbox">
+      {/* Checkbox - STICKY */}
+      <TableCell 
+        padding="checkbox"
+        sx={{ 
+          position: 'sticky', 
+          left: 0, 
+          bgcolor: 'inherit', 
+          zIndex: 1,
+          minWidth: 48
+        }}
+      >
         <Checkbox
           checked={selected}
           onChange={(e) => onSelect(e.target.checked)}
@@ -298,12 +315,32 @@ export default function AnalyzerTableRow({
 
       {/* Dynamic Columns */}
       {columns
-        .filter(col => visibleColumns.includes(col.id))
-        .map(column => (
-          <TableCell key={column.id} sx={{ minWidth: column.width || 120 }}>
-            {renderCell(column)}
-          </TableCell>
-        ))}
+        .filter(col => visibleColumns.includes(col.id) && !['select', 'image', 'asin'].includes(col.id))
+        .map(column => {
+          const isEditable = column.editable && ['wholesale_cost', 'buy_cost', 'pack_size', 'moq', 'supplier_sku'].includes(column.id);
+          
+          return (
+            <TableCell key={column.id} sx={{ minWidth: column.width || 120 }}>
+              {isEditable ? (
+                <InlineEditCell
+                  value={getCellValue(column.id)}
+                  onSave={(newValue) => onFieldUpdate(column.id, newValue)}
+                  type={column.type === 'currency' ? 'number' : column.type === 'number' ? 'number' : 'text'}
+                  formatValue={(v) => {
+                    if (column.type === 'currency') return `$${Number(v).toFixed(2)}`;
+                    if (column.type === 'number') return formatNumber(v);
+                    return v;
+                  }}
+                  prefix={column.type === 'currency' ? '$' : undefined}
+                  min={column.type === 'number' ? 0 : undefined}
+                  step={column.type === 'currency' ? 0.01 : 1}
+                />
+              ) : (
+                renderCell(column)
+              )}
+            </TableCell>
+          );
+        })}
     </TableRow>
   );
 }

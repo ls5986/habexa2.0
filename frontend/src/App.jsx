@@ -85,10 +85,10 @@ function App() {
                     <AppLayout>
                       <Routes>
                         <Route path="/dashboard" element={<Suspense fallback={<Loading />}><Dashboard /></Suspense>} />
-                        <Route path="/deals" element={<Navigate to="/products" replace />} />
+                        <Route path="/deals" element={<Navigate to="/analyzer" replace />} />
                         <Route path="/deals/:dealId" element={<Suspense fallback={<Loading />}><DealDetail /></Suspense>} />
                         <Route path="/suppliers" element={<Suspense fallback={<Loading />}><Suppliers /></Suspense>} />
-                        <Route path="/products" element={<Suspense fallback={<Loading />}><Products /></Suspense>} />
+                        <Route path="/products" element={<Navigate to="/analyzer" replace />} />
                         <Route path="/jobs" element={<Suspense fallback={<Loading />}><Jobs /></Suspense>} />
                         <Route path="/buy-list" element={<Suspense fallback={<Loading />}><BuyList /></Suspense>} />
                         <Route path="/buy-lists" element={<Suspense fallback={<Loading />}><BuyLists /></Suspense>} />

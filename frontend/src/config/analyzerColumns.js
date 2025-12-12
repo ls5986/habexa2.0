@@ -117,6 +117,34 @@ export const analyzerColumns = [
     width: 110,
     visible: true,
     sortable: true,
+    editable: true, // Can edit wholesale cost
+  },
+  {
+    id: 'buy_cost',
+    label: 'Buy Cost',
+    type: 'currency',
+    width: 110,
+    visible: true,
+    sortable: true,
+    editable: true, // Can edit buy cost
+  },
+  {
+    id: 'pack_size',
+    label: 'Pack Size',
+    type: 'number',
+    width: 100,
+    visible: true,
+    sortable: true,
+    editable: true, // Can edit pack size
+  },
+  {
+    id: 'moq',
+    label: 'MOQ',
+    type: 'number',
+    width: 80,
+    visible: true,
+    sortable: true,
+    editable: true, // Can edit MOQ
   },
   {
     id: 'buy_box_price',
@@ -368,6 +396,15 @@ export const analyzerColumns = [
     visible: false,
     sortable: true,
   },
+  {
+    id: 'supplier_sku',
+    label: 'Supplier SKU',
+    type: 'text',
+    width: 140,
+    visible: true,
+    sortable: true,
+    editable: true, // Can edit supplier SKU
+  },
   
   // Purchase History
   {
@@ -446,6 +483,9 @@ export const defaultVisibleColumns = [
   'package_quantity',
   'amazon_link',
   'wholesale_cost',
+  'buy_cost',
+  'pack_size',
+  'moq',
   'buy_box_price',
   'profit_amount',
   'margin_percentage',
@@ -460,6 +500,7 @@ export const defaultVisibleColumns = [
   'amazon_in_stock',
   'is_hazmat',
   'bought_last_30d',
+  'supplier_sku',
 ];
 
 // Column groups for organized menu
@@ -474,7 +515,7 @@ export const columnGroups = {
   },
   pricing: {
     label: 'Pricing',
-    columns: ['wholesale_cost', 'buy_box_price', 'lowest_price_90d', 'avg_buybox_90d', 'list_price'],
+    columns: ['wholesale_cost', 'buy_cost', 'pack_size', 'moq', 'buy_box_price', 'lowest_price_90d', 'avg_buybox_90d', 'list_price'],
   },
   profitability: {
     label: 'Profitability',
@@ -502,7 +543,7 @@ export const columnGroups = {
   },
   supplier: {
     label: 'Supplier',
-    columns: ['supplier_name'],
+    columns: ['supplier_name', 'supplier_sku'],
   },
   purchase: {
     label: 'Purchase History',

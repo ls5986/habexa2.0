@@ -256,11 +256,70 @@ export default function EnhancedAnalyzer() {
   // ============================================
   const handleBulkAddToOrder = async (productIds) => {
     try {
-      // Navigate to order creation with selected products
-      // OR open order dialog
-      console.log('Add to order:', productIds);
+      // Create buy list from selected products
+      const response = await api.post('/buy-lists/create-from-products', {
+        product_ids: productIds,
+        name: `Buy List - ${new Date().toLocaleDateString()}`
+      });
+      
+      if (response.data?.buy_list_id) {
+        // Navigate to buy list or show success
+        window.location.href = `/buy-lists/${response.data.buy_list_id}`;
+      }
     } catch (err) {
       console.error('Bulk add to order failed:', err);
+      alert('Failed to create buy list');
+    }
+  };
+  
+  const handleBulkUpdateCosts = async (productIds, updates) => {
+    try {
+      // Get product sources for these products
+      const productSourceUpdates = [];
+      
+      for (const productId of productIds) {
+        const product = products.find(p => p.id === productId);
+        const productSource = product?.product_sources?.[0];
+        
+        if (productSource?.id) {
+          const updateData = { id: productSource.id };
+          if (updates.wholesale_cost !== '') updateData.wholesale_cost = parseFloat(updates.wholesale_cost);
+          if (updates.pack_size !== '') updateData.pack_size = parseInt(updates.pack_size);
+          if (updates.moq !== '') updateData.moq = parseInt(updates.moq);
+          
+          if (Object.keys(updateData).length > 1) {
+            productSourceUpdates.push(updateData);
+          }
+        }
+      }
+      
+      if (productSourceUpdates.length > 0) {
+        await api.post('/products/bulk-update-costs', {
+          product_source_updates: productSourceUpdates
+        });
+        
+        fetchProducts();
+        setSelectedProducts(new Set());
+        setSelectAll(false);
+      }
+    } catch (err) {
+      console.error('Bulk update costs failed:', err);
+      alert('Failed to update costs');
+    }
+  };
+  
+  const handleBulkRefreshData = async (productIds) => {
+    try {
+      await api.post('/products/bulk-refetch', {
+        product_ids: productIds
+      });
+      
+      alert('API data refresh started. This may take a few minutes.');
+      // Optionally refresh products after a delay
+      setTimeout(() => fetchProducts(), 5000);
+    } catch (err) {
+      console.error('Bulk refresh failed:', err);
+      alert('Failed to refresh data');
     }
   };
 
@@ -296,14 +355,14 @@ export default function EnhancedAnalyzer() {
     }
   };
 
-  const handleExport = () => {
+  const handleExport = (productIds = []) => {
     // Export to CSV
-    const selectedData = filteredProducts.filter(p => 
-      selectedProducts.size === 0 || selectedProducts.has(p.id)
-    );
+    const productsToExport = productIds.length > 0
+      ? filteredProducts.filter(p => productIds.includes(p.id))
+      : filteredProducts;
     
     // Convert to CSV
-    const csv = convertToCSV(selectedData);
+    const csv = convertToCSV(productsToExport);
     
     // Download
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -312,6 +371,7 @@ export default function EnhancedAnalyzer() {
     a.href = url;
     a.download = `habexa-products-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
+    URL.revokeObjectURL(url);
   };
 
   // ============================================
@@ -534,6 +594,9 @@ export default function EnhancedAnalyzer() {
           onHide={handleBulkHide}
           onDelete={handleBulkDelete}
           onFavorite={handleBulkFavorite}
+          onUpdateCosts={handleBulkUpdateCosts}
+          onRefreshData={handleBulkRefreshData}
+          onExport={handleExport}
           onClearSelection={() => {
             setSelectedProducts(new Set());
             setSelectAll(false);
@@ -564,12 +627,22 @@ export default function EnhancedAnalyzer() {
         <Table stickyHeader>
           <TableHead>
             <TableRow>
-              {/* Checkbox Column */}
-              <TableCell padding="checkbox" sx={{ bgcolor: 'grey.100' }}>
+              {/* Checkbox Column - MUST BE FIRST, STICKY */}
+              <TableCell 
+                padding="checkbox" 
+                sx={{ 
+                  bgcolor: 'grey.100', 
+                  position: 'sticky', 
+                  left: 0, 
+                  zIndex: 3,
+                  minWidth: 48
+                }}
+              >
                 <Checkbox
                   checked={selectAll}
                   indeterminate={selectedProducts.size > 0 && selectedProducts.size < filteredProducts.length}
                   onChange={(e) => handleSelectAll(e.target.checked)}
+                  sx={{ color: 'primary.main' }}
                 />
               </TableCell>
 
