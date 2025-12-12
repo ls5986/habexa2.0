@@ -317,7 +317,9 @@ export default function AnalyzerTableRow({
       {columns
         .filter(col => visibleColumns.includes(col.id) && !['select', 'image', 'asin'].includes(col.id))
         .map(column => {
-          const isEditable = column.editable && ['wholesale_cost', 'buy_cost', 'pack_size', 'moq', 'supplier_sku'].includes(column.id);
+          // Check if column is editable (from config or hardcoded list)
+          const editableFields = ['wholesale_cost', 'buy_cost', 'pack_size', 'moq', 'supplier_sku'];
+          const isEditable = (column.editable || editableFields.includes(column.id)) && onFieldUpdate;
           
           return (
             <TableCell key={column.id} sx={{ minWidth: column.width || 120 }}>
@@ -327,6 +329,13 @@ export default function AnalyzerTableRow({
                   onSave={(newValue) => onFieldUpdate(column.id, newValue)}
                   type={column.type === 'currency' ? 'number' : column.type === 'number' ? 'number' : 'text'}
                   formatValue={(v) => {
+                    if (v == null || v === '') return '—';
+                    if (column.type === 'currency') return `$${Number(v).toFixed(2)}`;
+                    if (column.type === 'number') return formatNumber(v);
+                    return v;
+                  }}
+                  displayValue={(v) => {
+                    if (v == null || v === '') return '—';
                     if (column.type === 'currency') return `$${Number(v).toFixed(2)}`;
                     if (column.type === 'number') return formatNumber(v);
                     return v;

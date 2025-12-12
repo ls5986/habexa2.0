@@ -673,24 +673,28 @@ export default function EnhancedAnalyzer() {
                         {column.label}
                       </Typography>
                       
-                      <IconButton
-                        size="small"
-                        onClick={() => {
-                          if (sortBy === column.id) {
-                            setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-                          } else {
-                            setSortBy(column.id);
-                            setSortDirection('desc');
-                          }
-                        }}
-                        sx={{ p: 0.5 }}
-                      >
-                        <Typography variant="caption">
-                          {sortBy === column.id && (
-                            sortDirection === 'asc' ? '↑' : '↓'
-                          )}
-                        </Typography>
-                      </IconButton>
+                      {column.sortable !== false && (
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            if (sortBy === column.id) {
+                              setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+                            } else {
+                              setSortBy(column.id);
+                              setSortDirection('desc');
+                            }
+                          }}
+                          sx={{ p: 0.5, ml: 0.5 }}
+                        >
+                          <Typography variant="caption" color="primary">
+                            {sortBy === column.id ? (
+                              sortDirection === 'asc' ? '↑' : '↓'
+                            ) : (
+                              '⇅'
+                            )}
+                          </Typography>
+                        </IconButton>
+                      )}
                     </Box>
                   </TableCell>
                 ))}
