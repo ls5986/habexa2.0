@@ -47,7 +47,7 @@ async def update_product(
         raise HTTPException(500, str(e))
 
 
-@router.post("/bulk-hide")
+@router.post("/products/bulk-hide")
 async def bulk_hide_products(
     product_ids: List[str] = Body(..., embed=True, alias="product_ids"),
     current_user: dict = Depends(get_current_user)
@@ -59,10 +59,12 @@ async def bulk_hide_products(
         if not product_ids:
             raise HTTPException(400, "No product IDs provided")
         
+        user_id = current_user.get('id') or current_user.get('sub')
+        
         # Update all products
         result = supabase.table('products').update({
             'status': 'hidden'
-        }).in_('id', product_ids).eq('user_id', current_user['id']).execute()
+        }).in_('id', product_ids).eq('user_id', user_id).execute()
         
         return {
             "success": True,
@@ -76,7 +78,7 @@ async def bulk_hide_products(
         raise HTTPException(500, str(e))
 
 
-@router.post("/bulk-delete")
+@router.post("/products/bulk-delete")
 async def bulk_delete_products(
     product_ids: List[str] = Body(..., embed=True, alias="product_ids"),
     current_user: dict = Depends(get_current_user)
@@ -88,10 +90,12 @@ async def bulk_delete_products(
         if not product_ids:
             raise HTTPException(400, "No product IDs provided")
         
+        user_id = current_user.get('id') or current_user.get('sub')
+        
         # Delete products
         result = supabase.table('products').delete().in_(
             'id', product_ids
-        ).eq('user_id', current_user['id']).execute()
+        ).eq('user_id', user_id).execute()
         
         return {
             "success": True,
@@ -105,7 +109,7 @@ async def bulk_delete_products(
         raise HTTPException(500, str(e))
 
 
-@router.post("/bulk-favorite")
+@router.post("/products/bulk-favorite")
 async def bulk_favorite_products(
     product_ids: List[str] = Body(..., embed=True, alias="product_ids"),
     favorite: bool = Body(True, embed=True),
@@ -118,10 +122,12 @@ async def bulk_favorite_products(
         if not product_ids:
             raise HTTPException(400, "No product IDs provided")
         
+        user_id = current_user.get('id') or current_user.get('sub')
+        
         # Update favorite status
         result = supabase.table('products').update({
             'is_favorite': favorite
-        }).in_('id', product_ids).eq('user_id', current_user['id']).execute()
+        }).in_('id', product_ids).eq('user_id', user_id).execute()
         
         return {
             "success": True,
@@ -135,7 +141,7 @@ async def bulk_favorite_products(
         raise HTTPException(500, str(e))
 
 
-@router.post("/bulk-update-costs")
+@router.post("/products/bulk-update-costs")
 async def bulk_update_costs(
     updates: List[Dict[str, Any]] = Body(...),
     current_user: dict = Depends(get_current_user)
@@ -158,10 +164,12 @@ async def bulk_update_costs(
         for update in updates:
             product_id = update.pop('product_id')
             
+            user_id = current_user.get('id') or current_user.get('sub')
+            
             # Update product_sources table
             result = supabase.table('product_sources').update(update).eq(
                 'product_id', product_id
-            ).eq('user_id', current_user['id']).execute()
+            ).eq('user_id', user_id).execute()
             
             if result.data:
                 updated_count += 1

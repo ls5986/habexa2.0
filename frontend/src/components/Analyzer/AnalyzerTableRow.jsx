@@ -11,7 +11,6 @@ import {
   alpha
 } from '@mui/material';
 import InlineEditCell from './InlineEditCell';
-import { analyzerColumns } from './analyzerColumns';
 import { formatCurrency, formatPercentage, formatNumber } from '../../utils/formatters';
 
 export default function AnalyzerTableRow({
@@ -20,7 +19,8 @@ export default function AnalyzerTableRow({
   visibleColumns,
   profitColor,
   onSelect,
-  onFieldUpdate
+  onFieldUpdate,
+  columns = []
 }) {
   const handleFieldUpdate = async (field, value) => {
     if (onFieldUpdate) {
@@ -53,7 +53,7 @@ export default function AnalyzerTableRow({
 
   const renderCell = (column) => {
     const value = getCellValue(column.id);
-    const columnConfig = analyzerColumns.find(c => c.id === column.id) || {};
+    const columnConfig = columns.find(c => c.id === column.id) || {};
 
     // Inline editable fields
     const editableFields = ['wholesale_cost', 'buy_cost', 'pack_size', 'moq'];
@@ -262,7 +262,7 @@ export default function AnalyzerTableRow({
       </TableCell>
 
       {/* Dynamic Columns */}
-      {analyzerColumns
+      {columns
         .filter(col => visibleColumns.includes(col.id))
         .map(column => (
           <TableCell key={column.id} sx={{ minWidth: column.width || 120 }}>

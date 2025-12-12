@@ -52,6 +52,12 @@ import api from '../services/api';
 import { useToast } from '../context/ToastContext';
 
 export default function Analyzer() {
+  // Use the new Enhanced Analyzer component
+  return <EnhancedAnalyzer />;
+}
+
+// Legacy Analyzer component (kept for reference)
+export function LegacyAnalyzer() {
   // State management
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
