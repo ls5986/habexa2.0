@@ -28,7 +28,7 @@ import {
   TrendingUp,
   TrendingDown,
   Package,
-  Refresh,
+  RefreshCw,
 } from 'lucide-react';
 import api from '../services/api';
 import { useToast } from '../context/ToastContext';
@@ -171,7 +171,7 @@ export default function FinancialDashboard() {
           </FormControl>
           <Button
             variant="outlined"
-            startIcon={<Refresh size={16} />}
+            startIcon={<RefreshCw size={16} />}
             onClick={handleRecalculateAll}
             disabled={recalculating}
           >
