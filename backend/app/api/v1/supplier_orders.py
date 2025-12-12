@@ -197,6 +197,16 @@ async def create_orders_from_buy_list(
                 .insert(order_data)\
                 .execute()
             
+            # Auto-generate prep instructions if order has items
+            if order_response.data:
+                order_id = order_response.data[0]['id']
+                try:
+                    from app.services.prep_instructions_service import PrepInstructionsService
+                    prep_service = PrepInstructionsService(user_id)
+                    await prep_service.generate_prep_instructions_for_order(order_id)
+                except Exception as e:
+                    logger.warning(f"Failed to generate prep instructions for order {order_id}: {e}")
+            
             if not order_response.data:
                 logger.error(f"Failed to create order for supplier {supplier_id}")
                 continue
