@@ -55,8 +55,18 @@ class SPAPIExtractor:
                 # Browse classification
                 if 'browseClassification' in summary:
                     browse = summary['browseClassification']
-                    extracted['category'] = browse.get('displayName')
+                    display_name = browse.get('displayName', '')
+                    extracted['category'] = display_name
                     extracted['category_rank'] = browse.get('classificationRank')
+                    
+                    # Extract subcategory (everything after first ">")
+                    if '>' in display_name:
+                        parts = display_name.split('>', 1)
+                        extracted['category'] = parts[0].strip()
+                        extracted['subcategory'] = parts[1].strip() if len(parts) > 1 else None
+                    
+                    # Determine if top-level category (no ">" separator)
+                    extracted['is_top_level_category'] = '>' not in display_name
             
             # ===== IDENTIFIERS FROM ATTRIBUTES =====
             if 'attributes' in sp_response:
@@ -167,6 +177,31 @@ class SPAPIExtractor:
             # ===== BROWSE NODES =====
             if 'browseNodes' in sp_response:
                 extracted['browse_nodes'] = sp_response['browseNodes']
+            
+            # ===== CALCULATED FIELDS =====
+            # Calculate is_oversized based on FBA size limits
+            if extracted.get('item_weight') and extracted.get('item_length') and extracted.get('item_width') and extracted.get('item_height'):
+                weight = float(extracted.get('item_weight', 0))
+                length = float(extracted.get('item_length', 0))
+                width = float(extracted.get('item_width', 0))
+                height = float(extracted.get('item_height', 0))
+                
+                # FBA standard size limits
+                # Standard: weight <= 20 lbs, length <= 18", width <= 14", height <= 8"
+                # Or dimensional weight > 20 lbs
+                is_oversized = False
+                
+                if weight > 20:
+                    is_oversized = True
+                elif length > 18 or width > 14 or height > 8:
+                    is_oversized = True
+                else:
+                    # Calculate dimensional weight: (L × W × H) / 139
+                    dim_weight = (length * width * height) / 139
+                    if dim_weight > 20:
+                        is_oversized = True
+                
+                extracted['is_oversized'] = is_oversized
             
             logger.debug(f"✅ Extracted {len(extracted)} fields from SP-API response")
             
@@ -295,11 +330,15 @@ class SPAPIFeesExtractor:
                 fee_amount = fee_detail.get('FinalFee', {}).get('Amount', 0)
                 
                 if fee_type == 'ReferralFee':
-                    # Calculate percentage (if we have sell price)
-                    pass  # Store raw amount for now
+                    extracted['referral_fee'] = fee_amount
+                    # Calculate percentage if we have sell price
+                    # Will be calculated separately if needed
                 
                 elif fee_type == 'FBAFees':
                     extracted['fba_fees'] = fee_amount
+                
+                elif fee_type == 'VariableClosingFee':
+                    extracted['variable_closing_fee'] = fee_amount
             
             logger.debug(f"✅ Extracted fee data: total={extracted.get('fees_total')}, fba={extracted.get('fba_fees')}")
             
@@ -631,6 +670,32 @@ class KeepaExtractor:
                 return int((oos_minutes / total_minutes) * 100)
         except Exception as e:
             logger.debug(f"Error calculating OOS percentage: {e}")
+        
+        return None
+    
+    @staticmethod
+    def _calc_lowest_price(price_history: List, days: int) -> Optional[float]:
+        """Calculate lowest price over last N days."""
+        if not price_history or len(price_history) < 2:
+            return None
+        
+        try:
+            base_date = datetime(2011, 1, 1)
+            now = datetime.now()
+            cutoff_time = (now - timedelta(days=days) - base_date).total_seconds() / 60
+            
+            recent_prices = []
+            for i in range(0, len(price_history) - 1, 2):
+                timestamp = price_history[i]
+                price = price_history[i + 1]
+                
+                if timestamp >= cutoff_time and price >= 0:
+                    recent_prices.append(price)
+            
+            if recent_prices:
+                return round(min(recent_prices) / 100, 2)
+        except Exception as e:
+            logger.debug(f"Error calculating lowest price: {e}")
         
         return None
     
