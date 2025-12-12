@@ -91,6 +91,7 @@ function App() {
                         <Route path="/buy-lists" element={<Suspense fallback={<Loading />}><BuyLists /></Suspense>} />
                         <Route path="/buy-lists/:id" element={<Suspense fallback={<Loading />}><BuyListDetail /></Suspense>} />
                         <Route path="/orders" element={<Suspense fallback={<Loading />}><Orders /></Suspense>} />
+                        <Route path="/supplier-orders/:id" element={<Suspense fallback={<Loading />}><SupplierOrderDetail /></Suspense>} />
                         <Route path="/orders/:id" element={<Suspense fallback={<Loading />}><OrderDetails /></Suspense>} />
                         <Route path="/analyze" element={<Suspense fallback={<Loading />}><Analyze /></Suspense>} />
                         <Route path="/analyzer" element={<Suspense fallback={<Loading />}><Analyzer /></Suspense>} />
