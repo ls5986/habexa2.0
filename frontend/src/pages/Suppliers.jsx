@@ -16,7 +16,7 @@ import api from '../services/api';
 
 const Suppliers = () => {
   const navigate = useNavigate();
-  const { suppliers, loading, refetch } = useSuppliers();
+  const { suppliers, loading, refetch, refreshSuppliers } = useSuppliers();
   const [formOpen, setFormOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -45,7 +45,11 @@ const Suppliers = () => {
     try {
       const url = `/suppliers/${deleteDialog.supplier.id}`;
       await api.delete(deleteProducts ? `${url}?delete_products=true` : url);
-      refetch();
+      if (refetch) {
+        refetch();
+      } else if (refreshSuppliers) {
+        refreshSuppliers();
+      }
       setDeleteDialog({ open: false, supplier: null });
     } catch (err) {
       alert('Failed to delete supplier');
