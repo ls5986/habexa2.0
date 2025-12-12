@@ -67,6 +67,7 @@ def daily_inventory_snapshot(user_id: str = None):
                     
                     try:
                         # Get inventory summaries from SP-API (requires user connection)
+                        # Note: This will return zeros if user not connected
                         inventory_data = await sp_api_client.get_inventory_summaries(batch_asins, user_id=uid)
                         
                         # Create snapshots for each product
