@@ -355,6 +355,38 @@ export default function EnhancedAnalyzer() {
     }
   };
 
+  const handlePricingModeChange = (mode) => {
+    setPricingMode(mode);
+    localStorage.setItem('habexa_pricing_mode', mode);
+  };
+
+  // Helper function to get price based on pricing mode
+  const getPriceForMode = (product) => {
+    if (pricingMode === 'current') {
+      return product.buy_box_price || product.current_price;
+    } else if (pricingMode === '30d_avg') {
+      return product.buy_box_price_30d_avg;
+    } else if (pricingMode === '90d_avg') {
+      return product.buy_box_price_90d_avg;
+    } else if (pricingMode === '365d_avg') {
+      return product.buy_box_price_365d_avg;
+    }
+    // Fallback
+    return product.buy_box_price || product.buy_box_price_365d_avg || product.buy_box_price_90d_avg || product.buy_box_price_30d_avg;
+  };
+
+  // Calculate price deviation percentage
+  const getPriceDeviation = (product) => {
+    const currentPrice = product.buy_box_price || product.current_price;
+    const selectedPrice = getPriceForMode(product);
+    
+    if (!currentPrice || !selectedPrice || selectedPrice === 0) {
+      return null;
+    }
+    
+    return ((currentPrice - selectedPrice) / selectedPrice) * 100;
+  };
+
   const handleExport = (productIds = []) => {
     // Export to CSV
     const productsToExport = productIds.length > 0
@@ -713,6 +745,7 @@ export default function EnhancedAnalyzer() {
                   onFieldUpdate={handleFieldUpdate}
                   columns={analyzerColumns}
                   roiValue={product.roi || product.roi_percentage || 0}
+                  pricingMode={pricingMode}
                 />
             ))}
 
