@@ -17,6 +17,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Deals = lazy(() => import('./pages/Deals'));
 const DealDetail = lazy(() => import('./pages/DealDetail'));
 const Suppliers = lazy(() => import('./pages/Suppliers'));
+const SupplierDetail = lazy(() => import('./pages/SupplierDetail'));
 const Products = lazy(() => import('./pages/Products'));
 const Analyze = lazy(() => import('./pages/Analyze'));
 const Settings = lazy(() => import('./pages/Settings'));
@@ -88,6 +89,7 @@ function App() {
                         <Route path="/deals" element={<Navigate to="/analyzer" replace />} />
                         <Route path="/deals/:dealId" element={<Suspense fallback={<Loading />}><DealDetail /></Suspense>} />
                         <Route path="/suppliers" element={<Suspense fallback={<Loading />}><Suppliers /></Suspense>} />
+                        <Route path="/suppliers/:supplierId" element={<Suspense fallback={<Loading />}><SupplierDetail /></Suspense>} />
                         <Route path="/products" element={<Navigate to="/analyzer" replace />} />
                         <Route path="/jobs" element={<Suspense fallback={<Loading />}><Jobs /></Suspense>} />
                         <Route path="/buy-list" element={<Suspense fallback={<Loading />}><BuyList /></Suspense>} />

@@ -134,9 +134,47 @@ async def update_supplier(
 
 
 @router.delete("/{supplier_id}")
-async def delete_supplier(supplier_id: str, current_user=Depends(get_current_user)):
-    """Delete supplier."""
+async def delete_supplier(
+    supplier_id: str, 
+    delete_products: bool = False,
+    current_user=Depends(get_current_user)
+):
+    """Delete supplier. Optionally delete all products from this supplier."""
     
+    # If delete_products is True, delete all products from this supplier
+    if delete_products:
+        # First, get all product_sources for this supplier
+        product_sources = supabase.table("product_sources")\
+            .select("product_id")\
+            .eq("supplier_id", supplier_id)\
+            .eq("user_id", current_user.id)\
+            .execute()
+        
+        product_ids = [ps["product_id"] for ps in product_sources.data] if product_sources.data else []
+        
+        # Delete products
+        if product_ids:
+            supabase.table("products")\
+                .delete()\
+                .in_("id", product_ids)\
+                .eq("user_id", current_user.id)\
+                .execute()
+        
+        # Delete product_sources
+        supabase.table("product_sources")\
+            .delete()\
+            .eq("supplier_id", supplier_id)\
+            .eq("user_id", current_user.id)\
+            .execute()
+    else:
+        # Just unlink products from supplier (set supplier_id to NULL)
+        supabase.table("product_sources")\
+            .update({"supplier_id": None})\
+            .eq("supplier_id", supplier_id)\
+            .eq("user_id", current_user.id)\
+            .execute()
+    
+    # Delete supplier
     supabase.table("suppliers").delete().eq("id", supplier_id).eq("user_id", current_user.id).execute()
     
     return {"success": True}
