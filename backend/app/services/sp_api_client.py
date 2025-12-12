@@ -827,6 +827,62 @@ class SPAPIClient:
         
         return data.get("payload", {}).get("inventorySummaries", [])
     
+    async def get_inventory_summaries(self, asins: List[str], user_id: str = None, marketplace_id: str = "ATVPDKIKX0DER") -> Dict[str, Dict[str, Any]]:
+        """
+        Get FBA inventory summaries for multiple ASINs.
+        Returns dict mapping ASIN to inventory data.
+        """
+        inventory_data = {}
+        
+        if user_id and not await self.is_user_connected(user_id, marketplace_id):
+            logger.warning(f"User {user_id} not connected, cannot get inventory summaries")
+            return {asin: {
+                'fulfillable_quantity': 0,
+                'inbound_working_quantity': 0,
+                'inbound_shipped_quantity': 0,
+                'reserved_quantity': 0,
+                'unfulfillable_quantity': 0
+            } for asin in asins}
+        
+        try:
+            # Use get_my_inventory and filter by ASINs
+            if user_id:
+                all_inventory = await self.get_my_inventory(user_id, marketplace_id)
+                for inv in all_inventory or []:
+                    asin = inv.get('asin')
+                    if asin and asin in asins:
+                        total_qty = inv.get('totalQuantity', {})
+                        inventory_data[asin] = {
+                            'fulfillable_quantity': total_qty.get('sellableQuantity', 0),
+                            'inbound_working_quantity': total_qty.get('inboundWorkingQuantity', 0),
+                            'inbound_shipped_quantity': total_qty.get('inboundShippedQuantity', 0),
+                            'reserved_quantity': total_qty.get('reservedQuantity', 0),
+                            'unfulfillable_quantity': total_qty.get('unsellableQuantity', 0)
+                        }
+            
+            # For ASINs not found, return zeros
+            for asin in asins:
+                if asin not in inventory_data:
+                    inventory_data[asin] = {
+                        'fulfillable_quantity': 0,
+                        'inbound_working_quantity': 0,
+                        'inbound_shipped_quantity': 0,
+                        'reserved_quantity': 0,
+                        'unfulfillable_quantity': 0
+                    }
+            
+            return inventory_data
+        
+        except Exception as e:
+            logger.error(f"Error getting inventory summaries: {e}", exc_info=True)
+            return {asin: {
+                'fulfillable_quantity': 0,
+                'inbound_working_quantity': 0,
+                'inbound_shipped_quantity': 0,
+                'reserved_quantity': 0,
+                'unfulfillable_quantity': 0
+            } for asin in asins}
+    
     async def get_my_orders(self, user_id: str, marketplace_id: str = "ATVPDKIKX0DER", days: int = 30) -> Optional[list]:
         """Get user's orders - REQUIRES USER CONNECTION."""
         if not await self.is_user_connected(user_id, marketplace_id):
