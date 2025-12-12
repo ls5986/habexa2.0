@@ -15,6 +15,7 @@ const menuItems = [
   { id: 'buy-list', label: 'Buy List', icon: ShoppingCart, path: '/buy-list' },
   { id: 'buy-lists', label: 'Buy Lists', icon: ShoppingCart, path: '/buy-lists' },
   { id: 'orders', label: 'Orders', icon: Receipt, path: '/orders' },
+  { id: 'financial', label: 'Financial', icon: DollarSign, path: '/financial' },
   { id: 'analyze', label: 'Analyze', icon: Search, path: '/analyze' },
   { id: 'pricing', label: 'Pricing', icon: CreditCard, path: '/pricing' },
 ];
