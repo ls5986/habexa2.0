@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.core.config import settings
-from app.api.v1 import deals, analysis, suppliers, notifications, settings as api_settings, watchlist, orders, billing, telegram, amazon, keepa, debug, market, sp_api, products, brands, jobs, batch, buy_list, buy_lists, supplier_orders, tpl, fba_shipments, financial, templates, prep_centers, auth, users, upload, favorites, products_bulk, product_sources
+from app.api.v1 import deals, analysis, suppliers, notifications, settings as api_settings, watchlist, orders, billing, telegram, amazon, keepa, debug, market, sp_api, products, brands, jobs, batch, buy_list, buy_lists, supplier_orders, tpl, fba_shipments, financial, templates, prep_centers, auth, users, upload, favorites, products_bulk, product_sources, pack_variants, brand_restrictions
 from app.routers import analyzer
 from app.middleware.performance import PerformanceMiddleware
 import logging
@@ -125,6 +125,8 @@ app.include_router(sp_api.router, prefix=f"{settings.API_V1_PREFIX}", tags=["sp-
 app.include_router(debug.router, prefix=f"{settings.API_V1_PREFIX}/debug", tags=["debug"])
 app.include_router(upload.router, prefix=f"{settings.API_V1_PREFIX}", tags=["upload"])
 app.include_router(analyzer.router, prefix=f"{settings.API_V1_PREFIX}", tags=["analyzer"])
+app.include_router(pack_variants.router, prefix=f"{settings.API_V1_PREFIX}", tags=["pack-variants"])
+app.include_router(brand_restrictions.router, prefix=f"{settings.API_V1_PREFIX}", tags=["brand-restrictions"])
 
 
 @app.get("/")

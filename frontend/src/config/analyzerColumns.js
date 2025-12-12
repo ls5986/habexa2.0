@@ -488,6 +488,7 @@ export const defaultVisibleColumns = [
   'moq',
   'buy_box_price',
   'profit_amount',
+  'ppu',
   'margin_percentage',
   'roi_percentage',
   'is_top_level',
