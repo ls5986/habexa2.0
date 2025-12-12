@@ -1,0 +1,322 @@
+"""
+Recommendation Service
+
+Main orchestrator for generating intelligent order recommendations.
+"""
+import logging
+from typing import Dict, Any, List, Optional
+from datetime import datetime
+
+from app.services.supabase_client import supabase
+from app.services.recommendation_scorer import RecommendationScorer
+from app.services.recommendation_filter import RecommendationFilter
+from app.services.recommendation_optimizer import RecommendationOptimizer
+from app.services.brand_restriction_detector import BrandRestrictionDetector
+
+logger = logging.getLogger(__name__)
+
+
+class RecommendationService:
+    """Generate intelligent order recommendations."""
+    
+    def __init__(self, user_id: str):
+        self.user_id = user_id
+        self.scorer = RecommendationScorer()
+        self.filter = RecommendationFilter()
+        self.optimizer = RecommendationOptimizer()
+        self.brand_detector = BrandRestrictionDetector(user_id)
+    
+    async def generate_recommendations(
+        self,
+        supplier_id: str,
+        goal_type: str,
+        goal_params: Dict[str, Any],
+        constraints: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Generate recommendations for a supplier.
+        
+        Args:
+            supplier_id: Supplier ID
+            goal_type: 'meet_minimum', 'target_profit', 'restock_inventory'
+            goal_params: Goal-specific parameters
+            constraints: Filters and constraints
+        
+        Returns:
+            Recommendation run results
+        """
+        try:
+            # Update filter and scorer with constraints
+            self.filter = RecommendationFilter(
+                min_roi=constraints.get('min_roi', 25.0),
+                max_fba_sellers=constraints.get('max_fba_sellers', 30),
+                max_days_to_sell=constraints.get('max_days_to_sell', 60),
+                avoid_hazmat=constraints.get('avoid_hazmat', True),
+                pricing_mode=constraints.get('pricing_mode', '365d_avg')
+            )
+            
+            self.scorer = RecommendationScorer(
+                pricing_mode=constraints.get('pricing_mode', '365d_avg')
+            )
+            
+            # Get all products for supplier
+            products_result = supabase.table('products').select(
+                '''
+                *,
+                product_sources!inner(
+                    *,
+                    supplier:suppliers(*)
+                )
+                '''
+            ).eq('product_sources.supplier_id', supplier_id).eq('user_id', self.user_id).execute()
+            
+            if not products_result.data:
+                return {
+                    'success': False,
+                    'error': 'No products found for supplier'
+                }
+            
+            # Create recommendation run
+            run_id = await self._create_recommendation_run(
+                supplier_id, goal_type, goal_params, constraints
+            )
+            
+            # Process products
+            scored_products = []
+            filter_failures = []
+            products_analyzed = 0
+            products_passed = 0
+            products_failed = 0
+            
+            for item in products_result.data:
+                products_analyzed += 1
+                product = item
+                product_source = item.get('product_sources', [{}])[0] if item.get('product_sources') else {}
+                
+                # Check brand restrictions
+                brand_name = product.get('brand')
+                brand_status = None
+                if brand_name:
+                    brand_check = await self.brand_detector.detect_and_flag(
+                        product_id=product.get('id'),
+                        brand_name=brand_name,
+                        supplier_id=supplier_id
+                    )
+                    brand_status = brand_check.get('brand_status')
+                
+                # Apply filters
+                should_include, failure_reason = self.filter.should_include(
+                    product, product_source, brand_status
+                )
+                
+                if not should_include:
+                    products_failed += 1
+                    filter_failures.append({
+                        'product_id': product.get('id'),
+                        'filter_name': failure_reason or 'unknown',
+                        'run_id': run_id
+                    })
+                    continue
+                
+                products_passed += 1
+                
+                # Calculate score
+                score_result = self.scorer.calculate_score(product, product_source)
+                
+                # Calculate unit cost and profit
+                wholesale_cost = float(product_source.get('wholesale_cost', 0))
+                pack_size = product_source.get('pack_size', 1) or 1
+                unit_cost = wholesale_cost / pack_size if pack_size > 0 else wholesale_cost
+                
+                sell_price = self.scorer._get_price_for_mode(product)
+                fba_fee = float(product.get('fba_fees', 0))
+                referral_pct = float(product.get('referral_fee_percentage', 15.0))
+                referral_fee = sell_price * (referral_pct / 100)
+                total_fees = fba_fee + referral_fee
+                total_cost = unit_cost + 0.10 + 0.50 + total_fees
+                profit_per_unit = sell_price - total_cost
+                
+                # Build product data for optimizer
+                scored_product = {
+                    'product_id': product.get('id'),
+                    'product_source_id': product_source.get('id'),
+                    'asin': product.get('asin'),
+                    'title': product.get('title'),
+                    'brand': product.get('brand'),
+                    'score': score_result['total_score'],
+                    'profitability_score': score_result['profitability_score'],
+                    'velocity_score': score_result['velocity_score'],
+                    'competition_score': score_result['competition_score'],
+                    'risk_score': score_result['risk_score'],
+                    'unit_cost': unit_cost,
+                    'profit_per_unit': profit_per_unit,
+                    'pack_size': pack_size,
+                    'monthly_sales': product.get('est_monthly_sales', 0),
+                    'fba_sellers': product.get('fba_seller_count', 0),
+                    'sell_price': sell_price,
+                    'roi': (profit_per_unit / total_cost * 100) if total_cost > 0 else 0,
+                    'breakdown': score_result.get('breakdown', {})
+                }
+                
+                scored_products.append(scored_product)
+            
+            # Store filter failures
+            if filter_failures:
+                supabase.table('recommendation_filter_failures').insert(filter_failures).execute()
+            
+            # Optimize based on goal
+            if goal_type == 'meet_minimum':
+                budget = goal_params.get('budget', 0)
+                result = self.optimizer.optimize_for_budget(
+                    scored_products,
+                    budget=budget,
+                    max_days_to_sell=constraints.get('max_days_to_sell')
+                )
+            
+            elif goal_type == 'target_profit':
+                profit_target = goal_params.get('profit_target', 0)
+                max_budget = goal_params.get('max_budget')
+                result = self.optimizer.optimize_for_profit(
+                    scored_products,
+                    profit_target=profit_target,
+                    max_budget=max_budget,
+                    fast_pct=goal_params.get('fast_pct', 0.60),
+                    medium_pct=goal_params.get('medium_pct', 0.30),
+                    slow_pct=goal_params.get('slow_pct', 0.10)
+                )
+            
+            elif goal_type == 'restock_inventory':
+                # TODO: Get current inventory and reorder points
+                current_inventory = {}  # Placeholder
+                reorder_points = {}  # Placeholder
+                max_budget = goal_params.get('max_budget')
+                
+                result = self.optimizer.optimize_for_restock(
+                    scored_products,
+                    current_inventory=current_inventory,
+                    reorder_points=reorder_points,
+                    max_budget=max_budget
+                )
+            
+            else:
+                return {
+                    'success': False,
+                    'error': f'Unknown goal_type: {goal_type}'
+                }
+            
+            # Generate reasoning and warnings
+            for product in result['products']:
+                why_recommended = []
+                warnings = []
+                
+                # Why recommended
+                if product.get('score', 0) >= 80:
+                    why_recommended.append('Top score (80+)')
+                if product.get('roi', 0) >= 100:
+                    why_recommended.append(f'High ROI ({product["roi"]:.0f}%)')
+                if product.get('monthly_sales', 0) > 500:
+                    why_recommended.append('Fast mover (500+ sales/month)')
+                if product.get('fba_sellers', 999) < 10:
+                    why_recommended.append('Low competition')
+                
+                # Warnings
+                breakdown = product.get('breakdown', {})
+                volatility = breakdown.get('price_volatility', 0)
+                if volatility > 30:
+                    warnings.append(f'Price volatility ({volatility:.0f}%)')
+                
+                if not why_recommended:
+                    why_recommended.append('Meets criteria')
+                
+                product['why_recommended'] = why_recommended
+                product['warnings'] = warnings
+            
+            # Store results
+            await self._store_recommendation_results(run_id, result, products_analyzed, products_passed, products_failed)
+            
+            return {
+                'success': True,
+                'run_id': run_id,
+                'results': result,
+                'stats': {
+                    'products_analyzed': products_analyzed,
+                    'products_passed': products_passed,
+                    'products_failed': products_failed
+                }
+            }
+        
+        except Exception as e:
+            logger.error(f"Recommendation generation failed: {e}", exc_info=True)
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
+    async def _create_recommendation_run(
+        self,
+        supplier_id: str,
+        goal_type: str,
+        goal_params: Dict[str, Any],
+        constraints: Dict[str, Any]
+    ) -> str:
+        """Create recommendation run record."""
+        run_data = {
+            'user_id': self.user_id,
+            'supplier_id': supplier_id,
+            'goal_type': goal_type,
+            'goal_params': goal_params,
+            'status': 'pending'
+        }
+        
+        result = supabase.table('recommendation_runs').insert(run_data).execute()
+        return result.data[0]['id'] if result.data else None
+    
+    async def _store_recommendation_results(
+        self,
+        run_id: str,
+        optimization_result: Dict[str, Any],
+        products_analyzed: int,
+        products_passed: int,
+        products_failed: int
+    ):
+        """Store recommendation results in database."""
+        # Store individual product recommendations
+        result_records = []
+        for product in optimization_result.get('products', []):
+            result_records.append({
+                'user_id': self.user_id,
+                'run_id': run_id,
+                'product_id': product.get('product_id'),
+                'product_source_id': product.get('product_source_id'),
+                'total_score': product.get('score', 0),
+                'profitability_score': product.get('profitability_score', 0),
+                'velocity_score': product.get('velocity_score', 0),
+                'competition_score': product.get('competition_score', 0),
+                'risk_score': product.get('risk_score', 0),
+                'recommended_quantity': product.get('recommended_quantity', 0),
+                'recommended_cost': product.get('recommended_cost', 0),
+                'expected_profit': product.get('expected_profit', 0),
+                'expected_roi': product.get('roi', 0),
+                'days_to_sell': product.get('days_to_sell', 0),
+                'mover_category': product.get('mover_category'),
+                'why_recommended': product.get('why_recommended', []),
+                'warnings': product.get('warnings', [])
+            })
+        
+        if result_records:
+            supabase.table('recommendation_results').insert(result_records).execute()
+        
+        # Update run with summary
+        supabase.table('recommendation_runs').update({
+            'status': 'completed',
+            'completed_at': datetime.utcnow().isoformat(),
+            'total_products_analyzed': products_analyzed,
+            'products_passed_filters': products_passed,
+            'products_failed_filters': products_failed,
+            'recommended_product_count': len(optimization_result.get('products', [])),
+            'total_investment': optimization_result.get('total_cost', 0),
+            'expected_profit': optimization_result.get('total_profit', 0),
+            'expected_roi': optimization_result.get('roi', 0),
+            'avg_days_to_sell': optimization_result.get('avg_days_to_sell', 0)
+        }).eq('id', run_id).execute()
+
