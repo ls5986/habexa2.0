@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.core.config import settings
-from app.api.v1 import deals, analysis, suppliers, notifications, settings as api_settings, watchlist, orders, billing, telegram, amazon, keepa, debug, market, sp_api, products, brands, jobs, batch, buy_list, buy_lists, supplier_orders, tpl, fba_shipments, financial, templates, auth, users, upload, favorites
+from app.api.v1 import deals, analysis, suppliers, notifications, settings as api_settings, watchlist, orders, billing, telegram, amazon, keepa, debug, market, sp_api, products, brands, jobs, batch, buy_list, buy_lists, supplier_orders, tpl, fba_shipments, financial, templates, prep_centers, auth, users, upload, favorites
 from app.routers import analyzer
 from app.middleware.performance import PerformanceMiddleware
 import logging
@@ -109,6 +109,7 @@ app.include_router(tpl.router, prefix=f"{settings.API_V1_PREFIX}", tags=["tpl"])
 app.include_router(fba_shipments.router, prefix=f"{settings.API_V1_PREFIX}", tags=["fba-shipments"])
 app.include_router(financial.router, prefix=f"{settings.API_V1_PREFIX}", tags=["financial"])
 app.include_router(templates.router, prefix=f"{settings.API_V1_PREFIX}", tags=["templates"])
+app.include_router(prep_centers.router, prefix=f"{settings.API_V1_PREFIX}", tags=["prep-centers"])
 app.include_router(orders.router, prefix=f"{settings.API_V1_PREFIX}/orders", tags=["orders"])
 app.include_router(billing.router, prefix=f"{settings.API_V1_PREFIX}/billing", tags=["billing"])
 app.include_router(auth.router, prefix=f"{settings.API_V1_PREFIX}/auth", tags=["auth"])

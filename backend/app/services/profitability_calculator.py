@@ -88,10 +88,8 @@ class ProfitabilityCalculator:
             if total_fees == 0:
                 total_fees = fba_fee + referral_fee
             
-            # Cost assumptions (from user settings or defaults)
-            prep_cost = cls._safe_decimal(
-                (user_settings or {}).get('prep_cost') or cls.DEFAULT_PREP_COST
-            )
+            # Prep cost (from prep assignment or user settings or default)
+            prep_cost = cls._get_prep_cost(product_data, user_settings)
             
             # Inbound shipping (estimate based on weight if available)
             item_weight = product_data.get('item_weight') or product_data.get('package_weight')
@@ -185,6 +183,28 @@ class ProfitabilityCalculator:
         except Exception as e:
             logger.error(f"Error calculating profitability: {e}", exc_info=True)
             return cls._empty_result()
+    
+    @staticmethod
+    def _get_prep_cost(product_data: Dict[str, Any], user_settings: Optional[Dict[str, Any]] = None) -> Decimal:
+        """
+        Get prep cost from prep assignment, user settings, or default.
+        
+        Priority:
+        1. prep_cost_per_unit from product (if assigned to prep center)
+        2. User settings prep_cost
+        3. Default prep cost
+        """
+        # Check if product has prep cost from assignment
+        prep_cost_per_unit = product_data.get('prep_cost_per_unit')
+        if prep_cost_per_unit:
+            return cls._safe_decimal(prep_cost_per_unit)
+        
+        # Check user settings
+        if user_settings and user_settings.get('prep_cost'):
+            return cls._safe_decimal(user_settings.get('prep_cost'))
+        
+        # Default
+        return cls.DEFAULT_PREP_COST
     
     @staticmethod
     def _safe_decimal(value: Any) -> Decimal:
