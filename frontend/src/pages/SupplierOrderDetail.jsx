@@ -35,6 +35,7 @@ import {
   Download,
   Send,
   CheckCircle,
+  Package,
 } from 'lucide-react';
 import api from '../services/api';
 import { useToast } from '../context/ToastContext';
@@ -67,10 +68,33 @@ export default function SupplierOrderDetail() {
     estimated_delivery_date: '',
     notes: '',
   });
+  const [createInboundDialogOpen, setCreateInboundDialogOpen] = useState(false);
+  const [warehouses, setWarehouses] = useState([]);
+  const [selectedWarehouse, setSelectedWarehouse] = useState('');
+  const [inboundData, setInboundData] = useState({
+    tracking_number: '',
+    carrier: '',
+    shipped_date: '',
+    expected_delivery_date: '',
+    requires_prep: false,
+    prep_instructions: '',
+    notes: '',
+  });
+  const [creatingInbound, setCreatingInbound] = useState(false);
 
   useEffect(() => {
     fetchOrder();
+    fetchWarehouses();
   }, [id]);
+
+  const fetchWarehouses = async () => {
+    try {
+      const response = await api.get('/tpl/warehouses?active_only=true');
+      setWarehouses(response.data.warehouses || []);
+    } catch (error) {
+      console.error('Error fetching warehouses:', error);
+    }
+  };
 
   const fetchOrder = async () => {
     setLoading(true);
@@ -164,6 +188,51 @@ export default function SupplierOrderDetail() {
     }
   };
 
+  const handleCreateInbound = async () => {
+    if (!selectedWarehouse) {
+      showToast('Please select a 3PL warehouse', 'warning');
+      return;
+    }
+
+    setCreatingInbound(true);
+    try {
+      const response = await api.post(`/tpl/inbounds/create-from-supplier-order?supplier_order_id=${id}&tpl_warehouse_id=${selectedWarehouse}`, {
+        tracking_number: inboundData.tracking_number || null,
+        carrier: inboundData.carrier || null,
+        shipped_date: inboundData.shipped_date || null,
+        expected_delivery_date: inboundData.expected_delivery_date || null,
+        requires_prep: inboundData.requires_prep,
+        prep_instructions: inboundData.prep_instructions || null,
+        notes: inboundData.notes || null,
+      });
+      
+      showToast('3PL inbound created', 'success');
+      setCreateInboundDialogOpen(false);
+      setInboundData({
+        tracking_number: '',
+        carrier: '',
+        shipped_date: '',
+        expected_delivery_date: '',
+        requires_prep: false,
+        prep_instructions: '',
+        notes: '',
+      });
+      setSelectedWarehouse('');
+      
+      // Navigate to inbound detail
+      if (response.data.inbound?.id) {
+        setTimeout(() => {
+          window.location.href = `/tpl/inbounds/${response.data.inbound.id}`;
+        }, 1500);
+      }
+    } catch (error) {
+      console.error('Error creating inbound:', error);
+      showToast(error.response?.data?.detail || 'Failed to create inbound', 'error');
+    } finally {
+      setCreatingInbound(false);
+    }
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
@@ -227,6 +296,17 @@ export default function SupplierOrderDetail() {
               disabled={updating}
             >
               Mark as Sent
+            </Button>
+          )}
+          {(order.status === 'sent' || order.status === 'confirmed' || order.status === 'in_transit') && (
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<Package size={16} />}
+              onClick={() => setCreateInboundDialogOpen(true)}
+              disabled={creatingInbound || warehouses.length === 0}
+            >
+              Create 3PL Inbound
             </Button>
           )}
           <Button
@@ -501,6 +581,131 @@ export default function SupplierOrderDetail() {
             disabled={updating}
           >
             Update
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Create 3PL Inbound Dialog */}
+      <Dialog
+        open={createInboundDialogOpen}
+        onClose={() => {
+          setCreateInboundDialogOpen(false);
+          setInboundData({
+            tracking_number: '',
+            carrier: '',
+            shipped_date: '',
+            expected_delivery_date: '',
+            requires_prep: false,
+            prep_instructions: '',
+            notes: '',
+          });
+          setSelectedWarehouse('');
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Create 3PL Inbound</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+            <FormControl fullWidth required>
+              <InputLabel>3PL Warehouse</InputLabel>
+              <Select
+                value={selectedWarehouse}
+                onChange={(e) => setSelectedWarehouse(e.target.value)}
+                label="3PL Warehouse"
+              >
+                {warehouses.map((warehouse) => (
+                  <MenuItem key={warehouse.id} value={warehouse.id}>
+                    {warehouse.name} {warehouse.company && `(${warehouse.company})`}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <TextField
+              label="Tracking Number"
+              value={inboundData.tracking_number}
+              onChange={(e) => setInboundData({ ...inboundData, tracking_number: e.target.value })}
+              fullWidth
+            />
+            <TextField
+              label="Carrier"
+              value={inboundData.carrier}
+              onChange={(e) => setInboundData({ ...inboundData, carrier: e.target.value })}
+              fullWidth
+              placeholder="UPS, FedEx, etc."
+            />
+            <TextField
+              label="Shipped Date"
+              type="datetime-local"
+              value={inboundData.shipped_date}
+              onChange={(e) => setInboundData({ ...inboundData, shipped_date: e.target.value })}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              label="Expected Delivery Date"
+              type="date"
+              value={inboundData.expected_delivery_date}
+              onChange={(e) => setInboundData({ ...inboundData, expected_delivery_date: e.target.value })}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={inboundData.requires_prep}
+                  onChange={(e) => setInboundData({ ...inboundData, requires_prep: e.target.checked })}
+                />
+              }
+              label="Requires Prep"
+            />
+            {inboundData.requires_prep && (
+              <TextField
+                label="Prep Instructions"
+                value={inboundData.prep_instructions}
+                onChange={(e) => setInboundData({ ...inboundData, prep_instructions: e.target.value })}
+                fullWidth
+                multiline
+                rows={3}
+                placeholder="Special prep requirements, labeling instructions, etc."
+              />
+            )}
+            <TextField
+              label="Notes"
+              value={inboundData.notes}
+              onChange={(e) => setInboundData({ ...inboundData, notes: e.target.value })}
+              fullWidth
+              multiline
+              rows={2}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setCreateInboundDialogOpen(false);
+              setInboundData({
+                tracking_number: '',
+                carrier: '',
+                shipped_date: '',
+                expected_delivery_date: '',
+                requires_prep: false,
+                prep_instructions: '',
+                notes: '',
+              });
+              setSelectedWarehouse('');
+            }}
+            disabled={creatingInbound}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleCreateInbound}
+            variant="contained"
+            disabled={creatingInbound || !selectedWarehouse}
+            startIcon={<Package size={16} />}
+          >
+            {creatingInbound ? 'Creating...' : 'Create Inbound'}
           </Button>
         </DialogActions>
       </Dialog>

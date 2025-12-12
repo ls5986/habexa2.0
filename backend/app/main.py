@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.core.config import settings
-from app.api.v1 import deals, analysis, suppliers, notifications, settings as api_settings, watchlist, orders, billing, telegram, amazon, keepa, debug, market, sp_api, products, brands, jobs, batch, buy_list, buy_lists, supplier_orders, auth, users, upload, favorites
+from app.api.v1 import deals, analysis, suppliers, notifications, settings as api_settings, watchlist, orders, billing, telegram, amazon, keepa, debug, market, sp_api, products, brands, jobs, batch, buy_list, buy_lists, supplier_orders, tpl, auth, users, upload, favorites
 from app.routers import analyzer
 from app.middleware.performance import PerformanceMiddleware
 import logging
@@ -105,6 +105,7 @@ app.include_router(watchlist.router, prefix=f"{settings.API_V1_PREFIX}/watchlist
 app.include_router(buy_list.router, prefix=f"{settings.API_V1_PREFIX}/buy-list", tags=["buy-list"])
 app.include_router(buy_lists.router, prefix=f"{settings.API_V1_PREFIX}", tags=["buy-lists"])
 app.include_router(supplier_orders.router, prefix=f"{settings.API_V1_PREFIX}", tags=["supplier-orders"])
+app.include_router(tpl.router, prefix=f"{settings.API_V1_PREFIX}", tags=["tpl"])
 app.include_router(orders.router, prefix=f"{settings.API_V1_PREFIX}/orders", tags=["orders"])
 app.include_router(billing.router, prefix=f"{settings.API_V1_PREFIX}/billing", tags=["billing"])
 app.include_router(auth.router, prefix=f"{settings.API_V1_PREFIX}/auth", tags=["auth"])
