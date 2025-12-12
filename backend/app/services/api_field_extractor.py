@@ -476,6 +476,17 @@ class KeepaExtractor:
                         if last_price >= 0:
                             extracted['buybox_price_current'] = last_price / 100
                             extracted['buy_box_price'] = last_price / 100
+                            
+                            # Calculate averages for different time periods
+                            extracted['buy_box_price_30d_avg'] = KeepaExtractor._calc_price_avg(
+                                bb_prices, days=30
+                            )
+                            extracted['buy_box_price_90d_avg'] = KeepaExtractor._calc_price_avg(
+                                bb_prices, days=90
+                            )
+                            extracted['buy_box_price_365d_avg'] = KeepaExtractor._calc_price_avg(
+                                bb_prices, days=365
+                            )
                 
                 # Availability (index 2)
                 if len(csv) > 2 and csv[2]:

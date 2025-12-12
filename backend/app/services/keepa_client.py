@@ -254,6 +254,7 @@ class KeepaClient:
                             "avg_price_30": round(stats.get("avg30", 0) / 100.0, 2) if stats.get("avg30") else None,
                             "avg_price_90": round(stats.get("avg90", 0) / 100.0, 2) if stats.get("avg90") else None,
                             "avg_price_180": round(stats.get("avg180", 0) / 100.0, 2) if stats.get("avg180") else None,
+                            "avg_price_365": round(stats.get("avg365", 0) / 100.0, 2) if stats.get("avg365") else None,
                             "min_price_30": round(stats.get("min30", 0) / 100.0, 2) if stats.get("min30") else None,
                             "min_price_90": round(stats.get("min90", 0) / 100.0, 2) if stats.get("min90") else None,
                             "max_price_30": round(stats.get("max30", 0) / 100.0, 2) if stats.get("max30") else None,
