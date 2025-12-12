@@ -22,27 +22,20 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import ViewColumnIcon from '@mui/icons-material/ViewColumn';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import LocalOfferIcon from '@mui/icons-material/LocalOffer';
+import InventoryIcon from '@mui/icons-material/Inventory';
+import WarningIcon from '@mui/icons-material/Warning';
+import ClearIcon from '@mui/icons-material/Clear';
 
 import AnalyzerTableRow from './AnalyzerTableRow';
 import AnalyzerBulkActions from './AnalyzerBulkActions';
 import AnalyzerFilters from './AnalyzerFilters';
 import AnalyzerSupplierSwitcher from './AnalyzerSupplierSwitcher';
 import AnalyzerColumnMenu from './AnalyzerColumnMenu';
+import { analyzerColumns, defaultVisibleColumns, getColorForValue } from '../../config/analyzerColumns';
 import api from '../../services/api';
-
-// Default columns configuration (will be replaced with actual analyzerColumns import)
-const DEFAULT_COLUMNS = [
-  { id: 'title', label: 'Title', defaultVisible: true, width: 300 },
-  { id: 'wholesale_cost', label: 'Wholesale Cost', defaultVisible: true, width: 120 },
-  { id: 'buy_cost', label: 'Buy Cost', defaultVisible: true, width: 120 },
-  { id: 'pack_size', label: 'Pack Size', defaultVisible: true, width: 100 },
-  { id: 'sell_price', label: 'Sell Price', defaultVisible: true, width: 120 },
-  { id: 'profit', label: 'Profit', defaultVisible: true, width: 120 },
-  { id: 'roi', label: 'ROI %', defaultVisible: true, width: 100 },
-  { id: 'margin', label: 'Margin %', defaultVisible: true, width: 100 },
-  { id: 'bsr', label: 'BSR', defaultVisible: true, width: 100 },
-  { id: 'fba_sellers', label: 'FBA Sellers', defaultVisible: true, width: 120 },
-];
+import './analyzer.css';
 
 export default function EnhancedAnalyzer() {
   // ============================================
@@ -70,9 +63,7 @@ export default function EnhancedAnalyzer() {
   const [showFilters, setShowFilters] = useState(false);
   
   // Column visibility
-  const [visibleColumns, setVisibleColumns] = useState(
-    DEFAULT_COLUMNS.filter(col => col.defaultVisible).map(col => col.id)
-  );
+  const [visibleColumns, setVisibleColumns] = useState(defaultVisibleColumns);
   const [showColumnMenu, setShowColumnMenu] = useState(false);
   
   // Sorting
@@ -345,8 +336,11 @@ export default function EnhancedAnalyzer() {
   const convertToCSV = (data) => {
     if (!data || data.length === 0) return '';
     
-    // Get visible columns
-    const cols = DEFAULT_COLUMNS.filter(col => visibleColumns.includes(col.id));
+    // Get visible columns (excluding select, image, asin which are always first)
+    const cols = analyzerColumns.filter(col => 
+      visibleColumns.includes(col.id) && 
+      !['select', 'image', 'asin'].includes(col.id)
+    );
     
     // Headers
     const headers = ['ASIN', 'Title', ...cols.map(col => col.label)].join(',');
@@ -456,35 +450,44 @@ export default function EnhancedAnalyzer() {
       {/* QUICK FILTER CHIPS */}
       <Stack direction="row" spacing={1} mb={2} flexWrap="wrap" gap={1}>
         <Chip
+          icon={<TrendingUpIcon />}
           label="High ROI (50%+)"
           onClick={() => setFilters({...filters, roi: { min: 50, max: null }})}
           color={filters.roi.min === 50 ? 'primary' : 'default'}
           variant={filters.roi.min === 50 ? 'filled' : 'outlined'}
+          sx={{ fontWeight: filters.roi.min === 50 ? 600 : 400 }}
         />
         
         <Chip
+          icon={<LocalOfferIcon />}
           label="Promo Deals"
           onClick={() => setFilters({...filters, has_promo: true})}
           color={filters.has_promo === true ? 'primary' : 'default'}
           variant={filters.has_promo === true ? 'filled' : 'outlined'}
+          sx={{ fontWeight: filters.has_promo === true ? 600 : 400 }}
         />
         
         <Chip
+          icon={<InventoryIcon />}
           label="Multi-Packs (>1)"
           onClick={() => setFilters({...filters, pack_size: { min: 2, max: null }})}
           color={filters.pack_size.min === 2 ? 'primary' : 'default'}
           variant={filters.pack_size.min === 2 ? 'filled' : 'outlined'}
+          sx={{ fontWeight: filters.pack_size.min === 2 ? 600 : 400 }}
         />
         
         <Chip
+          icon={<WarningIcon />}
           label="Unprofitable"
           onClick={() => setFilters({...filters, roi: { min: null, max: 5 }})}
           color={filters.roi.max === 5 ? 'error' : 'default'}
           variant={filters.roi.max === 5 ? 'filled' : 'outlined'}
+          sx={{ fontWeight: filters.roi.max === 5 ? 600 : 400 }}
         />
         
         {activeFilterCount > 0 && (
           <Chip
+            icon={<ClearIcon />}
             label="Clear All Filters"
             onClick={() => setFilters({
               search: '',
@@ -514,7 +517,7 @@ export default function EnhancedAnalyzer() {
       {showColumnMenu && (
         <Box position="relative">
           <AnalyzerColumnMenu
-            columns={DEFAULT_COLUMNS}
+            columns={analyzerColumns}
             visibleColumns={visibleColumns}
             onVisibleColumnsChange={setVisibleColumns}
             onClose={() => setShowColumnMenu(false)}
@@ -585,8 +588,8 @@ export default function EnhancedAnalyzer() {
               </TableCell>
 
               {/* Dynamic Columns */}
-              {DEFAULT_COLUMNS
-                .filter(col => visibleColumns.includes(col.id))
+              {analyzerColumns
+                .filter(col => visibleColumns.includes(col.id) && !['select', 'image', 'asin'].includes(col.id))
                 .map(column => (
                   <TableCell 
                     key={column.id}
@@ -623,16 +626,17 @@ export default function EnhancedAnalyzer() {
 
           <TableBody>
             {filteredProducts.map(product => (
-              <AnalyzerTableRow
-                key={product.id}
-                product={product}
-                selected={selectedProducts.has(product.id)}
-                visibleColumns={visibleColumns}
-                profitColor={getProfitColor(product.roi || product.roi_percentage || 0)}
-                onSelect={(checked) => handleSelectProduct(product.id, checked)}
-                onFieldUpdate={handleFieldUpdate}
-                columns={DEFAULT_COLUMNS}
-              />
+                <AnalyzerTableRow
+                  key={product.id}
+                  product={product}
+                  selected={selectedProducts.has(product.id)}
+                  visibleColumns={visibleColumns}
+                  profitColor={getProfitColor(product.roi || product.roi_percentage || 0)}
+                  onSelect={(checked) => handleSelectProduct(product.id, checked)}
+                  onFieldUpdate={handleFieldUpdate}
+                  columns={analyzerColumns}
+                  roiValue={product.roi || product.roi_percentage || 0}
+                />
             ))}
 
             {filteredProducts.length === 0 && !loading && (

@@ -369,6 +369,35 @@ export const analyzerColumns = [
     sortable: true,
   },
   
+  // Purchase History
+  {
+    id: 'bought_last_30d',
+    label: 'Bought Last 30d',
+    type: 'number',
+    width: 130,
+    visible: true,
+    sortable: true,
+    format: 'comma',
+  },
+  {
+    id: 'bought_last_60d',
+    label: 'Bought Last 60d',
+    type: 'number',
+    width: 130,
+    visible: false,
+    sortable: true,
+    format: 'comma',
+  },
+  {
+    id: 'bought_last_90d',
+    label: 'Bought Last 90d',
+    type: 'number',
+    width: 130,
+    visible: false,
+    sortable: true,
+    format: 'comma',
+  },
+  
   // Review Data
   {
     id: 'review_count',
@@ -430,6 +459,7 @@ export const defaultVisibleColumns = [
   'total_seller_count',
   'amazon_in_stock',
   'is_hazmat',
+  'bought_last_30d',
 ];
 
 // Column groups for organized menu
@@ -473,6 +503,10 @@ export const columnGroups = {
   supplier: {
     label: 'Supplier',
     columns: ['supplier_name'],
+  },
+  purchase: {
+    label: 'Purchase History',
+    columns: ['bought_last_30d', 'bought_last_60d', 'bought_last_90d'],
   },
   reviews: {
     label: 'Reviews',

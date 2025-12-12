@@ -1,0 +1,235 @@
+/* Analyzer Table Styles - App Analyzer Style */
+
+.analyzer-container {
+  background: #fafafa;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.analyzer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 16px 24px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.analyzer-table-container {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.analyzer-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.analyzer-table thead th {
+  background: #f5f5f5;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #666;
+  padding: 12px 16px;
+  border-bottom: 2px solid #e0e0e0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.analyzer-table tbody tr {
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.15s ease;
+}
+
+.analyzer-table tbody tr:hover {
+  background-color: #f9f9f9;
+}
+
+/* Color-coded rows */
+.analyzer-row-excellent {
+  background-color: rgba(76, 175, 80, 0.08) !important;
+}
+
+.analyzer-row-good {
+  background-color: rgba(255, 152, 0, 0.06) !important;
+}
+
+.analyzer-row-acceptable {
+  background-color: rgba(255, 193, 7, 0.05) !important;
+}
+
+.analyzer-row-marginal {
+  background-color: rgba(255, 152, 0, 0.04) !important;
+}
+
+.analyzer-row-unprofitable {
+  background-color: rgba(244, 67, 54, 0.05) !important;
+}
+
+/* Quick Filter Chips */
+.analyzer-filter-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.analyzer-filter-chip {
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.analyzer-filter-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.analyzer-filter-chip.active {
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+/* Bulk Actions Toolbar */
+.analyzer-bulk-actions {
+  position: sticky;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.analyzer-bulk-actions button {
+  color: white;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.analyzer-bulk-actions button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Sticky Columns */
+.analyzer-sticky-column {
+  position: sticky;
+  background: inherit;
+  z-index: 2;
+}
+
+.analyzer-sticky-column.image {
+  left: 48px;
+}
+
+.analyzer-sticky-column.asin {
+  left: 148px;
+}
+
+/* Profitability Badges */
+.profit-badge-excellent {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  font-weight: 600;
+}
+
+.profit-badge-good {
+  background-color: #fff3e0;
+  color: #e65100;
+  font-weight: 600;
+}
+
+.profit-badge-acceptable {
+  background-color: #fffde7;
+  color: #f57f17;
+  font-weight: 600;
+}
+
+.profit-badge-marginal {
+  background-color: #fff3e0;
+  color: #ef6c00;
+  font-weight: 500;
+}
+
+.profit-badge-unprofitable {
+  background-color: #ffebee;
+  color: #c62828;
+  font-weight: 500;
+}
+
+/* Inline Edit Cells */
+.analyzer-inline-edit {
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.analyzer-inline-edit:hover {
+  background-color: #f5f5f5;
+}
+
+.analyzer-inline-edit.editing {
+  background-color: #e3f2fd;
+}
+
+/* Loading States */
+.analyzer-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 48px;
+}
+
+/* Empty State */
+.analyzer-empty {
+  text-align: center;
+  padding: 64px 24px;
+  color: #999;
+}
+
+.analyzer-empty h6 {
+  margin-bottom: 8px;
+  color: #666;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .analyzer-container {
+    padding: 16px;
+  }
+  
+  .analyzer-table-container {
+    overflow-x: auto;
+  }
+}
+

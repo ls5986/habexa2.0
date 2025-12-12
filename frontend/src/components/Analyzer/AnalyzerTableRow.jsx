@@ -20,7 +20,8 @@ export default function AnalyzerTableRow({
   profitColor,
   onSelect,
   onFieldUpdate,
-  columns = []
+  columns = [],
+  roiValue = 0
 }) {
   const handleFieldUpdate = async (field, value) => {
     if (onFieldUpdate) {
@@ -208,6 +209,22 @@ export default function AnalyzerTableRow({
       case 'est_monthly_sales':
         return formatNumber(value || 0);
 
+      case 'bought_last_30d':
+      case 'bought_last_60d':
+      case 'bought_last_90d':
+        const boughtValue = value || 0;
+        return (
+          <Typography
+            variant="body2"
+            sx={{
+              color: boughtValue > 0 ? 'success.main' : 'text.secondary',
+              fontWeight: boughtValue > 0 ? 600 : 400
+            }}
+          >
+            {formatNumber(boughtValue)}
+          </Typography>
+        );
+
       default:
         // Default rendering
         if (typeof value === 'boolean') {
@@ -220,13 +237,31 @@ export default function AnalyzerTableRow({
     }
   };
 
+  // Get row background color based on ROI tier
+  const getRowBgColor = () => {
+    if (selected) {
+      return alpha(profitColor || '#1976d2', 0.1);
+    }
+    
+    // Color code by ROI tier
+    if (roiValue >= 50) return alpha('#4caf50', 0.08); // Excellent - light green
+    if (roiValue >= 30) return alpha('#ff9800', 0.06); // Good - light orange
+    if (roiValue >= 15) return alpha('#ffc107', 0.05); // Acceptable - light yellow
+    if (roiValue >= 5) return alpha('#ff9800', 0.04); // Marginal - very light orange
+    if (roiValue < 5 && roiValue > -100) return alpha('#f44336', 0.05); // Unprofitable - light red
+    
+    return 'transparent';
+  };
+
   return (
     <TableRow
       sx={{
+        bgcolor: getRowBgColor(),
         '&:hover': {
-          bgcolor: alpha(profitColor || '#1976d2', 0.05)
+          bgcolor: alpha(profitColor || '#1976d2', 0.1),
+          cursor: 'pointer'
         },
-        bgcolor: selected ? alpha(profitColor || '#1976d2', 0.1) : 'transparent'
+        transition: 'background-color 0.2s ease'
       }}
     >
       {/* Checkbox */}

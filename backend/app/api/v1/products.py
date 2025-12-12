@@ -467,6 +467,68 @@ async def get_deals(
         result = supabase.rpc('filter_product_deals', rpc_params).execute()
         deals = result.data or []
         
+        # Add purchase history data for each deal
+        if deals:
+            product_ids = [d.get('product_id') for d in deals if d.get('product_id')]
+            if product_ids:
+                try:
+                    # Get purchase quantities from supplier_order_items
+                    from datetime import datetime, timedelta
+                    now = datetime.utcnow()
+                    
+                    # Aggregate purchase quantities for last 30, 60, 90 days
+                    purchase_history = {}
+                    
+                    # Get all valid supplier order IDs for this user
+                    valid_orders = supabase.table('supplier_orders')\
+                        .select('id')\
+                        .eq('user_id', user_id)\
+                        .in_('status', ['sent', 'confirmed', 'in_transit', 'received'])\
+                        .execute()
+                    
+                    valid_order_ids = [o['id'] for o in (valid_orders.data or [])]
+                    
+                    if valid_order_ids:
+                        for days in [30, 60, 90]:
+                            cutoff_date = (now - timedelta(days=days)).isoformat()
+                            
+                            purchase_query = supabase.table('supplier_order_items')\
+                                .select('product_id, quantity')\
+                                .in_('product_id', product_ids)\
+                                .in_('supplier_order_id', valid_order_ids)\
+                                .gte('created_at', cutoff_date)\
+                                .execute()
+                            
+                            # Aggregate by product_id
+                            for item in purchase_query.data or []:
+                                pid = item['product_id']
+                                qty = item.get('quantity', 0)
+                                
+                                if pid not in purchase_history:
+                                    purchase_history[pid] = {}
+                                
+                                purchase_history[pid][f'bought_last_{days}d'] = \
+                                    purchase_history[pid].get(f'bought_last_{days}d', 0) + qty
+                    
+                    # Add purchase history to deals
+                    for deal in deals:
+                        pid = deal.get('product_id')
+                        if pid and pid in purchase_history:
+                            deal.update(purchase_history[pid])
+                        else:
+                            # Set defaults if no purchase history
+                            deal['bought_last_30d'] = 0
+                            deal['bought_last_60d'] = 0
+                            deal['bought_last_90d'] = 0
+                            
+                except Exception as purchase_error:
+                    logger.warning(f"Failed to fetch purchase history: {purchase_error}")
+                    # Set defaults on error
+                    for deal in deals:
+                        deal['bought_last_30d'] = 0
+                        deal['bought_last_60d'] = 0
+                        deal['bought_last_90d'] = 0
+        
         # Log filter application for debugging
         if asin_status:
             logger.info(f"✅ ASIN status filter applied (RPC): {asin_status}, returned {len(deals)} deals")
