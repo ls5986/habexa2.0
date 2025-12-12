@@ -7,8 +7,11 @@
 -- Drop existing buy_list_items if it exists (from old schema)
 DROP TABLE IF EXISTS buy_list_items CASCADE;
 
+-- Drop existing buy_lists if it exists (to recreate with proper schema)
+DROP TABLE IF EXISTS buy_lists CASCADE;
+
 -- Create buy_lists table
-CREATE TABLE IF NOT EXISTS buy_lists (
+CREATE TABLE buy_lists (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     name VARCHAR(255) NOT NULL,
@@ -26,14 +29,11 @@ CREATE TABLE IF NOT EXISTS buy_lists (
     -- Metadata
     notes TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW(),
-    
-    -- Indexes
-    CONSTRAINT buy_lists_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Create buy_list_items table
-CREATE TABLE IF NOT EXISTS buy_list_items (
+CREATE TABLE buy_list_items (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     buy_list_id UUID REFERENCES buy_lists(id) ON DELETE CASCADE NOT NULL,
     product_id UUID REFERENCES products(id) ON DELETE CASCADE NOT NULL,
@@ -59,17 +59,28 @@ CREATE TABLE IF NOT EXISTS buy_list_items (
     UNIQUE(buy_list_id, product_id, product_source_id)
 );
 
--- Create indexes for performance
-CREATE INDEX IF NOT EXISTS idx_buy_lists_user_id ON buy_lists(user_id);
-CREATE INDEX IF NOT EXISTS idx_buy_lists_status ON buy_lists(status);
-CREATE INDEX IF NOT EXISTS idx_buy_lists_created_at ON buy_lists(created_at DESC);
+-- Drop existing indexes if they exist
+DROP INDEX IF EXISTS idx_buy_lists_user_id;
+DROP INDEX IF EXISTS idx_buy_lists_status;
+DROP INDEX IF EXISTS idx_buy_lists_created_at;
+DROP INDEX IF EXISTS idx_buy_list_items_buy_list_id;
+DROP INDEX IF EXISTS idx_buy_list_items_product_id;
+DROP INDEX IF EXISTS idx_buy_list_items_product_source_id;
 
-CREATE INDEX IF NOT EXISTS idx_buy_list_items_buy_list_id ON buy_list_items(buy_list_id);
-CREATE INDEX IF NOT EXISTS idx_buy_list_items_product_id ON buy_list_items(product_id);
-CREATE INDEX IF NOT EXISTS idx_buy_list_items_product_source_id ON buy_list_items(product_source_id);
+-- Create indexes for performance
+CREATE INDEX idx_buy_lists_user_id ON buy_lists(user_id);
+CREATE INDEX idx_buy_lists_status ON buy_lists(status);
+CREATE INDEX idx_buy_lists_created_at ON buy_lists(created_at DESC);
+
+CREATE INDEX idx_buy_list_items_buy_list_id ON buy_list_items(buy_list_id);
+CREATE INDEX idx_buy_list_items_product_id ON buy_list_items(product_id);
+CREATE INDEX idx_buy_list_items_product_source_id ON buy_list_items(product_source_id);
+
+-- Drop existing function if it exists
+DROP FUNCTION IF EXISTS update_buy_list_summary() CASCADE;
 
 -- Create function to update buy_list summary metrics
-CREATE OR REPLACE FUNCTION update_buy_list_summary()
+CREATE FUNCTION update_buy_list_summary()
 RETURNS TRIGGER AS $$
 BEGIN
     UPDATE buy_lists
@@ -126,6 +137,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Drop existing triggers if they exist
+DROP TRIGGER IF EXISTS trigger_update_buy_list_summary_insert ON buy_list_items;
+DROP TRIGGER IF EXISTS trigger_update_buy_list_summary_update ON buy_list_items;
+DROP TRIGGER IF EXISTS trigger_update_buy_list_summary_delete ON buy_list_items;
+
 -- Create triggers to auto-update summary metrics
 CREATE TRIGGER trigger_update_buy_list_summary_insert
     AFTER INSERT ON buy_list_items
@@ -145,6 +161,16 @@ CREATE TRIGGER trigger_update_buy_list_summary_delete
 -- Enable RLS (Row Level Security)
 ALTER TABLE buy_lists ENABLE ROW LEVEL SECURITY;
 ALTER TABLE buy_list_items ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can view their own buy lists" ON buy_lists;
+DROP POLICY IF EXISTS "Users can create their own buy lists" ON buy_lists;
+DROP POLICY IF EXISTS "Users can update their own buy lists" ON buy_lists;
+DROP POLICY IF EXISTS "Users can delete their own buy lists" ON buy_lists;
+DROP POLICY IF EXISTS "Users can view items in their buy lists" ON buy_list_items;
+DROP POLICY IF EXISTS "Users can add items to their buy lists" ON buy_list_items;
+DROP POLICY IF EXISTS "Users can update items in their buy lists" ON buy_list_items;
+DROP POLICY IF EXISTS "Users can delete items from their buy lists" ON buy_list_items;
 
 -- RLS Policies for buy_lists
 CREATE POLICY "Users can view their own buy lists"
