@@ -549,6 +549,9 @@ export default function EnhancedAnalyzer() {
         </Stack>
       </Box>
 
+      {/* PRICING MODE TOGGLE */}
+      <PricingModeToggle value={pricingMode} onChange={handlePricingModeChange} />
+
       {/* QUICK FILTER CHIPS */}
       <Stack direction="row" spacing={1} mb={2} flexWrap="wrap" gap={1}>
         <Chip
