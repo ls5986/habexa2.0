@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Paper,
@@ -30,7 +30,6 @@ import {
   Grid,
   Alert,
   Snackbar,
-  CircularProgress,
 } from '@mui/material';
 import {
   FilterList,
@@ -47,8 +46,9 @@ import {
   Star,
 } from '@mui/icons-material';
 import { analyzerColumns, defaultVisibleColumns, columnGroups, getColorForValue } from '../config/analyzerColumns';
-import api from '../services/api';
-import { useToast } from '../context/ToastContext';
+import axios from 'axios';
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 export default function Analyzer() {
   // State management
@@ -58,7 +58,7 @@ export default function Analyzer() {
     total_products: 0,
     profitable_count: 0,
     avg_roi: 0,
-    total_profit_potential: 0,
+    total_monthly_profit: 0,
   });
   
   // Table state
@@ -68,19 +68,18 @@ export default function Analyzer() {
   const [order, setOrder] = useState('desc');
   const [visibleColumns, setVisibleColumns] = useState(defaultVisibleColumns);
   const [selected, setSelected] = useState([]);
-  const [total, setTotal] = useState(0);
   
   // Filter state
   const [filters, setFilters] = useState({
     search: '',
-    min_roi: '',
-    max_roi: '',
-    profit_tier: '',
+    minRoi: '',
+    maxRoi: '',
+    profitTier: '',
     category: '',
-    supplier_id: '',
-    is_profitable: '',
-    amazon_sells: '',
-    is_hazmat: '',
+    supplier: '',
+    isProfitable: '',
+    amazonSells: '',
+    isHazmat: '',
   });
   
   // UI state
@@ -88,10 +87,6 @@ export default function Analyzer() {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const [categories, setCategories] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
-  const [bulkAnalyzing, setBulkAnalyzing] = useState(false);
-  const [exporting, setExporting] = useState(false);
-
-  const { showToast } = useToast();
 
   // Fetch data on mount and filter changes
   useEffect(() => {
@@ -101,62 +96,79 @@ export default function Analyzer() {
     fetchSuppliers();
   }, [page, rowsPerPage, orderBy, order]);
 
-  const fetchProducts = useCallback(async () => {
+  const fetchProducts = async () => {
     setLoading(true);
     try {
-      // Build filter object (remove empty strings)
-      const filterObj = Object.fromEntries(
-        Object.entries(filters).filter(([_, v]) => v !== '' && v !== null)
-      );
-      
-      // Convert string numbers to actual numbers
-      if (filterObj.min_roi) filterObj.min_roi = parseFloat(filterObj.min_roi);
-      if (filterObj.max_roi) filterObj.max_roi = parseFloat(filterObj.max_roi);
-      if (filterObj.is_profitable !== '') filterObj.is_profitable = filterObj.is_profitable === 'true';
-      if (filterObj.amazon_sells !== '') filterObj.amazon_sells = filterObj.amazon_sells === 'true';
-      if (filterObj.is_hazmat !== '') filterObj.is_hazmat = filterObj.is_hazmat === 'true';
-      
-      const response = await api.post(
-        `/analyzer/products?page=${page + 1}&page_size=${rowsPerPage}&sort_by=${orderBy}&sort_order=${order}`,
-        filterObj
-      );
-      
+      const params = {
+        skip: page * rowsPerPage,
+        limit: rowsPerPage,
+        order_by: orderBy,
+        order_direction: order,
+        ...buildFilterParams(),
+      };
+
+      const response = await axios.get(`${API_BASE_URL}/api/analyzer/products`, {
+        params,
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+
       setProducts(response.data.products || []);
-      setTotal(response.data.total || 0);
     } catch (error) {
       console.error('Error fetching products:', error);
-      showToast('Error loading products', 'error');
+      showSnackbar('Error loading products', 'error');
     } finally {
       setLoading(false);
     }
-  }, [filters, page, rowsPerPage, orderBy, order, showToast]);
+  };
 
-  const fetchStats = useCallback(async () => {
+  const fetchStats = async () => {
     try {
-      const response = await api.get('/analyzer/stats');
+      const params = buildFilterParams();
+      const response = await axios.get(`${API_BASE_URL}/api/analyzer/stats`, {
+        params,
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
       setStats(response.data);
     } catch (error) {
       console.error('Error fetching stats:', error);
     }
-  }, []);
+  };
 
-  const fetchCategories = useCallback(async () => {
+  const fetchCategories = async () => {
     try {
-      const response = await api.get('/analyzer/categories');
+      const response = await axios.get(`${API_BASE_URL}/api/analyzer/categories`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
       setCategories(response.data.categories || []);
     } catch (error) {
       console.error('Error fetching categories:', error);
     }
-  }, []);
+  };
 
-  const fetchSuppliers = useCallback(async () => {
+  const fetchSuppliers = async () => {
     try {
-      const response = await api.get('/analyzer/suppliers');
+      const response = await axios.get(`${API_BASE_URL}/api/analyzer/suppliers`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
       setSuppliers(response.data.suppliers || []);
     } catch (error) {
       console.error('Error fetching suppliers:', error);
     }
-  }, []);
+  };
+
+  const buildFilterParams = () => {
+    const params = {};
+    if (filters.search) params.search = filters.search;
+    if (filters.minRoi) params.min_roi = parseFloat(filters.minRoi);
+    if (filters.maxRoi) params.max_roi = parseFloat(filters.maxRoi);
+    if (filters.profitTier) params.profit_tier = filters.profitTier;
+    if (filters.category) params.category = filters.category;
+    if (filters.supplier) params.supplier = filters.supplier;
+    if (filters.isProfitable !== '') params.is_profitable = filters.isProfitable === 'true';
+    if (filters.amazonSells !== '') params.amazon_sells = filters.amazonSells === 'true';
+    if (filters.isHazmat !== '') params.is_hazmat = filters.isHazmat === 'true';
+    return params;
+  };
 
   const handleApplyFilters = () => {
     setPage(0);
@@ -167,14 +179,14 @@ export default function Analyzer() {
   const handleClearFilters = () => {
     setFilters({
       search: '',
-      min_roi: '',
-      max_roi: '',
-      profit_tier: '',
+      minRoi: '',
+      maxRoi: '',
+      profitTier: '',
       category: '',
-      supplier_id: '',
-      is_profitable: '',
-      amazon_sells: '',
-      is_hazmat: '',
+      supplier: '',
+      isProfitable: '',
+      amazonSells: '',
+      isHazmat: '',
     });
     setPage(0);
     setTimeout(() => {
@@ -212,60 +224,58 @@ export default function Analyzer() {
 
   const handleBulkAnalyze = async () => {
     if (selected.length === 0) {
-      showToast('Please select products first', 'warning');
+      showSnackbar('Please select products first', 'warning');
       return;
     }
 
-    setBulkAnalyzing(true);
     try {
-      const response = await api.post('/analyzer/bulk-analyze', selected);
-      showToast(`Re-analyzed ${response.data.analyzed} products`, 'success');
+      await axios.post(
+        `${API_BASE_URL}/api/analyzer/bulk-analyze`,
+        { product_ids: selected },
+        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+      );
+      
+      showSnackbar(`Re-analyzed ${selected.length} products`, 'success');
       setSelected([]);
       fetchProducts();
       fetchStats();
     } catch (error) {
       console.error('Error bulk analyzing:', error);
-      showToast('Error re-analyzing products', 'error');
-    } finally {
-      setBulkAnalyzing(false);
+      showSnackbar('Error re-analyzing products', 'error');
     }
   };
 
   const handleExportCSV = async () => {
-    setExporting(true);
     try {
-      const filterObj = Object.fromEntries(
-        Object.entries(filters).filter(([_, v]) => v !== '' && v !== null)
-      );
-      
-      const productIds = selected.length > 0 ? selected : null;
-      
-      const response = await api.post(
-        '/analyzer/export?format=csv',
-        { ...filterObj, product_ids: productIds },
-        { responseType: 'blob' }
-      );
+      const params = buildFilterParams();
+      const response = await axios.get(`${API_BASE_URL}/api/analyzer/export`, {
+        params,
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        responseType: 'blob',
+      });
 
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `habexa_products_${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute('download', `analyzer_export_${new Date().toISOString().split('T')[0]}.csv`);
       document.body.appendChild(link);
       link.click();
       link.remove();
       
-      showToast('CSV exported successfully', 'success');
+      showSnackbar('CSV exported successfully', 'success');
     } catch (error) {
       console.error('Error exporting CSV:', error);
-      showToast('Error exporting data', 'error');
-    } finally {
-      setExporting(false);
+      showSnackbar('Error exporting data', 'error');
     }
   };
 
   const handleCopyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
-    showToast('Copied to clipboard', 'success');
+    showSnackbar('Copied to clipboard', 'success');
+  };
+
+  const showSnackbar = (message, severity = 'info') => {
+    setSnackbar({ open: true, message, severity });
   };
 
   const renderCellValue = (column, product) => {
@@ -282,7 +292,6 @@ export default function Analyzer() {
         <Checkbox
           checked={selected.indexOf(product.id) !== -1}
           onChange={() => handleSelectOne(product.id)}
-          size="small"
         />
       );
     }
@@ -295,9 +304,6 @@ export default function Analyzer() {
           alt={product.title}
           variant="rounded"
           sx={{ width: 60, height: 60 }}
-          onError={(e) => {
-            e.target.src = '/placeholder-product.png';
-          }}
         />
       );
     }
@@ -308,11 +314,10 @@ export default function Analyzer() {
         <IconButton
           size="small"
           color="primary"
-          href={product.amazon_link || `https://www.amazon.com/dp/${product.asin}`}
+          href={`https://www.amazon.com/dp/${product.asin}`}
           target="_blank"
-          rel="noopener noreferrer"
         >
-          <OpenInNew fontSize="small" />
+          <OpenInNew />
         </IconButton>
       );
     }
@@ -326,7 +331,7 @@ export default function Analyzer() {
           fontWeight={column.colorCoded ? 600 : 400}
           sx={{ color: colorConfig?.color }}
         >
-          ${typeof value === 'number' ? value.toFixed(2) : value}
+          ${value.toFixed(2)}
         </Typography>
       );
     }
@@ -341,7 +346,7 @@ export default function Analyzer() {
           fontWeight={column.colorCoded ? 600 : 400}
           sx={{ color: colorConfig?.color }}
         >
-          {typeof value === 'number' ? value.toFixed(decimals) : value}%
+          {value.toFixed(decimals)}%
         </Typography>
       );
     }
@@ -350,7 +355,7 @@ export default function Analyzer() {
     if (column.type === 'number' && column.format === 'comma') {
       return (
         <Typography variant="body2">
-          {typeof value === 'number' ? value.toLocaleString() : value}
+          {value.toLocaleString()}
         </Typography>
       );
     }
@@ -359,7 +364,7 @@ export default function Analyzer() {
     if (column.type === 'number' && column.decimals) {
       return (
         <Typography variant="body2">
-          {typeof value === 'number' ? value.toFixed(column.decimals) : value}
+          {value.toFixed(column.decimals)}
         </Typography>
       );
     }
@@ -400,7 +405,7 @@ export default function Analyzer() {
       return (
         <Box display="flex" alignItems="center" gap={0.5}>
           <Star fontSize="small" color="warning" />
-          <Typography variant="body2">{typeof value === 'number' ? value.toFixed(1) : value}</Typography>
+          <Typography variant="body2">{value.toFixed(1)}</Typography>
         </Box>
       );
     }
@@ -445,14 +450,13 @@ export default function Analyzer() {
   };
 
   const getRowColor = (product) => {
-    const roi = product.roi_percentage || product.roi;
-    if (!roi && roi !== 0) return 'transparent';
-    const colorConfig = getColorForValue('roi', roi);
+    if (!product.roi_percentage) return 'transparent';
+    const colorConfig = getColorForValue('roi', product.roi_percentage);
     return colorConfig?.bgColor || 'transparent';
   };
 
   return (
-    <Box sx={{ p: 3, bgcolor: '#f5f5f5', minHeight: '100vh' }}>
+    <Box sx={{ p: 3 }}>
       {/* Header */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4" fontWeight={600}>
@@ -470,9 +474,8 @@ export default function Analyzer() {
             variant="outlined"
             startIcon={<Download />}
             onClick={handleExportCSV}
-            disabled={exporting}
           >
-            {exporting ? 'Exporting...' : 'Export CSV'}
+            Export CSV
           </Button>
           <Button
             variant="contained"
@@ -481,7 +484,6 @@ export default function Analyzer() {
               fetchProducts();
               fetchStats();
             }}
-            disabled={loading}
           >
             Refresh
           </Button>
@@ -497,7 +499,7 @@ export default function Analyzer() {
                 Total Products
               </Typography>
               <Typography variant="h4" fontWeight={600}>
-                {stats.total_products || 0}
+                {stats.total_products}
               </Typography>
             </CardContent>
           </Card>
@@ -509,7 +511,7 @@ export default function Analyzer() {
                 Profitable Deals
               </Typography>
               <Typography variant="h4" fontWeight={600} color="success.main">
-                {stats.profitable_count || 0}
+                {stats.profitable_count}
               </Typography>
             </CardContent>
           </Card>
@@ -520,8 +522,8 @@ export default function Analyzer() {
               <Typography color="text.secondary" gutterBottom>
                 Average ROI
               </Typography>
-              <Typography variant="h4" fontWeight={600} color="primary.main">
-                {stats.avg_roi ? `${stats.avg_roi.toFixed(1)}%` : '0%'}
+              <Typography variant="h4" fontWeight={600} color="primary">
+                {stats.avg_roi?.toFixed(1)}%
               </Typography>
             </CardContent>
           </Card>
@@ -530,10 +532,10 @@ export default function Analyzer() {
           <Card>
             <CardContent>
               <Typography color="text.secondary" gutterBottom>
-                Monthly Profit Potential
+                Monthly Profit
               </Typography>
               <Typography variant="h4" fontWeight={600} color="success.main">
-                ${stats.total_profit_potential ? stats.total_profit_potential.toLocaleString() : '0'}
+                ${stats.total_monthly_profit?.toLocaleString()}
               </Typography>
             </CardContent>
           </Card>
@@ -547,7 +549,7 @@ export default function Analyzer() {
             <TextField
               fullWidth
               size="small"
-              label="Search ASIN/Title"
+              label="Search ASIN"
               value={filters.search}
               onChange={(e) => setFilters({ ...filters, search: e.target.value })}
             />
@@ -558,16 +560,16 @@ export default function Analyzer() {
               size="small"
               label="Min ROI %"
               type="number"
-              value={filters.min_roi}
-              onChange={(e) => setFilters({ ...filters, min_roi: e.target.value })}
+              value={filters.minRoi}
+              onChange={(e) => setFilters({ ...filters, minRoi: e.target.value })}
             />
           </Grid>
           <Grid item xs={12} md={2}>
             <FormControl fullWidth size="small">
               <InputLabel>Profit Tier</InputLabel>
               <Select
-                value={filters.profit_tier}
-                onChange={(e) => setFilters({ ...filters, profit_tier: e.target.value })}
+                value={filters.profitTier}
+                onChange={(e) => setFilters({ ...filters, profitTier: e.target.value })}
                 label="Profit Tier"
               >
                 <MenuItem value="">All</MenuItem>
@@ -629,9 +631,8 @@ export default function Analyzer() {
               size="small"
               startIcon={<Refresh />}
               onClick={handleBulkAnalyze}
-              disabled={bulkAnalyzing}
             >
-              {bulkAnalyzing ? 'Analyzing...' : 'Re-Analyze Selected'}
+              Re-Analyze Selected
             </Button>
           </Box>
         </Alert>
@@ -672,7 +673,6 @@ export default function Analyzer() {
                           indeterminate={selected.length > 0 && selected.length < products.length}
                           checked={products.length > 0 && selected.length === products.length}
                           onChange={handleSelectAll}
-                          size="small"
                         />
                       ) : (
                         column.label
@@ -684,14 +684,14 @@ export default function Analyzer() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={visibleColumns.length} align="center" sx={{ py: 4 }}>
-                    <CircularProgress />
+                  <TableCell colSpan={visibleColumns.length} align="center">
+                    <Typography>Loading...</Typography>
                   </TableCell>
                 </TableRow>
               ) : products.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={visibleColumns.length} align="center" sx={{ py: 4 }}>
-                    <Typography color="text.secondary">No products found</Typography>
+                  <TableCell colSpan={visibleColumns.length} align="center">
+                    <Typography>No products found</Typography>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -700,7 +700,7 @@ export default function Analyzer() {
                     key={product.id}
                     sx={{
                       bgcolor: getRowColor(product),
-                      '&:hover': { opacity: 0.8 },
+                      '&:hover': { bgcolor: 'action.hover' },
                     }}
                   >
                     {analyzerColumns
@@ -729,7 +729,7 @@ export default function Analyzer() {
         </TableContainer>
         <TablePagination
           component="div"
-          count={total || stats.total_products}
+          count={stats.total_products}
           page={page}
           onPageChange={(e, newPage) => setPage(newPage)}
           rowsPerPage={rowsPerPage}
@@ -737,7 +737,7 @@ export default function Analyzer() {
             setRowsPerPage(parseInt(e.target.value, 10));
             setPage(0);
           }}
-          rowsPerPageOptions={[25, 50, 100, 200]}
+          rowsPerPageOptions={[25, 50, 100]}
         />
       </Paper>
 
