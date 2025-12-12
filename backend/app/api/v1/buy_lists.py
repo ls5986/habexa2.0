@@ -2,7 +2,7 @@
 Buy Lists API - Phase 2 Implementation
 Proper buy lists system with multiple lists per user and detailed tracking.
 """
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Body, Query
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
