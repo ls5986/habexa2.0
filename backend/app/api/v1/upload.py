@@ -11,6 +11,7 @@ from app.services.column_mapper import (
     MAPPABLE_FIELDS
 )
 from app.tasks.file_processing import parse_csv, parse_excel
+from app.services.template_engine import TemplateEngine
 from typing import Optional, List, Dict, Any
 import logging
 import os
@@ -133,8 +134,25 @@ async def analyze_file(
                     break
         column_samples[col] = samples[:5]
     
+    # Try to detect template
+    detected_template = None
+    if job.get("supplier_id"):
+        detected_template = TemplateEngine.detect_template(
+            filename=job["filename"],
+            columns=headers,
+            supplier_id=job["supplier_id"]
+        )
+    
     # Auto-map columns
     auto_mapping = auto_map_columns(headers)
+    
+    # If template detected, use its mappings as default
+    if detected_template:
+        template_mappings = detected_template.get("column_mappings", {})
+        # Merge template mappings with auto-mapping (template takes precedence)
+        for supplier_col, habexa_field in template_mappings.items():
+            if supplier_col in headers:
+                auto_mapping[supplier_col] = habexa_field
     
     # Get saved mappings for this supplier (if supplier_id exists)
     saved_mappings = []
@@ -157,6 +175,20 @@ async def analyze_file(
                 }
                 for m in mappings_result.data
             ]
+    
+    # Get templates for this supplier
+    templates = []
+    if job.get("supplier_id"):
+        templates_result = supabase.table("supplier_templates")\
+            .select("id, template_name, description, is_active, usage_count, last_used_at")\
+            .eq("user_id", user_id)\
+            .eq("supplier_id", job["supplier_id"])\
+            .eq("is_active", True)\
+            .order("usage_count", desc=True)\
+            .execute()
+        
+        if templates_result.data:
+            templates = templates_result.data
     
     # Update job with file info
     supabase.table("upload_jobs")\
@@ -185,7 +217,13 @@ async def analyze_file(
         "total_rows": len(rows),
         "columns": columns,
         "auto_mapping": auto_mapping,
-        "saved_mappings": saved_mappings
+        "saved_mappings": saved_mappings,
+        "detected_template": {
+            "id": detected_template["id"],
+            "template_name": detected_template["template_name"],
+            "description": detected_template.get("description")
+        } if detected_template else None,
+        "available_templates": templates
     }
 
 
@@ -197,6 +235,7 @@ async def analyze_file(
 async def start_processing(
     job_id: str,
     column_mapping: str = Form(...),  # JSON string
+    template_id: Optional[str] = Form(None),  # Optional template ID to apply
     save_mapping: bool = Form(False),
     mapping_name: Optional[str] = Form(None),
     current_user: dict = Depends(get_current_user),
@@ -230,7 +269,6 @@ async def start_processing(
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid column_mapping JSON")
     
-    # Validate mapping
     # Get file columns from stored file
     file_path = Path(job.get("file_path"))
     if not file_path.exists():
@@ -242,10 +280,35 @@ async def start_processing(
     
     filename_lower = job["filename"].lower()
     if filename_lower.endswith(('.xlsx', '.xls')):
-        _, headers = parse_excel(contents)
+        rows, headers = parse_excel(contents)
     else:
-        _, headers = parse_csv(contents)
+        rows, headers = parse_csv(contents)
     
+    # If template_id provided, load and apply template
+    template = None
+    template_applied = False
+    if template_id:
+        template_result = supabase.table("supplier_templates")\
+            .select("*")\
+            .eq("id", template_id)\
+            .eq("user_id", user_id)\
+            .single()\
+            .execute()
+        
+        if template_result.data:
+            template = template_result.data
+            template_applied = True
+            
+            # Apply template to rows
+            template_result_data = TemplateEngine.apply_template(rows[:100], template)  # Test with first 100 rows
+            
+            # Update mapping_dict with template mappings
+            template_mappings = template.get("column_mappings", {})
+            for supplier_col, habexa_field in template_mappings.items():
+                if supplier_col in headers:
+                    mapping_dict[supplier_col] = habexa_field
+    
+    # Validate mapping
     validation = validate_mapping(mapping_dict, headers)
     if not validation["valid"]:
         raise HTTPException(
@@ -279,19 +342,34 @@ async def start_processing(
             .upsert(mapping_data, on_conflict="user_id,supplier_id,mapping_name")\
             .execute()
     
-    # Update job with mapping
+    # Update job with mapping and template info
     chunk_size = 500
     total_chunks = (job["total_rows"] + chunk_size - 1) // chunk_size
     
+    update_data = {
+        "column_mapping": mapping_dict,
+        "status": "validating",
+        "chunk_size": chunk_size,
+        "total_chunks": total_chunks,
+        "started_at": datetime.utcnow().isoformat(),
+        "updated_at": datetime.utcnow().isoformat()
+    }
+    
+    if template_id:
+        update_data["template_id"] = template_id
+        update_data["template_applied"] = True
+        
+        # Update template usage count
+        supabase.table("supplier_templates")\
+            .update({
+                "usage_count": (template.get("usage_count", 0) + 1),
+                "last_used_at": datetime.utcnow().isoformat()
+            })\
+            .eq("id", template_id)\
+            .execute()
+    
     supabase.table("upload_jobs")\
-        .update({
-            "column_mapping": mapping_dict,
-            "status": "validating",
-            "chunk_size": chunk_size,
-            "total_chunks": total_chunks,
-            "started_at": datetime.utcnow().isoformat(),
-            "updated_at": datetime.utcnow().isoformat()
-        })\
+        .update(update_data)\
         .eq("id", job_id)\
         .execute()
     
