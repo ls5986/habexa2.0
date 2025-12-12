@@ -16,12 +16,12 @@
 
 ## 📝 To Be Created (Adding Now)
 
-10. [ ] `ADD_USER_PREFERENCES.sql` - User preferences (pricing mode, etc.)
-11. [ ] `ADD_UPLOAD_TEMPLATES.sql` - Upload template system
-12. [ ] Any additional migrations as needed during implementation
+10. ✅ `ADD_USER_PREFERENCES.sql` - User preferences (pricing mode, etc.)
+11. ✅ `ADD_UPLOAD_TEMPLATES.sql` - Upload template system
 
 ---
 
-**Total Migrations:** 12  
-**Status:** Tracked and ready for execution
+**Total Migrations:** 11  
+**Status:** All migrations created and ready for execution  
+**Note:** Run all migrations in order. Some may have dependencies on earlier migrations.
 
