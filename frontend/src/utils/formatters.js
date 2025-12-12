@@ -19,6 +19,11 @@ export const formatROI = (roi) => {
   return `${sign}${roi.toFixed(1)}%`;
 };
 
+export const formatPercentage = (value) => {
+  if (value === null || value === undefined || isNaN(value)) return '0%';
+  return `${Number(value).toFixed(1)}%`;
+};
+
 export const formatRank = (rank) => {
   if (!rank) return 'N/A';
   return `#${formatNumber(rank)}`;
