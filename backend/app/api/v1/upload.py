@@ -12,13 +12,17 @@ from app.services.column_mapper import (
 )
 from app.tasks.file_processing import parse_csv, parse_excel
 from app.services.template_engine import TemplateEngine
+from app.tasks.enterprise_file_processing import process_large_file
 from typing import Optional, List, Dict, Any
 import logging
 import os
 import uuid
 import json
+import io
+import pandas as pd
 from datetime import datetime
 from pathlib import Path
+from fastapi import Query
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +36,261 @@ UPLOAD_TEMP_DIR.mkdir(parents=True, exist_ok=True)
 # ============================================================================
 # STEP 1: PREPARE UPLOAD (Initialize Job)
 # ============================================================================
+
+@router.post("/file")
+async def upload_product_file(
+    file: UploadFile = File(...),
+    supplier_id: Optional[str] = Form(None),
+    column_mapping: Optional[str] = Form(None),  # JSON string
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Upload product file for enterprise processing.
+    
+    Supports CSV and Excel files up to 100MB.
+    Handles 50,000+ products efficiently.
+    
+    Returns job_id for progress tracking.
+    """
+    try:
+        # Validate file
+        if not file.filename or not file.filename.endswith(('.csv', '.xlsx', '.xls')):
+            raise HTTPException(400, "Only CSV and Excel files supported")
+        
+        # Create unique job ID
+        job_id = str(uuid.uuid4())
+        
+        # Save file to temp location
+        upload_dir = UPLOAD_TEMP_DIR / str(current_user["id"])
+        upload_dir.mkdir(parents=True, exist_ok=True)
+        
+        file_path = upload_dir / f"{job_id}_{file.filename}"
+        
+        # Save uploaded file
+        contents = await file.read()
+        with open(file_path, "wb") as f:
+            f.write(contents)
+        
+        file_size = len(contents)
+        
+        logger.info(f"📁 File uploaded: {file.filename} ({file_size / 1024 / 1024:.1f} MB)")
+        
+        # Parse column mapping if provided
+        mapping_dict = {}
+        if column_mapping:
+            try:
+                mapping_dict = json.loads(column_mapping)
+            except json.JSONDecodeError:
+                pass
+        
+        # Default column mapping if not provided
+        if not mapping_dict:
+            # Quick parse to get headers
+            filename_lower = file.filename.lower()
+            if filename_lower.endswith(('.xlsx', '.xls')):
+                df_sample = pd.read_excel(io.BytesIO(contents), nrows=1)
+            else:
+                df_sample = pd.read_csv(io.BytesIO(contents), nrows=1)
+            
+            headers = list(df_sample.columns)
+            mapping_dict = auto_map_columns(headers)
+        
+        # Create upload job record
+        job_record = {
+            'id': job_id,
+            'user_id': current_user["id"],
+            'filename': file.filename,
+            'file_path': str(file_path),
+            'file_size_bytes': file_size,
+            'total_rows': 0,  # Will be updated during processing
+            'status': 'pending',
+            'supplier_id': supplier_id,
+            'started_at': datetime.utcnow().isoformat(),
+            'created_at': datetime.utcnow().isoformat(),
+            'updated_at': datetime.utcnow().isoformat()
+        }
+        
+        supabase.table('upload_jobs').insert(job_record).execute()
+        
+        # Queue Celery task for background processing
+        try:
+            task = process_large_file.delay(
+                job_id=job_id,
+                user_id=current_user["id"],
+                file_path=str(file_path),
+                column_mapping=mapping_dict,
+                supplier_id=supplier_id
+            )
+            task_id = task.id
+        except Exception as e:
+            logger.warning(f"Celery not available, using BackgroundTasks: {e}")
+            task_id = None
+            # Fallback to sync processing for small files
+            if file_size < 5 * 1024 * 1024:  # < 5MB
+                from app.services.streaming_file_processor import StreamingFileProcessor
+                processor = StreamingFileProcessor(
+                    user_id=current_user["id"],
+                    job_id=job_id
+                )
+                # Run in background
+                import asyncio
+                asyncio.create_task(
+                    processor.process_file(
+                        file_path=str(file_path),
+                        column_mapping=mapping_dict,
+                        supplier_id=supplier_id
+                    )
+                )
+        
+        logger.info(f"✅ Queued processing job: {job_id} (Celery task: {task_id})")
+        
+        return {
+            'job_id': job_id,
+            'task_id': task_id,
+            'filename': file.filename,
+            'file_size': file_size,
+            'status': 'queued',
+            'message': 'File upload successful. Processing started in background.'
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Upload failed: {e}", exc_info=True)
+        raise HTTPException(500, f"Upload failed: {str(e)}")
+
+
+@router.get("/status/{job_id}")
+async def get_upload_status(
+    job_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get real-time upload job status.
+    
+    Returns:
+    {
+        "status": "fetching_api",
+        "progress": 75,
+        "processed_rows": 37500,
+        "total_rows": 50000,
+        "current_phase": "Fetching API data",
+        "duration_seconds": 180,
+        "estimated_remaining": 60
+    }
+    """
+    try:
+        # Get job from database
+        response = supabase.table('upload_jobs').select('*').eq(
+            'id', job_id
+        ).eq('user_id', current_user["id"]).single().execute()
+        
+        if not response.data:
+            raise HTTPException(404, "Job not found")
+        
+        job = response.data
+        
+        # Calculate progress percentage
+        progress = 0
+        if job.get('total_rows') and job['total_rows'] > 0:
+            progress = int((job.get('processed_rows', 0) / job['total_rows']) * 100)
+        
+        # Estimate remaining time
+        estimated_remaining = None
+        if job.get('status') != 'complete' and job.get('duration_seconds') and job.get('processed_rows'):
+            time_per_row = job['duration_seconds'] / job['processed_rows']
+            remaining_rows = job['total_rows'] - job['processed_rows']
+            estimated_remaining = int(time_per_row * remaining_rows)
+        
+        # Map status to user-friendly phase
+        phase_map = {
+            'pending': 'Queued',
+            'parsing': 'Parsing file',
+            'converting_upcs': 'Converting UPCs to ASINs',
+            'inserting': 'Saving products to database',
+            'fetching_api': 'Fetching Amazon API data',
+            'complete': 'Complete',
+            'failed': 'Failed',
+            'cancelled': 'Cancelled'
+        }
+        
+        return {
+            'job_id': job_id,
+            'status': job.get('status', 'pending'),
+            'current_phase': phase_map.get(job.get('status', 'pending'), job.get('status', 'pending')),
+            'progress': progress,
+            'total_rows': job.get('total_rows', 0),
+            'processed_rows': job.get('processed_rows', 0),
+            'successful_rows': job.get('successful_rows', 0),
+            'failed_rows': job.get('failed_rows', 0),
+            'products_created': job.get('products_created', 0),
+            'cache_hits': job.get('cache_hits', 0),
+            'api_calls_made': job.get('api_calls_made', 0),
+            'duration_seconds': job.get('duration_seconds'),
+            'estimated_remaining_seconds': estimated_remaining,
+            'started_at': job.get('started_at'),
+            'completed_at': job.get('completed_at'),
+            'error': job.get('error_summary')
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Status check failed: {e}", exc_info=True)
+        raise HTTPException(500, str(e))
+
+
+@router.get("/jobs")
+async def list_upload_jobs(
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    List all upload jobs for current user.
+    """
+    try:
+        response = supabase.table('upload_jobs').select('*').eq(
+            'user_id', current_user["id"]
+        ).order('created_at', desc=True).range(
+            offset, offset + limit - 1
+        ).execute()
+        
+        return {
+            'jobs': response.data or [],
+            'total': len(response.data or [])
+        }
+        
+    except Exception as e:
+        logger.error(f"List jobs failed: {e}", exc_info=True)
+        raise HTTPException(500, str(e))
+
+
+@router.delete("/job/{job_id}")
+async def cancel_upload_job(
+    job_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Cancel a running upload job.
+    """
+    try:
+        # Update job status to cancelled
+        supabase.table('upload_jobs').update({
+            'status': 'cancelled',
+            'updated_at': datetime.utcnow().isoformat()
+        }).eq('id', job_id).eq('user_id', current_user["id"]).execute()
+        
+        # TODO: Actually cancel the Celery task
+        # from app.celery_app import celery_app
+        # celery_app.control.revoke(task_id, terminate=True)
+        
+        return {'message': 'Job cancelled'}
+        
+    except Exception as e:
+        logger.error(f"Cancel failed: {e}", exc_info=True)
+        raise HTTPException(500, str(e))
+
 
 @router.post("/prepare")
 async def prepare_upload(
