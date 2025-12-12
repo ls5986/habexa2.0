@@ -3684,18 +3684,18 @@ async def select_asin(
     user_id = str(current_user.id)
     
     try:
-        # Get product
+        # Get product (use limit(1) instead of single() to avoid error on 0 rows)
         product_result = supabase.table("products")\
             .select("*")\
             .eq("id", product_id)\
             .eq("user_id", user_id)\
-            .single()\
+            .limit(1)\
             .execute()
         
-        if not product_result.data:
+        if not product_result.data or len(product_result.data) == 0:
             raise HTTPException(404, "Product not found")
         
-        product = product_result.data
+        product = product_result.data[0]
         
         if product.get('asin_status') != 'multiple_found':
             raise HTTPException(400, "Product does not need ASIN selection")
@@ -3786,11 +3786,27 @@ async def select_asin(
             .eq("id", product_id)\
             .execute()
         
-        # Update product_source stage to trigger analysis
-        supabase.table("product_sources")\
-            .update({"stage": "new"})\
+        # Update product_source stage to trigger analysis (if it exists)
+        # Check if product_source exists first to avoid errors
+        product_source_check = supabase.table("product_sources")\
+            .select("id")\
             .eq("product_id", product_id)\
+            .limit(1)\
             .execute()
+        
+        if product_source_check.data and len(product_source_check.data) > 0:
+            supabase.table("product_sources")\
+                .update({"stage": "new"})\
+                .eq("product_id", product_id)\
+                .execute()
+        else:
+            # Create product_source if it doesn't exist
+            supabase.table("product_sources")\
+                .insert({
+                    "product_id": product_id,
+                    "stage": "new"
+                })\
+                .execute()
         
         # Get parent ASIN from Keepa (optional but recommended)
         # Note: Keepa client may not return parent_asin yet - this is a placeholder
