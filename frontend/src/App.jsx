@@ -27,6 +27,7 @@ const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
 const Debug = lazy(() => import('./pages/Debug'));
 const BuyList = lazy(() => import('./pages/BuyList'));
+const BuyLists = lazy(() => import('./pages/BuyLists'));
 const BuyListDetail = lazy(() => import('./pages/BuyListDetail'));
 const Orders = lazy(() => import('./pages/Orders'));
 const OrderDetails = lazy(() => import('./pages/OrderDetails'));
