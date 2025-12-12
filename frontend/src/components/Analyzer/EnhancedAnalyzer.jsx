@@ -69,6 +69,16 @@ export default function EnhancedAnalyzer() {
   // Sorting
   const [sortBy, setSortBy] = useState('roi');
   const [sortDirection, setSortDirection] = useState('desc');
+  
+  // Pricing mode: current, 30d_avg, 90d_avg, 365d_avg
+  const [pricingMode, setPricingMode] = useState(() => {
+    return localStorage.getItem('habexa_pricing_mode') || '365d_avg';
+  });
+  
+  const handlePricingModeChange = (mode) => {
+    setPricingMode(mode);
+    localStorage.setItem('habexa_pricing_mode', mode);
+  };
 
   // ============================================
   // DATA FETCHING

@@ -21,7 +21,8 @@ export default function AnalyzerTableRow({
   onSelect,
   onFieldUpdate,
   columns = [],
-  roiValue = 0
+  roiValue = 0,
+  pricingMode = '365d_avg'
 }) {
   const handleFieldUpdate = async (field, value) => {
     if (onFieldUpdate) {
@@ -130,7 +131,47 @@ export default function AnalyzerTableRow({
 
       case 'sell_price':
       case 'buy_box_price':
-        return formatCurrency(value);
+        // Use pricing mode to determine which price to show
+        const getPriceForMode = (product) => {
+          if (pricingMode === 'current') {
+            return product.buy_box_price || product.current_price;
+          } else if (pricingMode === '30d_avg') {
+            return product.buy_box_price_30d_avg;
+          } else if (pricingMode === '90d_avg') {
+            return product.buy_box_price_90d_avg;
+          } else if (pricingMode === '365d_avg') {
+            return product.buy_box_price_365d_avg;
+          }
+          // Fallback
+          return product.buy_box_price || product.buy_box_price_365d_avg || product.buy_box_price_90d_avg || product.buy_box_price_30d_avg;
+        };
+        
+        const priceForMode = getPriceForMode(product);
+        const currentPrice = product.buy_box_price || product.current_price;
+        const priceDeviation = currentPrice && priceForMode && priceForMode > 0
+          ? ((currentPrice - priceForMode) / priceForMode) * 100
+          : null;
+        
+        return (
+          <Box>
+            <Typography variant="body2" fontWeight="bold">
+              {priceForMode ? formatCurrency(priceForMode) : '—'}
+            </Typography>
+            {pricingMode !== 'current' && currentPrice && priceDeviation && Math.abs(priceDeviation) > 10 && (
+              <Box display="flex" alignItems="center" gap={0.5} mt={0.5}>
+                <Typography variant="caption" color="text.secondary">
+                  Current: {formatCurrency(currentPrice)}
+                </Typography>
+                <Chip 
+                  label={`${priceDeviation > 0 ? '+' : ''}${priceDeviation.toFixed(0)}%`}
+                  color={priceDeviation > 0 ? 'success' : 'error'}
+                  size="small"
+                  sx={{ height: 16, fontSize: '0.65rem' }}
+                />
+              </Box>
+            )}
+          </Box>
+        );
 
       case 'profit':
       case 'profit_amount':
