@@ -45,6 +45,7 @@ import {
   TrendingUp,
   TrendingDown,
   Star,
+  ShoppingCart,
 } from '@mui/icons-material';
 import { analyzerColumns, defaultVisibleColumns, columnGroups, getColorForValue } from '../config/analyzerColumns';
 import api from '../services/api';
@@ -90,6 +91,9 @@ export default function Analyzer() {
   const [suppliers, setSuppliers] = useState([]);
   const [bulkAnalyzing, setBulkAnalyzing] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [createBuyListDialogOpen, setCreateBuyListDialogOpen] = useState(false);
+  const [buyListName, setBuyListName] = useState('');
+  const [creatingBuyList, setCreatingBuyList] = useState(false);
 
   const { showToast } = useToast();
 
@@ -228,6 +232,41 @@ export default function Analyzer() {
       showToast('Error re-analyzing products', 'error');
     } finally {
       setBulkAnalyzing(false);
+    }
+  };
+
+  const handleCreateBuyList = async () => {
+    if (selected.length === 0) {
+      showToast('Please select products first', 'warning');
+      return;
+    }
+
+    if (!buyListName.trim()) {
+      showToast('Please enter a buy list name', 'warning');
+      return;
+    }
+
+    setCreatingBuyList(true);
+    try {
+      const response = await api.post('/buy-lists/create-from-products', {
+        product_ids: selected,
+        name: buyListName.trim()
+      });
+      
+      showToast(`Created buy list "${buyListName}" with ${response.data.added_items} products`, 'success');
+      setCreateBuyListDialogOpen(false);
+      setBuyListName('');
+      setSelected([]);
+      
+      // Navigate to buy list detail page
+      if (response.data.buy_list?.id) {
+        window.location.href = `/buy-lists/${response.data.buy_list.id}`;
+      }
+    } catch (error) {
+      console.error('Error creating buy list:', error);
+      showToast('Error creating buy list', 'error');
+    } finally {
+      setCreatingBuyList(false);
     }
   };
 
@@ -624,15 +663,26 @@ export default function Analyzer() {
             <Typography>
               {selected.length} product{selected.length > 1 ? 's' : ''} selected
             </Typography>
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={<Refresh />}
-              onClick={handleBulkAnalyze}
-              disabled={bulkAnalyzing}
-            >
-              {bulkAnalyzing ? 'Analyzing...' : 'Re-Analyze Selected'}
-            </Button>
+            <Box display="flex" gap={1}>
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<ShoppingCart />}
+                onClick={() => setCreateBuyListDialogOpen(true)}
+                color="primary"
+              >
+                Create Buy List
+              </Button>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<Refresh />}
+                onClick={handleBulkAnalyze}
+                disabled={bulkAnalyzing}
+              >
+                {bulkAnalyzing ? 'Analyzing...' : 'Re-Analyze'}
+              </Button>
+            </Box>
           </Box>
         </Alert>
       )}
@@ -776,6 +826,52 @@ export default function Analyzer() {
           </Box>
         ))}
       </Menu>
+
+      {/* Create Buy List Dialog */}
+      <Dialog
+        open={createBuyListDialogOpen}
+        onClose={() => {
+          setCreateBuyListDialogOpen(false);
+          setBuyListName('');
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Create Buy List</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Create a new buy list with {selected.length} selected product{selected.length > 1 ? 's' : ''}.
+          </Typography>
+          <TextField
+            autoFocus
+            fullWidth
+            label="Buy List Name"
+            value={buyListName}
+            onChange={(e) => setBuyListName(e.target.value)}
+            placeholder="e.g., KEHE Order #47 - Dec 2025"
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setCreateBuyListDialogOpen(false);
+              setBuyListName('');
+            }}
+            disabled={creatingBuyList}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleCreateBuyList}
+            variant="contained"
+            disabled={creatingBuyList || !buyListName.trim()}
+            startIcon={<ShoppingCart />}
+          >
+            {creatingBuyList ? 'Creating...' : 'Create Buy List'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Snackbar */}
       <Snackbar

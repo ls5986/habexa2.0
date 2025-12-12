@@ -13,6 +13,7 @@ const menuItems = [
   { id: 'suppliers', label: 'Suppliers', icon: Users, path: '/suppliers' },
   { id: 'jobs', label: 'Upload Jobs', icon: FileText, path: '/jobs' },
   { id: 'buy-list', label: 'Buy List', icon: ShoppingCart, path: '/buy-list' },
+  { id: 'buy-lists', label: 'Buy Lists', icon: ShoppingCart, path: '/buy-lists' },
   { id: 'orders', label: 'Orders', icon: Receipt, path: '/orders' },
   { id: 'analyze', label: 'Analyze', icon: Search, path: '/analyze' },
   { id: 'pricing', label: 'Pricing', icon: CreditCard, path: '/pricing' },
