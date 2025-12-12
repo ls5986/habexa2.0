@@ -11,7 +11,6 @@ from app.services.supabase_client import supabase
 from app.services.recommendation_scorer import RecommendationScorer
 from app.services.recommendation_filter import RecommendationFilter
 from app.services.recommendation_optimizer import RecommendationOptimizer
-from app.services.brand_restriction_detector import BrandRestrictionDetector
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +23,6 @@ class RecommendationService:
         self.scorer = RecommendationScorer()
         self.filter = RecommendationFilter()
         self.optimizer = RecommendationOptimizer()
-        self.brand_detector = BrandRestrictionDetector(user_id)
     
     async def generate_recommendations(
         self,
@@ -93,16 +91,19 @@ class RecommendationService:
                 product = item
                 product_source = item.get('product_sources', [{}])[0] if item.get('product_sources') else {}
                 
-                # Check brand restrictions
-                brand_name = product.get('brand')
+                # Check brand restrictions (from product_brand_flags if exists)
                 brand_status = None
-                if brand_name:
-                    brand_check = await self.brand_detector.detect_and_flag(
-                        product_id=product.get('id'),
-                        brand_name=brand_name,
-                        supplier_id=supplier_id
-                    )
-                    brand_status = brand_check.get('brand_status')
+                product_id = product.get('id')
+                if product_id:
+                    try:
+                        brand_flag_result = supabase.table('product_brand_flags').select('brand_status').eq(
+                            'product_id', product_id
+                        ).eq('user_id', self.user_id).limit(1).execute()
+                        
+                        if brand_flag_result.data:
+                            brand_status = brand_flag_result.data[0].get('brand_status')
+                    except:
+                        pass  # If no brand flag, assume unknown/unrestricted
                 
                 # Apply filters
                 should_include, failure_reason = self.filter.should_include(
