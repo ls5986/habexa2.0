@@ -187,6 +187,34 @@ export default function AnalyzerTableRow({
           </Typography>
         );
 
+      case 'ppu':
+        const ppuValue = value || 0;
+        const ppuColor = ppuValue >= 2 ? 'success.main' : 
+                        ppuValue >= 1 ? 'info.main' : 
+                        ppuValue >= 0.5 ? 'warning.main' : 
+                        'error.main';
+        return (
+          <Box>
+            <Typography
+              variant="body2"
+              sx={{
+                color: ppuColor,
+                fontWeight: 'bold'
+              }}
+            >
+              {formatCurrency(ppuValue)}
+            </Typography>
+            {ppuValue >= 2 && (
+              <Chip 
+                label="Best" 
+                size="small" 
+                color="success" 
+                sx={{ height: 16, fontSize: '0.65rem', mt: 0.5 }}
+              />
+            )}
+          </Box>
+        );
+
       case 'roi':
       case 'roi_percentage':
         return (
