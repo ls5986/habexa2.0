@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.core.config import settings
-from app.api.v1 import deals, analysis, suppliers, notifications, settings as api_settings, watchlist, orders, billing, telegram, amazon, keepa, debug, market, sp_api, products, brands, jobs, batch, buy_list, buy_lists, supplier_orders, tpl, fba_shipments, financial, templates, prep_centers, auth, users, upload, favorites, products_bulk, product_sources, pack_variants, brand_restrictions, cost_intelligence, po_emails, recommendations
+from app.api.v1 import deals, analysis, suppliers, notifications, settings as api_settings, watchlist, orders, billing, telegram, amazon, keepa, debug, market, sp_api, products, brands, jobs, batch, buy_list, buy_lists, supplier_orders, tpl, fba_shipments, financial, templates, prep_centers, auth, users, upload, favorites, products_bulk, product_sources, pack_variants, brand_restrictions, cost_intelligence, po_emails, recommendations, upload_templates
 from app.routers import analyzer
 from app.middleware.performance import PerformanceMiddleware
 import logging
