@@ -22,6 +22,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import SupplierProductsTab from '../components/SupplierDetail/SupplierProductsTab';
 import SupplierOrdersTab from '../components/SupplierDetail/SupplierOrdersTab';
 import SupplierTemplatesTab from '../components/SupplierDetail/SupplierTemplatesTab';
+import BrandRestrictionsTab from '../components/Supplier/BrandRestrictionsTab';
 import DeleteSupplierDialog from '../components/Suppliers/DeleteSupplierDialog';
 import api from '../services/api';
 
@@ -160,6 +161,7 @@ export default function SupplierDetail() {
           <Tab label="Products" />
           <Tab label="Orders" />
           <Tab label="Templates" />
+          <Tab label="Brand Restrictions" />
           <Tab label="Analytics" />
           <Tab label="Settings" />
         </Tabs>
@@ -169,12 +171,13 @@ export default function SupplierDetail() {
         {currentTab === 0 && <SupplierProductsTab supplierId={supplierId} />}
         {currentTab === 1 && <SupplierOrdersTab supplierId={supplierId} />}
         {currentTab === 2 && <SupplierTemplatesTab supplierId={supplierId} />}
-        {currentTab === 3 && (
+        {currentTab === 3 && <BrandRestrictionsTab supplierId={supplierId} />}
+        {currentTab === 4 && (
           <Paper sx={{ p: 4, textAlign: 'center' }}>
             <Typography>Analytics coming soon</Typography>
           </Paper>
         )}
-        {currentTab === 4 && (
+        {currentTab === 5 && (
           <Paper sx={{ p: 4, textAlign: 'center' }}>
             <Typography>Settings coming soon</Typography>
           </Paper>
