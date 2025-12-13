@@ -130,6 +130,8 @@ app.include_router(brand_restrictions.router, prefix=f"{settings.API_V1_PREFIX}"
 app.include_router(cost_intelligence.router, prefix=f"{settings.API_V1_PREFIX}", tags=["cost-intelligence"])
 app.include_router(po_emails.router, prefix=f"{settings.API_V1_PREFIX}", tags=["po-emails"])
 app.include_router(recommendations.router, prefix=f"{settings.API_V1_PREFIX}", tags=["recommendations"])
+app.include_router(upload_templates.router, prefix=f"{settings.API_V1_PREFIX}", tags=["upload-templates"])
+app.include_router(shipping_profiles.router, prefix=f"{settings.API_V1_PREFIX}", tags=["shipping-profiles"])
 
 
 @app.get("/")
