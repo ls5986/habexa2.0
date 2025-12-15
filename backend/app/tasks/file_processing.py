@@ -12,6 +12,7 @@ from typing import Optional, List, Dict, Tuple
 from app.core.celery_app import celery_app
 from app.services.supabase_client import supabase
 from app.tasks.base import JobManager
+from app.services.brand_restriction_detector import BrandRestrictionDetector
 import logging
 
 logger = logging.getLogger(__name__)
@@ -896,6 +897,32 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                             created_count = len(created.data or [])
                             logger.info(f"✅ Successfully created {created_count} products with ASINs")
                             
+                            # ================================================================================
+                            # 🔍 AUTO-DETECT BRAND RESTRICTIONS
+                            # ================================================================================
+                            if created.data:
+                                logger.info(f"🔍 Checking brand restrictions for {len(created.data)} products...")
+                                detector = BrandRestrictionDetector(user_id)
+                                for p in created.data:
+                                    brand_name = p.get('brand') or p.get('brand_name')
+                                    if brand_name:
+                                        try:
+                                            # Run async detection
+                                            from app.tasks.base import run_async
+                                            detection_result = run_async(
+                                                detector.detect_and_flag(
+                                                    product_id=p['id'],
+                                                    brand_name=brand_name,
+                                                    supplier_id=supplier_id
+                                                )
+                                            )
+                                            if detection_result.get('brand_status') in ['globally_restricted', 'supplier_restricted']:
+                                                logger.info(f"   ⚠️ Brand restricted: {brand_name} (status: {detection_result['brand_status']})")
+                                                results.setdefault('restricted_brands', 0)
+                                                results['restricted_brands'] += 1
+                                        except Exception as brand_error:
+                                            logger.warning(f"   Failed to check brand restriction for {brand_name}: {brand_error}")
+                            
                             for p in (created.data or []):
                                 product_cache[p["asin"]] = p["id"]
                                 results["products_created"] += 1
@@ -1144,6 +1171,32 @@ def process_file_upload(self, job_id: str, user_id: str, supplier_id: str, file_
                             created_no_asin = supabase.table("products").insert(normalized_products).execute()
                         created_count = len(created_no_asin.data or [])
                         logger.info(f"✅ Successfully inserted {created_count} products without ASINs")
+                        
+                        # ================================================================================
+                        # 🔍 AUTO-DETECT BRAND RESTRICTIONS
+                        # ================================================================================
+                        if created_no_asin.data:
+                            logger.info(f"🔍 Checking brand restrictions for {len(created_no_asin.data)} products...")
+                            detector = BrandRestrictionDetector(user_id)
+                            for p in created_no_asin.data:
+                                brand_name = p.get('brand') or p.get('brand_name')
+                                if brand_name:
+                                    try:
+                                        # Run async detection
+                                        from app.tasks.base import run_async
+                                        detection_result = run_async(
+                                            detector.detect_and_flag(
+                                                product_id=p['id'],
+                                                brand_name=brand_name,
+                                                supplier_id=supplier_id
+                                            )
+                                        )
+                                        if detection_result.get('brand_status') in ['globally_restricted', 'supplier_restricted']:
+                                            logger.info(f"   ⚠️ Brand restricted: {brand_name} (status: {detection_result['brand_status']})")
+                                            results.setdefault('restricted_brands', 0)
+                                            results['restricted_brands'] += 1
+                                    except Exception as brand_error:
+                                        logger.warning(f"   Failed to check brand restriction for {brand_name}: {brand_error}")
                         
                         for p in (created_no_asin.data or []):
                             # Use a special key format for products without ASIN: "upc:{upc}"
