@@ -9,6 +9,7 @@ from datetime import datetime
 
 from app.services.supabase_client import supabase
 from app.services.recommendation_scorer import RecommendationScorer
+from app.services.genius_scorer import GeniusScorer
 from app.services.recommendation_filter import RecommendationFilter
 from app.services.recommendation_optimizer import RecommendationOptimizer
 
@@ -18,9 +19,11 @@ logger = logging.getLogger(__name__)
 class RecommendationService:
     """Generate intelligent order recommendations."""
     
-    def __init__(self, user_id: str):
+    def __init__(self, user_id: str, use_genius_scorer: bool = True):
         self.user_id = user_id
-        self.scorer = RecommendationScorer()
+        self.use_genius_scorer = use_genius_scorer
+        self.scorer = RecommendationScorer()  # Legacy scorer (fallback)
+        self.genius_scorer = GeniusScorer()  # New genius scorer
         self.filter = RecommendationFilter()
         self.optimizer = RecommendationOptimizer()
     
@@ -121,8 +124,70 @@ class RecommendationService:
                 
                 products_passed += 1
                 
-                # Calculate score
-                score_result = self.scorer.calculate_score(product, product_source)
+                # Calculate score using Genius Scorer or legacy scorer
+                if self.use_genius_scorer:
+                    # Use Genius Scorer
+                    try:
+                        # Get Keepa data
+                        keepa_data = product.get('keepa_raw_response', {}) or {}
+                        if isinstance(keepa_data, str):
+                            import json
+                            try:
+                                keepa_data = json.loads(keepa_data)
+                            except:
+                                keepa_data = {}
+                        
+                        # Prepare product data for genius scorer
+                        product_data = {
+                            'roi': float(product.get('roi', 0) or product_source.get('roi', 0)),
+                            'profit_per_unit': float(product.get('profit_per_unit', 0) or product_source.get('profit_per_unit', 0)),
+                            'margin': float(product.get('margin', 0) or product_source.get('margin', 0)),
+                            'is_brand_restricted': brand_status in ['globally_restricted', 'supplier_restricted'],
+                            'order_quantity': 100
+                        }
+                        
+                        # Prepare SP-API data
+                        sp_api_data = {
+                            'sales_rank': product.get('current_sales_rank', 999999) or product.get('sales_rank', 999999),
+                            'category': product.get('category', 'default'),
+                            'fba_seller_count': product.get('fba_seller_count', 0),
+                            'is_hazmat': product.get('is_hazmat', False)
+                        }
+                        
+                        # User config
+                        user_config = {
+                            'min_roi': constraints.get('min_roi', 25.0),
+                            'max_fba_sellers': constraints.get('max_fba_sellers', 30),
+                            'handles_hazmat': not constraints.get('avoid_hazmat', True)
+                        }
+                        
+                        # Calculate genius score
+                        genius_result = self.genius_scorer.calculate_genius_score(
+                            product_data=product_data,
+                            keepa_data=keepa_data,
+                            sp_api_data=sp_api_data,
+                            user_config=user_config
+                        )
+                        
+                        # Convert genius result to legacy format for compatibility
+                        score_result = {
+                            'total_score': genius_result['total_score'],
+                            'profitability_score': genius_result['breakdown']['profitability'],
+                            'velocity_score': genius_result['breakdown']['velocity'],
+                            'competition_score': genius_result['breakdown']['competition'],
+                            'risk_score': genius_result['breakdown']['risk'],
+                            'breakdown': genius_result['component_scores'],
+                            'genius_grade': genius_result['grade'],
+                            'genius_badge': genius_result['badge'],
+                            'genius_insights': genius_result['insights']
+                        }
+                    except Exception as e:
+                        logger.warning(f"Genius scoring failed for product {product.get('id')}, using legacy scorer: {e}")
+                        # Fallback to legacy scorer
+                        score_result = self.scorer.calculate_score(product, product_source)
+                else:
+                    # Use legacy scorer
+                    score_result = self.scorer.calculate_score(product, product_source)
                 
                 # Calculate unit cost and profit
                 wholesale_cost = float(product_source.get('wholesale_cost', 0))
@@ -156,7 +221,11 @@ class RecommendationService:
                     'fba_sellers': product.get('fba_seller_count', 0),
                     'sell_price': sell_price,
                     'roi': (profit_per_unit / total_cost * 100) if total_cost > 0 else 0,
-                    'breakdown': score_result.get('breakdown', {})
+                    'breakdown': score_result.get('breakdown', {}),
+                    # Add genius score data if available
+                    'genius_grade': score_result.get('genius_grade'),
+                    'genius_badge': score_result.get('genius_badge'),
+                    'genius_insights': score_result.get('genius_insights', {})
                 }
                 
                 scored_products.append(scored_product)
