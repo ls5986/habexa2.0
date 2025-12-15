@@ -608,13 +608,29 @@ CREATE INDEX IF NOT EXISTS idx_upload_templates_user ON upload_templates(user_id
 CREATE INDEX IF NOT EXISTS idx_upload_templates_supplier ON upload_templates(supplier_id);
 
 -- ============================================
+-- MIGRATION 12: GENIUS SCORE COLUMNS
+-- ============================================
+
+ALTER TABLE products
+ADD COLUMN IF NOT EXISTS genius_score DECIMAL(5,2),
+ADD COLUMN IF NOT EXISTS genius_grade TEXT CHECK (genius_grade IN ('EXCELLENT', 'GOOD', 'FAIR', 'POOR')),
+ADD COLUMN IF NOT EXISTS genius_breakdown JSONB,
+ADD COLUMN IF NOT EXISTS genius_insights JSONB,
+ADD COLUMN IF NOT EXISTS genius_score_last_calculated TIMESTAMP WITH TIME ZONE;
+
+CREATE INDEX IF NOT EXISTS idx_products_genius_score ON products(genius_score DESC NULLS LAST);
+CREATE INDEX IF NOT EXISTS idx_products_genius_grade ON products(genius_grade);
+CREATE INDEX IF NOT EXISTS idx_products_genius_score_calculated ON products(genius_score_last_calculated DESC);
+
+-- ============================================
 -- ✅ MIGRATION COMPLETE
 -- ============================================
--- All 11 migrations have been applied
+-- All 12 migrations have been applied
 -- 
 -- Next steps:
 -- 1. Verify all tables were created
 -- 2. Test backend services
 -- 3. Test frontend components
+-- 4. Run genius scoring on products
 -- ============================================
 
