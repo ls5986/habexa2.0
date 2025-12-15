@@ -75,9 +75,37 @@ export default function EnhancedAnalyzer() {
     return localStorage.getItem('habexa_pricing_mode') || '365d_avg';
   });
   
-  const handlePricingModeChange = (mode) => {
+  // Load pricing mode from database on mount
+  useEffect(() => {
+    const loadPricingMode = async () => {
+      try {
+        const response = await api.get('/settings/preferences');
+        if (response.data?.default_pricing_mode) {
+          const mode = response.data.default_pricing_mode;
+          setPricingMode(mode);
+          localStorage.setItem('habexa_pricing_mode', mode);
+        }
+      } catch (error) {
+        console.error('Failed to load pricing mode preference:', error);
+        // Use localStorage fallback
+      }
+    };
+    loadPricingMode();
+  }, []);
+  
+  const handlePricingModeChange = async (mode) => {
     setPricingMode(mode);
     localStorage.setItem('habexa_pricing_mode', mode);
+    
+    // Also save to database user preferences
+    try {
+      await api.put('/settings/preferences', {
+        default_pricing_mode: mode
+      });
+    } catch (error) {
+      console.error('Failed to save pricing mode preference:', error);
+      // Non-critical - continue even if save fails
+    }
   };
 
   // ============================================

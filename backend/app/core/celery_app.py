@@ -30,6 +30,9 @@ celery_app = Celery(
         "app.tasks.keepa_analysis",
         "app.tasks.upload_processing",
         "app.tasks.asin_lookup",
+        "app.tasks.genius_scoring_tasks",
+        "app.tasks.inventory_tasks",
+        "app.tasks.supplier_performance_tasks",
     ],
     task_always_eager=False  # Don't execute tasks synchronously
 )
@@ -87,6 +90,16 @@ celery_app.conf.update(
             "task": "app.tasks.asin_lookup.process_pending_asin_lookups",
             "schedule": 1800.0,  # Every 30 minutes (backup to the 5-minute job)
             "args": (100,),
+        },
+        "refresh-genius-scores-daily": {
+            "task": "app.tasks.genius_scoring_tasks.refresh_genius_scores_daily",
+            "schedule": crontab(hour=3, minute=0),  # 3 AM every day
+            "options": {"queue": "default"}
+        },
+        "sync-fba-inventory-daily": {
+            "task": "app.tasks.inventory_tasks.sync_fba_inventory_daily",
+            "schedule": crontab(hour=2, minute=0),  # 2 AM every day
+            "options": {"queue": "default"}
         },
     },
 )

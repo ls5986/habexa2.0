@@ -215,6 +215,48 @@ export default function AnalyzerTableRow({
           </Box>
         );
 
+      case 'genius_score':
+        const score = value || 0;
+        const getGradeColor = (score) => {
+          if (score >= 85) return 'success'; // EXCELLENT - Green
+          if (score >= 70) return 'warning'; // GOOD - Yellow
+          if (score >= 50) return 'info';    // FAIR - Orange
+          return 'error';                     // POOR - Red
+        };
+        const getGradeBadge = (score) => {
+          if (score >= 85) return '🟢';
+          if (score >= 70) return '🟡';
+          if (score >= 50) return '🟠';
+          return '🔴';
+        };
+        const getGradeLabel = (score) => {
+          if (score >= 85) return 'EXCELLENT';
+          if (score >= 70) return 'GOOD';
+          if (score >= 50) return 'FAIR';
+          return 'POOR';
+        };
+        return (
+          <Box display="flex" alignItems="center" gap={1}>
+            <Typography
+              variant="body2"
+              sx={{
+                fontWeight: 'bold',
+                fontSize: '1rem'
+              }}
+            >
+              {score > 0 ? score.toFixed(1) : '—'}
+            </Typography>
+            {score > 0 && (
+              <Chip
+                label={`${getGradeBadge(score)} ${getGradeLabel(score)}`}
+                size="small"
+                color={getGradeColor(score)}
+                sx={{ height: 20, fontSize: '0.7rem' }}
+              />
+            )}
+          </Box>
+        );
+
       case 'roi':
       case 'roi_percentage':
         return (

@@ -32,6 +32,10 @@ class CostSettingsUpdate(BaseModel):
     inbound_rate_per_lb: Optional[float] = None  # New field name
 
 
+class PreferencesUpdate(BaseModel):
+    default_pricing_mode: Optional[str] = None  # current, 30d_avg, 90d_avg, 365d_avg
+
+
 @router.get("/profile")
 async def get_profile(current_user=Depends(get_current_user)):
     """Get user profile settings."""

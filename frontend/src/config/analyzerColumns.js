@@ -179,6 +179,18 @@ export const analyzerColumns = [
     sortable: true,
   },
   
+  // Genius Score (NEW - 0-100 composite score)
+  {
+    id: 'genius_score',
+    label: 'Genius Score',
+    type: 'genius_score',
+    width: 140,
+    visible: true,
+    sortable: true,
+    editable: false,
+    colorCoded: true,
+  },
+  
   // Profitability Metrics (COLOR CODED)
   {
     id: 'profit_amount',
