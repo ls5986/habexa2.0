@@ -412,12 +412,13 @@ CREATE TABLE IF NOT EXISTS reorder_alerts (
     is_dismissed BOOLEAN DEFAULT false,
     is_actioned BOOLEAN DEFAULT false,
     actioned_at TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    alert_date DATE DEFAULT CURRENT_DATE
 );
 
 CREATE INDEX IF NOT EXISTS idx_reorder_alerts_user ON reorder_alerts(user_id);
 CREATE INDEX IF NOT EXISTS idx_reorder_alerts_unread ON reorder_alerts(user_id, is_read) WHERE is_read = false;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_reorder_alerts_unique ON reorder_alerts(user_id, product_id, alert_type, date_trunc('day', created_at));
+CREATE UNIQUE INDEX IF NOT EXISTS idx_reorder_alerts_unique ON reorder_alerts(user_id, product_id, alert_type, alert_date);
 
 -- ============================================
 -- MIGRATION 7: SHIPPING COST PROFILES
