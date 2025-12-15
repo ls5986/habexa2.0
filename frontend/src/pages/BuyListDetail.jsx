@@ -41,6 +41,7 @@ import {
 import api from '../services/api';
 import { useToast } from '../context/ToastContext';
 import { formatCurrency } from '../utils/formatters';
+import ShippingCostCalculator from '../components/Shipping/ShippingCostCalculator';
 
 // Format percentage helper
 const formatPercentage = (value) => {
