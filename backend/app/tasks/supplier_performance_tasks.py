@@ -241,3 +241,4 @@ def calculate_supplier_performance(user_id: str = None, supplier_id: str = None)
         logger.error(f"Supplier performance calculation failed: {e}", exc_info=True)
         raise
 
+

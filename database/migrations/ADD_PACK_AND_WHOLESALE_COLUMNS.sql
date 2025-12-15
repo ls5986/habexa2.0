@@ -17,3 +17,4 @@ ALTER TABLE product_sources
 ADD CONSTRAINT check_pack_size_positive 
 CHECK (pack_size IS NULL OR pack_size > 0);
 
+

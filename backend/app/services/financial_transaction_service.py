@@ -292,3 +292,4 @@ class FinancialTransactionService:
             logger.error(f"Error getting P&L summary: {e}", exc_info=True)
             return {}
 
+

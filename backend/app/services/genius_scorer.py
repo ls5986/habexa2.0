@@ -752,3 +752,4 @@ class GeniusScorer:
         
         return insights
 
+
