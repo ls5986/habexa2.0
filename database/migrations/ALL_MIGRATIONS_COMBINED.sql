@@ -417,7 +417,7 @@ CREATE TABLE IF NOT EXISTS reorder_alerts (
 
 CREATE INDEX IF NOT EXISTS idx_reorder_alerts_user ON reorder_alerts(user_id);
 CREATE INDEX IF NOT EXISTS idx_reorder_alerts_unread ON reorder_alerts(user_id, is_read) WHERE is_read = false;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_reorder_alerts_unique ON reorder_alerts(user_id, product_id, alert_type, (created_at::date));
+CREATE UNIQUE INDEX IF NOT EXISTS idx_reorder_alerts_unique ON reorder_alerts(user_id, product_id, alert_type, date_trunc('day', created_at));
 
 -- ============================================
 -- MIGRATION 7: SHIPPING COST PROFILES
