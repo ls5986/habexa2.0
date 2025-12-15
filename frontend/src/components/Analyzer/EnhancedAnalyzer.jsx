@@ -56,6 +56,8 @@ export default function EnhancedAnalyzer() {
     roi: { min: null, max: null },
     profit: { min: null, max: null },
     pack_size: { min: null, max: null },
+    genius_score: { min: null, max: null },
+    genius_grade: [],
     profit_tier: [],
     has_promo: null,
     in_stock: null
@@ -173,6 +175,22 @@ export default function EnhancedAnalyzer() {
     }
     if (filters.pack_size.max) {
       filtered = filtered.filter(p => (p.pack_size || 1) <= filters.pack_size.max);
+    }
+
+    // Genius score filter
+    if (filters.genius_score?.min !== null) {
+      filtered = filtered.filter(p => (p.genius_score || 0) >= filters.genius_score.min);
+    }
+    if (filters.genius_score?.max !== null) {
+      filtered = filtered.filter(p => (p.genius_score || 0) <= filters.genius_score.max);
+    }
+
+    // Genius grade filter
+    if (filters.genius_grade && filters.genius_grade.length > 0) {
+      filtered = filtered.filter(p => {
+        const grade = p.genius_grade;
+        return grade && filters.genius_grade.includes(grade);
+      });
     }
 
     // Profit tier filter

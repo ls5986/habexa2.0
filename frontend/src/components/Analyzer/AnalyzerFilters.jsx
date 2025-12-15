@@ -140,6 +140,61 @@ export default function AnalyzerFilters({
           </Stack>
         </Box>
 
+        {/* Genius Score Range */}
+        <Box>
+          <Typography variant="body2" fontWeight="bold" mb={1}>
+            Genius Score (0-100)
+          </Typography>
+          <Stack direction="row" spacing={2}>
+            <TextField
+              label="Min"
+              type="number"
+              value={filters.genius_score?.min ?? ''}
+              onChange={(e) => handleRangeChange('genius_score', 'min', e.target.value)}
+              size="small"
+              sx={{ flex: 1 }}
+              inputProps={{ min: 0, max: 100 }}
+            />
+            <TextField
+              label="Max"
+              type="number"
+              value={filters.genius_score?.max ?? ''}
+              onChange={(e) => handleRangeChange('genius_score', 'max', e.target.value)}
+              size="small"
+              sx={{ flex: 1 }}
+              inputProps={{ min: 0, max: 100 }}
+            />
+          </Stack>
+        </Box>
+
+        {/* Genius Grade */}
+        <FormControl fullWidth size="small">
+          <InputLabel>Genius Grade</InputLabel>
+          <Select
+            multiple
+            value={filters.genius_grade || []}
+            onChange={(e) => handleFilterChange('genius_grade', e.target.value)}
+            renderValue={(selected) => (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                {selected.map((value) => (
+                  <Chip 
+                    key={value} 
+                    label={value === 'EXCELLENT' ? '🟢 EXCELLENT' : 
+                           value === 'GOOD' ? '🟡 GOOD' :
+                           value === 'FAIR' ? '🟠 FAIR' : '🔴 POOR'} 
+                    size="small" 
+                  />
+                ))}
+              </Box>
+            )}
+          >
+            <MenuItem value="EXCELLENT">🟢 Excellent (85-100)</MenuItem>
+            <MenuItem value="GOOD">🟡 Good (70-84)</MenuItem>
+            <MenuItem value="FAIR">🟠 Fair (50-69)</MenuItem>
+            <MenuItem value="POOR">🔴 Poor (0-49)</MenuItem>
+          </Select>
+        </FormControl>
+
         {/* Profit Tier */}
         <FormControl fullWidth size="small">
           <InputLabel>Profit Tier</InputLabel>
@@ -195,6 +250,8 @@ export default function AnalyzerFilters({
           filters.roi.min !== null || filters.roi.max !== null ||
           filters.profit.min !== null || filters.profit.max !== null ||
           filters.pack_size.min || filters.pack_size.max ||
+          filters.genius_score?.min !== null || filters.genius_score?.max !== null ||
+          filters.genius_grade?.length > 0 ||
           filters.profit_tier.length > 0 ||
           filters.has_promo !== null || filters.in_stock !== null) && (
           <Box>
@@ -224,6 +281,22 @@ export default function AnalyzerFilters({
                   onDelete={() => {
                     handleFilterChange('profit', { min: null, max: null });
                   }}
+                  size="small"
+                />
+              )}
+              {(filters.genius_score?.min !== null || filters.genius_score?.max !== null) && (
+                <Chip
+                  label={`Genius Score: ${filters.genius_score.min ?? '0'} - ${filters.genius_score.max ?? '100'}`}
+                  onDelete={() => {
+                    handleFilterChange('genius_score', { min: null, max: null });
+                  }}
+                  size="small"
+                />
+              )}
+              {filters.genius_grade?.length > 0 && (
+                <Chip
+                  label={`Grade: ${filters.genius_grade.join(', ')}`}
+                  onDelete={() => clearFilter('genius_grade')}
                   size="small"
                 />
               )}
@@ -262,6 +335,8 @@ export default function AnalyzerFilters({
                 roi: { min: null, max: null },
                 profit: { min: null, max: null },
                 pack_size: { min: null, max: null },
+                genius_score: { min: null, max: null },
+                genius_grade: [],
                 profit_tier: [],
                 has_promo: null,
                 in_stock: null

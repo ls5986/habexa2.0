@@ -8,8 +8,11 @@ import {
   Chip,
   Avatar,
   Link,
-  alpha
+  alpha,
+  Tooltip,
+  IconButton
 } from '@mui/material';
+import InfoIcon from '@mui/icons-material/Info';
 import InlineEditCell from './InlineEditCell';
 import { formatCurrency, formatPercentage, formatNumber } from '../../utils/formatters';
 
@@ -217,6 +220,7 @@ export default function AnalyzerTableRow({
 
       case 'genius_score':
         const score = value || 0;
+        const insights = product.genius_insights || {};
         const getGradeColor = (score) => {
           if (score >= 85) return 'success'; // EXCELLENT - Green
           if (score >= 70) return 'warning'; // GOOD - Yellow
@@ -235,6 +239,61 @@ export default function AnalyzerTableRow({
           if (score >= 50) return 'FAIR';
           return 'POOR';
         };
+        
+        // Build tooltip content from insights
+        const tooltipContent = score > 0 && (insights.strengths || insights.warnings || insights.opportunities || insights.weaknesses) ? (
+          <Box sx={{ maxWidth: 400, p: 1 }}>
+            {insights.strengths && insights.strengths.length > 0 && (
+              <>
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: 'success.main', mb: 0.5 }}>
+                  ✅ Strengths:
+                </Typography>
+                {insights.strengths.map((s, i) => (
+                  <Typography key={i} variant="body2" sx={{ ml: 2, mb: 0.5 }}>
+                    • {s}
+                  </Typography>
+                ))}
+              </>
+            )}
+            {insights.opportunities && insights.opportunities.length > 0 && (
+              <>
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: 'info.main', mt: 1, mb: 0.5 }}>
+                  💡 Opportunities:
+                </Typography>
+                {insights.opportunities.map((o, i) => (
+                  <Typography key={i} variant="body2" sx={{ ml: 2, mb: 0.5 }}>
+                    • {o}
+                  </Typography>
+                ))}
+              </>
+            )}
+            {insights.weaknesses && insights.weaknesses.length > 0 && (
+              <>
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: 'text.secondary', mt: 1, mb: 0.5 }}>
+                  ⚠️ Weaknesses:
+                </Typography>
+                {insights.weaknesses.map((w, i) => (
+                  <Typography key={i} variant="body2" sx={{ ml: 2, mb: 0.5 }}>
+                    • {w}
+                  </Typography>
+                ))}
+              </>
+            )}
+            {insights.warnings && insights.warnings.length > 0 && (
+              <>
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: 'warning.main', mt: 1, mb: 0.5 }}>
+                  ⚠️ Warnings:
+                </Typography>
+                {insights.warnings.map((w, i) => (
+                  <Typography key={i} variant="body2" sx={{ ml: 2, mb: 0.5 }}>
+                    • {w}
+                  </Typography>
+                ))}
+              </>
+            )}
+          </Box>
+        ) : null;
+        
         return (
           <Box display="flex" alignItems="center" gap={1}>
             <Typography
@@ -253,6 +312,25 @@ export default function AnalyzerTableRow({
                 color={getGradeColor(score)}
                 sx={{ height: 20, fontSize: '0.7rem' }}
               />
+            )}
+            {tooltipContent && (
+              <Tooltip 
+                title={tooltipContent}
+                arrow
+                placement="right"
+                componentsProps={{
+                  tooltip: {
+                    sx: {
+                      bgcolor: 'rgba(0, 0, 0, 0.9)',
+                      maxWidth: 400,
+                    }
+                  }
+                }}
+              >
+                <IconButton size="small" sx={{ p: 0.5 }}>
+                  <InfoIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
             )}
           </Box>
         );
