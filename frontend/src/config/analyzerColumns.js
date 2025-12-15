@@ -138,6 +138,15 @@ export const analyzerColumns = [
     editable: true, // Can edit pack size
   },
   {
+    id: 'has_pack_variants',
+    label: 'Variants',
+    type: 'pack_variants',
+    width: 100,
+    visible: false, // Hidden by default, can enable
+    sortable: false,
+    editable: false,
+  },
+  {
     id: 'moq',
     label: 'MOQ',
     type: 'number',

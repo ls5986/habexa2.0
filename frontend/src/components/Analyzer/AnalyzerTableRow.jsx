@@ -120,6 +120,30 @@ export default function AnalyzerTableRow({
         );
 
       case 'pack_size':
+        // Check if product has pack variants
+        const hasVariants = product.has_pack_variants || product.pack_variants?.length > 0;
+        return (
+          <Box display="flex" alignItems="center" gap={1}>
+            <InlineEditCell
+              value={value || 1}
+              type="integer"
+              min={1}
+              formatValue={(v) => formatNumber(v)}
+              onSave={(newValue) => handleFieldUpdate(column.id, newValue)}
+              editable={isEditable}
+            />
+            {hasVariants && (
+              <Chip
+                label={`${product.pack_variants?.length || '?'} variants`}
+                size="small"
+                color="info"
+                sx={{ height: 20, fontSize: '0.65rem' }}
+                title="Click to view pack variants"
+              />
+            )}
+          </Box>
+        );
+
       case 'moq':
         return (
           <InlineEditCell
@@ -129,6 +153,22 @@ export default function AnalyzerTableRow({
             formatValue={(v) => formatNumber(v)}
             onSave={(newValue) => handleFieldUpdate(column.id, newValue)}
             editable={isEditable}
+          />
+        );
+
+      case 'has_pack_variants':
+        const variantCount = product.pack_variants?.length || 0;
+        if (variantCount === 0) return '—';
+        return (
+          <Chip
+            label={`${variantCount} variant${variantCount > 1 ? 's' : ''}`}
+            size="small"
+            color="info"
+            sx={{ cursor: 'pointer' }}
+            onClick={() => {
+              // Could open dialog or navigate to detail page
+              window.open(`/products/${product.id}`, '_blank');
+            }}
           />
         );
 

@@ -74,7 +74,14 @@ async def get_analyzer_products(
     
     try:
         # Build base query - use product_deals view (already has all joined data)
-        query = supabase.table('product_deals').select('*', count='exact').eq('user_id', user_id)
+        # Include pack variants count
+        query = supabase.table('product_deals').select(
+            '''
+            *,
+            pack_variants:product_pack_variants(count)
+            ''',
+            count='exact'
+        ).eq('user_id', user_id)
         
         # Apply filters
         if filters.search:
