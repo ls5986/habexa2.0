@@ -40,6 +40,7 @@ import ListingScore from '../components/features/deals/ListingScore';
 import FavoriteButton from '../components/features/products/FavoriteButton';
 import UploadDetailsPanel from '../components/features/deals/UploadDetailsPanel';
 import ErrorBoundary from '../components/ErrorBoundary';
+import CostTypeSelector from '../components/Analyzer/CostTypeSelector';
 
 export default function DealDetail() {
   const { dealId } = useParams();
@@ -72,8 +73,11 @@ export default function DealDetail() {
     wholesale_cost: '',
     title: '',
     brand: '',
-    supplier_title: ''
+    supplier_title: '',
+    cost_type: 'unit',
+    case_size: 1
   });
+  const [productSourceId, setProductSourceId] = useState(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -485,6 +489,26 @@ export default function DealDetail() {
                     InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
                     helperText="Total cost for the entire pack"
                   />
+                  
+                  {/* Cost Type Selector */}
+                  {productSourceId && (
+                    <Box sx={{ mb: 2 }}>
+                      <CostTypeSelector
+                        productSourceId={productSourceId}
+                        costType={editFields.cost_type || deal.cost_type || 'unit'}
+                        packSize={editFields.pack_size || deal.pack_size || 1}
+                        caseSize={editFields.case_size || deal.case_size || 1}
+                        wholesaleCost={editFields.wholesale_cost || deal.wholesale_cost || 0}
+                        onUpdate={(updates) => {
+                          setEditFields({
+                            ...editFields,
+                            ...updates
+                          });
+                        }}
+                      />
+                    </Box>
+                  )}
+                  
                   <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
                     <Button
                       variant="contained"
