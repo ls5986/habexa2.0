@@ -632,7 +632,7 @@ class SPAPIClient:
         
         # Cache for 24 hours
         try:
-            from app.core.cache import get_cached, set_cached
+            from app.cache import cache
             cache.set(cache_key, result, ttl=86400)
         except Exception as e:
             logger.debug(f"Cache set failed: {e}")
