@@ -8,6 +8,7 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 from app.api.deps import get_current_user
 from app.services.supabase_client import supabase
+from app.services.prep_instructions_service import PrepInstructionsService
 import logging
 import uuid
 
@@ -197,16 +198,6 @@ async def create_orders_from_buy_list(
                 .insert(order_data)\
                 .execute()
             
-            # Auto-generate prep instructions if order has items
-            if order_response.data:
-                order_id = order_response.data[0]['id']
-                try:
-                    from app.services.prep_instructions_service import PrepInstructionsService
-                    prep_service = PrepInstructionsService(user_id)
-                    await prep_service.generate_prep_instructions_for_order(order_id)
-                except Exception as e:
-                    logger.warning(f"Failed to generate prep instructions for order {order_id}: {e}")
-            
             if not order_response.data:
                 logger.error(f"Failed to create order for supplier {supplier_id}")
                 continue
@@ -257,6 +248,16 @@ async def create_orders_from_buy_list(
                 items_response = supabase.table("supplier_order_items")\
                     .insert(order_items)\
                     .execute()
+                
+                # Auto-generate prep instructions after order items are created
+                if items_response.data:
+                    try:
+                        prep_service = PrepInstructionsService(user_id)
+                        prep_instructions = await prep_service.generate_prep_instructions_for_order(order_id)
+                        if prep_instructions:
+                            logger.info(f"✅ Generated {len(prep_instructions)} prep instructions for order {order_id}")
+                    except Exception as e:
+                        logger.warning(f"⚠️ Failed to generate prep instructions for order {order_id}: {e}")
                 
                 if items_response.data:
                     # Get updated order with summary metrics
